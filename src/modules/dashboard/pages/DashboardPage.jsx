@@ -2,8 +2,17 @@ import SummaryCards from "../components/SummaryCards";
 
 const DashboardPage = () => {
     return (
-        <div>
-            <h1>Dashboard 🚀</h1>
+        <div style={{ padding: "20px" }}>
+            <h1
+                style={{
+                    fontSize: "28px",
+                    fontWeight: "bold",
+                    marginBottom: "20px",
+                }}
+            >
+                Dashboard 🚀
+            </h1>
+
             <SummaryCards />
         </div>
     );

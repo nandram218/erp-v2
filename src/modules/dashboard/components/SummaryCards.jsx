@@ -1,22 +1,38 @@
+import React from "react";
+
 const SummaryCards = () => {
     const data = [
-        { title: "Total Students", value: 1200 },
-        { title: "Present Today", value: 1100 },
-        { title: "Fees Collected (Month)", value: "₹5,40,000" },
-        { title: "Pending Fees", value: "₹1,20,000" },
+        { title: "Total Students", value: 3 },
+        { title: "Present Today", value: 2 },
+        { title: "Fees Collected", value: "₹7000" },
+        { title: "Pending Fees", value: "₹3000" },
     ];
 
     return (
-        <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+        <div
+            style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                gap: "20px",
+            }}
+        >
             {data.map((item, index) => (
                 <div
                     key={index}
                     style={{
-                        background: "#ffffff",
+                        background:
+                            index === 0
+                                ? "linear-gradient(135deg, #667eea, #764ba2)"
+                                : index === 1
+                                    ? "linear-gradient(135deg, #43cea2, #185a9d)"
+                                    : index === 2
+                                        ? "linear-gradient(135deg, #f7971e, #ffd200)"
+                                        : "linear-gradient(135deg, #ff512f, #dd2476)",
+                        color: "#fff",
                         padding: "20px",
-                        borderRadius: "10px",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                        minWidth: "200px",
+                        borderRadius: "15px",
+                        minWidth: "220px",
+                        boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
                     }}
                 >
                     <h4>{item.title}</h4>
