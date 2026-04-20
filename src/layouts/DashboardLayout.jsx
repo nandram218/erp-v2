@@ -1,7 +1,7 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 
-const DashboardLayout = ({ children }) => {
+const DashboardLayout = () => {
     const linkStyle = {
         color: "#fff",
         textDecoration: "none",
@@ -47,8 +47,10 @@ const DashboardLayout = ({ children }) => {
                     Navbar
                 </div>
 
-                {/* Page Content */}
-                <div style={{ padding: "20px" }}>{children}</div>
+                {/* 🔥 IMPORTANT */}
+                <div style={{ padding: "20px" }}>
+                    <Outlet />
+                </div>
             </div>
         </div>
     );

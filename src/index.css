@@ -11,3 +11,35 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* ===== SCREEN VIEW ===== */
+.print-area {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ===== PRINT VIEW ===== */
+@media print {
+  body {
+    margin: 0;
+  }
+
+  button,
+  select,
+  input {
+    display: none !important;
+  }
+
+  .print-area {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    /* 2 cards per row */
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .id-card {
+    page-break-inside: avoid;
+  }
+}
