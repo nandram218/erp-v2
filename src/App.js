@@ -11,11 +11,15 @@ import StudentListPage from "./modules/students/pages/StudentListPage";
 import StudentProfile from "./modules/students/pages/StudentProfile";
 import StudentIDCard from "./modules/students/pages/StudentIDCard";     // single card
 import StudentIDCards from "./modules/students/pages/StudentIDCards";   // bulk cards
+import CertificatePreview from "./modules/students/certificates/CertificatePreview";
+import CertificateSelector from "./modules/students/certificates/CertificateSelector";
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
+        <Route path="/certificate-selector" element={<CertificateSelector />} />
+        <Route path="/certificate" element={<CertificatePreview />} />
         {/* ✅ Dashboard only */}
         <Route path="/" element={<DashboardLayout />}>
           <Route index element={<DashboardPage />} />

@@ -218,9 +218,9 @@ const StudentForm = () => {
         alert("Draft Saved");
     };
 
-    const handleDelete = () => {
-        localStorage.removeItem("draftStudent");
+    const handleReset = () => {
         setForm(initialState);
+        localStorage.removeItem("draftStudent");
     };
 
     /* ================= UI ================= */
@@ -251,11 +251,19 @@ const StudentForm = () => {
     const btn = (bg) => ({
         padding: "10px 20px",
         margin: "5px",
-        background: bg,
+        background: `linear-gradient(145deg, ${bg}, ${bg}cc)`,
         color: "#fff",
         border: "none",
-        borderRadius: "6px",
-        cursor: "pointer"
+        borderRadius: "10px",
+        cursor: "pointer",
+        fontWeight: "600",
+        letterSpacing: "0.5px",
+
+        boxShadow: `
+        4px 4px 10px rgba(0,0,0,0.3),
+        -2px -2px 6px rgba(255,255,255,0.2)
+    `,
+        transition: "all 0.15s ease"
     });
 
     return (
@@ -591,9 +599,34 @@ const StudentForm = () => {
 
             {/* BUTTONS */}
             <div style={{ textAlign: "center" }}>
-                <button onClick={handleSave} style={btn("#4CAF50")}>Save</button>
-                <button onClick={handleDraft} style={btn("#ff9800")}>Draft</button>
-                <button onClick={handleDelete} style={btn("#f44336")}>Delete</button>
+
+                <button
+                    onClick={handleSave}
+                    style={btn("#4CAF50")}
+                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(2px)"}
+                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0px)"}
+                >
+                    💾 Save
+                </button>
+
+                <button
+                    onClick={handleDraft}
+                    style={btn("#ff9800")}
+                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(2px)"}
+                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0px)"}
+                >
+                    📄 Draft
+                </button>
+
+                <button
+                    onClick={handleReset}
+                    style={btn("#f44336")}
+                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(2px)"}
+                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0px)"}
+                >
+                    🔄 Reset
+                </button>
+
             </div>
 
         </div>
