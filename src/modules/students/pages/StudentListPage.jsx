@@ -1,7 +1,49 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import StudentTable from "../components/StudentTable";
+const searchBox3D = {
+    width: "240px",
+    padding: "10px 12px",
+    borderRadius: "10px",
+    border: "2px solid #111",
+    boxShadow: `
+        inset 2px 2px 6px rgba(0,0,0,0.35),
+        inset -2px -2px 6px rgba(255,255,255,0.7)
+    `,
+    background: "#ffffff",
+    fontWeight: "600",
+    fontSize: "13px",
+    color: "#111",
+    outline: "none"
+};
+const btn3D = (bg) => ({
+    background: bg,
+    color: "#fff",
+    border: "none",
+    padding: "10px 18px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "700",
+    fontSize: "13px",
+    boxShadow: "0 5px 0 rgba(0,0,0,0.5)",
+    transition: "0.2s"
+});
 
+const input3D = {
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid #1a237e",
+    outline: "none",
+    fontWeight: "600",
+    boxShadow: "inset 0 3px 6px rgba(0,0,0,0.3)",
+    background: "#f5f7ff",
+    fontSize: "13px"
+};
+
+const select3D = {
+    ...input3D,
+    cursor: "pointer"
+};
 const StudentList = () => {
 
     const navigate = useNavigate();
@@ -54,22 +96,49 @@ const StudentList = () => {
 
     // ⭐ SMART SEARCH + FILTER (FINAL)
     const query = search.toLowerCase();
-
-    let filteredStudents = students.filter(s => {
+    const filteredStudents = students.filter((s) => {
         return (
+
+            // SEARCH
             (!search ||
                 s.name?.toLowerCase().includes(query) ||
                 s.mobile?.toLowerCase().includes(query) ||
                 s.mobileNo?.toLowerCase().includes(query) ||
                 s.admissionNo?.toLowerCase().includes(query)
-            ) &&
-            (!filters.class || String(s.class) === String(filters.class)) &&
-            (!filters.gender || s.gender === filters.gender) &&
-            (!filters.category || s.category === filters.category) &&
-            (!filters.hostel || s.hostel === filters.hostel) &&
-            (!filters.transport || s.transport === filters.transport) &&
-            (!filters.rte || String(s.RTE) === filters.rte) &&
-            (!filters.route || s.route === filters.route)
+            )
+
+            // CLASS
+            && (!filters.class || String(s.class) === String(filters.class))
+
+            // GENDER
+            && (!filters.gender || s.gender === filters.gender)
+
+            // CATEGORY
+            && (!filters.category || s.category === filters.category)
+
+            // HOSTEL
+            && (
+                !filters.hostel ||
+                (filters.hostel === "Yes" && s.hostel === true) ||
+                (filters.hostel === "No" && s.hostel === false)
+            )
+
+            // RTE
+            && (!filters.rte || String(s.RTE) === filters.rte)
+
+            // ✅ TRANSPORT (FIXED)
+            && (
+                !filters.transport ||
+                (filters.transport === "Yes" && s.transport === true) ||
+                (filters.transport === "No" && s.transport === false)
+            )
+
+            // ✅ ROUTE (ONLY WHEN TRANSPORT = YES)
+            && (
+                !filters.route ||
+                (filters.transport === "Yes" && s.route === filters.route)
+            )
+
         );
     });
 
@@ -83,23 +152,53 @@ const StudentList = () => {
             </button>
             {/* 🔥 TOOLBAR */}
             <div style={{
-
                 display: "flex",
                 flexWrap: "wrap",
                 gap: "10px",
                 alignItems: "center",
-                marginBottom: "10px"
+                marginBottom: "10px",
+
+                padding: "10px",
+                borderRadius: "12px",
+
+                background: "linear-gradient(145deg, #f1f5f9, #e2e8f0)",
+                border: "2px solid #0f2f6b",
+
+                boxShadow: `
+        inset 2px 2px 6px rgba(0,0,0,0.55),
+        inset -2px -2px 6px rgba(255,255,255,0.04)
+    `
             }}>
 
                 {/* BACK */}
-                <button onClick={() => navigate(-1)}>⬅ Back</button>
+                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
 
+                    <button
+                        style={btn3D("#000")}
+                        onClick={() => navigate(-1)}
+                        onMouseDown={(e) => e.currentTarget.style.transform = "translateY(2px)"}
+                        onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0px)"}
+                    >
+                        ⬅ Back
+                    </button>
+
+                    <button
+                        style={btn3D("#1b5e20")}
+                        onClick={() => window.print()}
+                        onMouseDown={(e) => e.currentTarget.style.transform = "translateY(2px)"}
+                        onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0px)"}
+                    >
+                        🖨 Print Report
+                    </button>
+
+                </div>
                 {/* SEARCH */}
                 <input
-                    placeholder="Search name / mobile / adm no"
+                    type="text"
+                    placeholder="🔍 Search name / mobile / adm no"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    style={{ padding: "5px" }}
+                    style={searchBox3D}
                 />
 
                 {/* CLASS */}
@@ -130,14 +229,18 @@ const StudentList = () => {
                 </select>
 
                 {/* HOSTEL */}
-                <select onChange={(e) => handleFilterChange("hostel", e.target.value)}>
-                    <option value="">Hostel</option>
+                <select
+                    value={filters.hostel}
+                    onChange={(e) => handleFilterChange("hostel", e.target.value)}
+                >
+                    <option value="">All Hostel</option>
                     <option value="Yes">Yes</option>
                     <option value="No">No</option>
                 </select>
 
                 {/* TRANSPORT */}
                 <select
+                    value={filters.transport}
                     onChange={(e) => {
                         handleFilterChange("transport", e.target.value);
                         if (e.target.value !== "Yes") {
@@ -145,11 +248,10 @@ const StudentList = () => {
                         }
                     }}
                 >
-                    <option value="">Transport</option>
+                    <option value="">All Transport</option>
                     <option value="Yes">Yes</option>
                     <option value="No">No</option>
                 </select>
-
                 {/* ROUTE (CONDITIONAL) */}
                 {filters.transport === "Yes" && (
                     <select

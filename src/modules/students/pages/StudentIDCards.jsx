@@ -13,22 +13,36 @@ const school = {
 
 /* ===== TEMPLATES ===== */
 const templates = [
-    { name: "Royal Blue", bg: "linear-gradient(135deg,#1e3c72,#2a5298)", accent: "#0d47a1", type: "h" },
-    { name: "Emerald Green", bg: "linear-gradient(135deg,#11998e,#38ef7d)", accent: "#00695c", type: "h" },
-    { name: "Sunset Orange", bg: "linear-gradient(135deg,#ff8008,#ffc837)", accent: "#e65100", type: "h" },
-    { name: "Dark Pro", bg: "linear-gradient(135deg,#232526,#414345)", accent: "#000", type: "h" },
+    // HORIZONTAL (keep strong ones)
+    { name: "Royal Blue", bg: "linear-gradient(135deg,#1e3c72,#2a5298)", accent: "#ffffff", type: "h" },
+    { name: "Sunset Gold", bg: "linear-gradient(135deg,#ff8008,#ffc837)", accent: "#000000", type: "h" },
+    { name: "Dark Steel", bg: "linear-gradient(135deg,#232526,#414345)", accent: "#ffffff", type: "h" },
 
-    { name: "Purple Glow", bg: "linear-gradient(135deg,#6a11cb,#2575fc)", accent: "#4a148c", type: "v" },
-    { name: "Red Royal", bg: "linear-gradient(135deg,#c31432,#240b36)", accent: "#880e4f", type: "v" },
-    { name: "Sky Light", bg: "linear-gradient(135deg,#56ccf2,#2f80ed)", accent: "#01579b", type: "v" },
-    { name: "Clean White", bg: "#ffffff", accent: "#1976d2", type: "v" },
+    // 🔥 PREMIUM VERTICAL THEMES
+    { name: "Purple Royal", bg: "linear-gradient(135deg,#6a11cb,#2575fc)", accent: "#ffffff", type: "v" },
+
+    { name: "Deep Purple", bg: "linear-gradient(135deg,#41295a,#2F0743)", accent: "#e0d4ff", type: "v" },
+
+    { name: "Ocean Blue", bg: "linear-gradient(135deg,#141e30,#243b55)", accent: "#4fc3f7", type: "v" },
+
+    { name: "Cyber Neon", bg: "linear-gradient(135deg,#0f2027,#203a43,#2c5364)", accent: "#00e5ff", type: "v" },
+
+    { name: "Black Gold", bg: "linear-gradient(135deg,#000000,#434343)", accent: "#ffd700", type: "v" },
+
+    { name: "Crimson Red", bg: "linear-gradient(135deg,#8e0e00,#1f1c18)", accent: "#ff5252", type: "v" },
+
+    { name: "Midnight Navy", bg: "linear-gradient(135deg,#000428,#004e92)", accent: "#90caf9", type: "v" },
+
+    { name: "Steel Grey Pro", bg: "linear-gradient(135deg,#485563,#29323c)", accent: "#ffffff", type: "v" },
+
+    { name: "Indigo Glow", bg: "linear-gradient(135deg,#283c86,#45a247)", accent: "#c5cae9", type: "v" },
 ];
-
 const StudentIDCards = () => {
     const [students, setStudents] = useState([]);
     const [selected, setSelected] = useState([]);
     const [selectedClass, setSelectedClass] = useState("");
     const [template, setTemplate] = useState(templates[0]);
+    const [search, setSearch] = useState("");
 
     useEffect(() => {
         const data = JSON.parse(localStorage.getItem("students")) || [];
@@ -43,41 +57,40 @@ const StudentIDCards = () => {
         );
     };
 
+    /* 🔍 FILTER */
+    const filteredStudents = students.filter(s =>
+        (s.name || "").toLowerCase().includes(search.toLowerCase()) &&
+        (selectedClass ? s.class === selectedClass : true)
+    );
+
+    /* ✅ FINAL LIST */
     const list =
         selected.length > 0
             ? students.filter(s => selected.includes(s.id))
-            : students;
-    // 🔥 ADD FROM HERE
+            : filteredStudents;
 
-    // Select All
-    const selectAll = () => {
-        setSelected(students.map(s => s.id));
-    };
+    /* 🔘 ACTIONS */
+    const selectAll = () => setSelected(filteredStudents.map(s => s.id));
+    const clearAll = () => setSelected([]);
 
-    // Clear All
-    const clearAll = () => {
-        setSelected([]);
-    };
-
-    // Class wise select
     const handleClassSelect = (cls) => {
         setSelectedClass(cls);
-
-        if (cls === "") {
-            setSelected([]);
-            return;
-        }
-
-        const filtered = students
-            .filter(s => s.class === cls)
-            .map(s => s.id);
-
-        setSelected(filtered);
+        if (cls === "") return setSelected([]);
+        setSelected(students.filter(s => s.class === cls).map(s => s.id));
     };
 
-    // Unique class list
     const classes = [...new Set(students.map(s => s.class))];
 
+    /* 🔘 3D BUTTON */
+    const btn3d = (color) => ({
+        background: color,
+        color: "#fff",
+        border: "none",
+        padding: "8px 16px",
+        borderRadius: "8px",
+        cursor: "pointer",
+        boxShadow: "0 4px 0 rgba(0,0,0,0.3)",
+    });
 
     /* ===== CARD ===== */
     const Card = ({ s }) => {
@@ -85,10 +98,9 @@ const StudentIDCards = () => {
 
         return (
             <div
-                className="id-card"
                 style={{
-                    width: isH ? 360 : 250,
-                    height: isH ? 220 : 370,
+                    width: isH ? 360 : 240,
+                    height: isH ? 220 : 420, // ✅ vertical fix
                     borderRadius: 14,
                     overflow: "hidden",
                     margin: 10,
@@ -99,17 +111,17 @@ const StudentIDCards = () => {
                     fontSize: 12
                 }}
             >
-
                 {/* HEADER */}
                 <div style={{
                     background: template.bg,
-                    color: "#fff",
-                    padding: "6px 8px",
+                    color: template.accent,   // ✅ FINAL FIX
+                    padding: "10px 12px",
                     display: "flex",
+                    justifyContent: "center",
+                    textAlign: "center",
                     alignItems: "center",
-                    gap: 6
+                    gap: "6px"
                 }}>
-                    <img src={school.logo} width={35} alt="" />
                     <div>
                         <div style={{ fontWeight: "bold", fontSize: 13 }}>{school.name}</div>
                         <div style={{ fontSize: 10 }}>{school.address}</div>
@@ -124,140 +136,123 @@ const StudentIDCards = () => {
                     padding: 8,
                     gap: 8
                 }}>
-
-                    {/* PHOTO */}
                     <div style={{ textAlign: "center" }}>
                         <img
-                            src={s.photo || "https://via.placeholder.com/100"}
+                            src={s.photo || school.logo}
                             style={{
                                 width: 90,
                                 height: 100,
                                 borderRadius: 10,
-                                border: `3px solid ${template.accent}`,
                                 objectFit: "cover"
                             }}
                             alt=""
                         />
                     </div>
 
-                    {/* DETAILS */}
-                    <div style={{ flex: 1 }}>
-                        <div style={{
-                            fontWeight: "bold",
-                            fontSize: 14,
-                            color: template.accent
-                        }}>
-                            {s.name}
-                        </div>
-
-                        <div style={{
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr",
-                            gap: 4,
-                            marginTop: 4
-                        }}>
-                            <div><b>Class:</b> {s.class}</div>
-                            <div><b>Sec:</b> {s.section}</div>
-                            <div><b>Father:</b> {s.fatherName}</div>
-                            <div><b>Mobile:</b> {s.fatherMobile}</div>
-                            <div><b>Blood:</b> {s.bloodGroup || "-"}</div>
-                            <div><b>ID:</b> {s.id}</div>
-                        </div>
-
-                        <div style={{ marginTop: 4 }}>
-                            <b>Address:</b> {s.city || "-"}
-                        </div>
+                    <div style={{ flex: 1, textAlign: "left", lineHeight: "1.5" }}>
+                        <b>{s.name}</b>
+                        <div>Class: {s.class} ({s.section})</div>
+                        <div>Father: {s.fatherName}</div>
+                        <div>Mobile: {s.fatherMobile}</div>
+                        <div>Blood: {s.bloodGroup || "-"}</div>
+                        <div>ID: {s.id}</div>
                     </div>
-
                 </div>
 
                 {/* FOOTER */}
                 <div style={{
                     borderTop: "1px solid #ddd",
-                    padding: 6,
+                    padding: 8,   // ✅ barcode cut fix
                     display: "flex",
                     justifyContent: "space-between",
-                    alignItems: "center"
+                    alignItems: "center",
+                    minHeight: 70
                 }}>
-
-                    <Barcode
-                        value={String(s.id)}
-                        width={1}
-                        height={25}
-                        fontSize={10}
-                    />
-
+                    <Barcode value={String(s.id)} width={1} height={25} fontSize={10} />
                     <QRCode value={JSON.stringify(s)} size={45} />
-
-                    <div style={{ textAlign: "center" }}>
-                        <img src={school.sign} width={65} alt="" />
-                        <div style={{ fontSize: 10 }}>Principal</div>
-                        <div style={{ fontSize: 9 }}>{school.phone}</div>
-                    </div>
-
                 </div>
-
             </div>
         );
     };
 
     return (
-        <div style={{ padding: 20 }}>
+        <div className="id-page">
             <h2>🎓 Professional ID Card Generator</h2>
 
-            {/* TEMPLATE SELECT */}
-            <select
-                onChange={(e) =>
+            {/* 🔍 TOP BAR */}
+            <div className="top-bar" style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "10px",
+                flexWrap: "wrap",
+                marginBottom: "15px"
+            }}>
+                <input
+                    placeholder="🔍 Search student..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                />
+
+                <select onChange={(e) =>
                     setTemplate(templates.find(t => t.name === e.target.value))
-                }
-            >
-                {templates.map(t => (
-                    <option key={t.name}>{t.name}</option>
-                ))}
-            </select>
+                }>
+                    {templates.map(t => <option key={t.name}>{t.name}</option>)}
+                </select>
 
-            {/* STUDENT SELECT */}
-            <div style={{ marginTop: 10 }}>
-
-                {/* ACTION BUTTONS */}
-                <div style={{ marginBottom: 10 }}>
-                    <button onClick={selectAll}>Select All</button>
-                    <button onClick={clearAll} style={{ marginLeft: 5 }}>Clear</button>
-                </div>
-
-                {/* CLASS SELECT */}
                 <select
                     value={selectedClass}
                     onChange={(e) => handleClassSelect(e.target.value)}
                 >
-                    <option value="">Select Class</option>
-                    {classes.map(c => (
-                        <option key={c}>{c}</option>
-                    ))}
+                    <option value="">All Classes</option>
+                    {classes.map(c => <option key={c}>{c}</option>)}
                 </select>
 
-                {/* STUDENT LIST */}
-                <div style={{ marginTop: 10, maxHeight: 200, overflow: "auto" }}>
-                    {students.map(s => (
-                        <label key={s.id} style={{ display: "block" }}>
-                            <input
-                                type="checkbox"
-                                checked={selected.includes(s.id)}
-                                onChange={() => toggle(s.id)}
-                            />
-                            {s.name} ({s.class})
-                        </label>
+                <button onClick={selectAll} style={btn3d("#4CAF50")}>Select All</button>
+                <button onClick={clearAll} style={btn3d("#f44336")}>Clear</button>
+                <button onClick={() => window.print()} style={btn3d("#2196F3")}>🖨 Print</button>
+            </div>
+
+            {/* ✅ SELECTED */}
+            <div className="selected-preview">
+                {students
+                    .filter(s => selected.includes(s.id))
+                    .map(s => (
+                        <span key={s.id} className="selected-chip">{s.name}</span>
                     ))}
-                </div>
-
             </div>
 
-            <button onClick={() => window.print()}>🖨 Print</button>
-
-            {/* CARDS */}
+            {/* 🆔 PREVIEW */}
             <div className="print-area">
-                {list.map(s => <Card key={s.id} s={s} />)}
+                {list.map(s => (
+                    <div key={s.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+
+                        {/* ✅ individual select */}
+                        <input
+                            type="checkbox"
+                            checked={selected.includes(s.id)}
+                            onChange={() => toggle(s.id)}
+                        />
+
+                        <Card s={s} />
+                    </div>
+                ))}
             </div>
+
+            {/* 📋 LIST */}
+            <div className="student-list">
+                {filteredStudents.map(s => (
+                    <label key={s.id}>
+                        <input
+                            type="checkbox"
+                            checked={selected.includes(s.id)}
+                            onChange={() => toggle(s.id)}
+                        />
+                        {s.name} ({s.class})
+                    </label>
+                ))}
+            </div>
+
         </div>
     );
 };

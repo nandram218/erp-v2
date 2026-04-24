@@ -14,83 +14,105 @@ const StudentProfile = () => {
 
     if (!student) return <div style={{ padding: 20 }}>Loading...</div>;
 
-    // 🎨 Colorful sections
-    const section = (bg) => ({
-        marginBottom: "20px",
-        padding: "18px",
+    /* 🎨 DARK POLISHED THEME */
+    const section = (borderColor) => ({
+        marginBottom: "18px",
+        padding: "16px",
         borderRadius: "14px",
-        background: bg,
-        boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
-        color: "#333"
+        background: "#1f2937",
+        borderLeft: `4px solid ${borderColor}`,
+        boxShadow: "0 6px 18px rgba(0,0,0,0.4)",
+        color: "#e5e7eb"
     });
 
     const label = {
         fontWeight: "600",
-        color: "#1a237e"
+        color: "#93c5fd"
     };
+
+    const btn3d = (bg) => ({
+        padding: "8px 16px",
+        background: bg,
+        color: "#fff",
+        border: "none",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontWeight: "600",
+        boxShadow: "0 4px 0 rgba(0,0,0,0.5)"
+    });
 
     return (
         <div style={{
             padding: "30px",
             minHeight: "100vh",
-            background: "linear-gradient(135deg, #667eea, #764ba2)"
+            background: "linear-gradient(135deg, #f5f7fa, #e4ebf5)"
         }}>
 
-            {/* 🔥 TOP BAR (Back + Print) */}
+            {/* 🔝 TOP BAR */}
             <div style={{
                 display: "flex",
                 justifyContent: "space-between",
-                marginBottom: "10px"
+                marginBottom: "15px"
             }}>
-                <button
-                    onClick={() => navigate(-1)}
-                    style={{
-                        padding: "8px 16px",
-                        background: "#3f51b5",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontWeight: "bold"
-                    }}
-                >
+                <button onClick={() => navigate(-1)} style={btn3d("#2563eb")}>
                     ⬅ Back
                 </button>
 
-                <button
-                    onClick={() => window.print()}
-                    style={{
-                        padding: "8px 16px",
-                        background: "#00c853",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer"
-                    }}
-                >
+                <button onClick={() => window.print()} style={btn3d("#16a34a")}>
                     🖨 Print
                 </button>
             </div>
 
             {/* MAIN CARD */}
             <div style={{
-                maxWidth: "900px",
+                maxWidth: "950px",
                 margin: "auto",
-                background: "#ffffff",
-                borderRadius: "20px",
+                background: "#111827",
+                borderRadius: "18px",
                 overflow: "hidden",
-                boxShadow: "0 10px 40px rgba(0,0,0,0.2)"
+                boxShadow: "0 15px 40px rgba(0,0,0,0.6)",
+                border: "2px solid #374151"
             }}>
 
                 {/* HEADER */}
                 <div style={{
-                    background: "linear-gradient(90deg, #ff6a00, #ee0979)",
+                    background: "linear-gradient(90deg,#4f46e5,#3b82f6)",
                     color: "#fff",
-                    padding: "20px",
-                    textAlign: "center"
+                    padding: "22px",
+                    textAlign: "center",
+                    borderBottom: "2px solid #1e40af"
                 }}>
-                    <h2 style={{ margin: 0 }}>🏫 Your School Name</h2>
-                    <p style={{ margin: 0 }}>Student Profile</p>
+                    <h2 style={{ margin: 0, letterSpacing: "1px" }}>
+                        🏫 YOUR SCHOOL NAME
+                    </h2>
+                    <p style={{ margin: 0, opacity: 0.9 }}>
+                        Student Profile
+                    </p>
+                </div>
+
+                {/* ID STRIP */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "10px 20px",
+                    background: "#1e293b",
+                    borderBottom: "1px solid #374151",
+                    color: "#cbd5f5"
+                }}>
+                    <div style={{ fontWeight: "600" }}>
+                        🆔 Student ID: {student.id}
+                    </div>
+
+                    <button
+                        onClick={() => {
+                            navigator.clipboard.writeText(student.id);
+                            alert("ID Copied!");
+                        }}
+                        style={btn3d("#3b82f6")}
+                    >
+                        Copy
+                    </button>
                 </div>
 
                 {/* PROFILE TOP */}
@@ -99,7 +121,8 @@ const StudentProfile = () => {
                     gap: "20px",
                     padding: "20px",
                     alignItems: "center",
-                    background: "#f4f7ff"
+                    background: "#111827",
+                    borderBottom: "1px solid #374151"
                 }}>
                     <img
                         src={student.photoPreview || "https://via.placeholder.com/120"}
@@ -107,14 +130,17 @@ const StudentProfile = () => {
                         style={{
                             width: 120,
                             height: 120,
-                            borderRadius: "15px",
+                            borderRadius: "12px",
                             objectFit: "cover",
-                            border: "3px solid #3f51b5"
+                            border: "3px solid #3b82f6",
+                            boxShadow: "0 0 12px #3b82f6"
                         }}
                     />
 
-                    <div style={{ flex: 1 }}>
-                        <h3 style={{ margin: 0, color: "#1a237e" }}>{student.name}</h3>
+                    <div style={{ flex: 1, color: "#e5e7eb" }}>
+                        <h3 style={{ margin: 0, color: "#60a5fa" }}>
+                            {student.name}
+                        </h3>
                         <p>Admission No: {student.admissionNo}</p>
                         <p>Class: {student.class} - {student.section}</p>
                         <p>Category: {student.category}</p>
@@ -126,7 +152,7 @@ const StudentProfile = () => {
                 <div style={{ padding: "20px" }}>
 
                     {/* FAMILY */}
-                    <div style={section("linear-gradient(135deg,#e3f2fd,#bbdefb)")}>
+                    <div style={section("#3b82f6")}>
                         <h4>👨‍👩‍👧 Family Details</h4>
                         <p><span style={label}>Father:</span> {student.fatherName}</p>
                         <p><span style={label}>Mother:</span> {student.motherName}</p>
@@ -134,7 +160,7 @@ const StudentProfile = () => {
                     </div>
 
                     {/* ID */}
-                    <div style={section("linear-gradient(135deg,#fff3e0,#ffe0b2)")}>
+                    <div style={section("#f59e0b")}>
                         <h4>🆔 Identity</h4>
                         <p><span style={label}>Aadhaar:</span> {student.aadhar}</p>
                         <p><span style={label}>Jan Aadhar:</span> {student.janAadhar}</p>
@@ -142,7 +168,7 @@ const StudentProfile = () => {
                     </div>
 
                     {/* ACADEMIC */}
-                    <div style={section("linear-gradient(135deg,#f3e5f5,#e1bee7)")}>
+                    <div style={section("#8b5cf6")}>
                         <h4>📚 Academic</h4>
                         <p><span style={label}>Previous School:</span> {student.previousSchool}</p>
                         <p><span style={label}>Last Class:</span> {student.lastClass}</p>
@@ -150,17 +176,16 @@ const StudentProfile = () => {
                     </div>
 
                     {/* TRANSPORT */}
-                    <div style={section("linear-gradient(135deg,#ede7f6,#d1c4e9)")}>
+                    <div style={section("#22c55e")}>
                         <h4>🚌 Transport / Hostel</h4>
-                        <p>Transport: {student.transport ? "Yes" : "No"}</p>
-                        <p>Route: {student.route}</p>
+                        <p>Transport: {student.transport ? `Yes (${student.route || "No"})` : "No"}</p>
                         <p>Fee: ₹{student.transportFee}</p>
                         <p>Hostel: {student.hostel ? "Yes" : "No"}</p>
                         <p>Hostel Fee: ₹{student.hostelFee}</p>
                     </div>
 
                     {/* ADDRESS + FEES */}
-                    <div style={section("linear-gradient(135deg,#e8f5e9,#c8e6c9)")}>
+                    <div style={section("#ef4444")}>
                         <h4>📍 Address</h4>
                         <p><b>Permanent:</b> {student.permanentAddress}</p>
                         <p><b>Current:</b> {student.currentAddress}</p>

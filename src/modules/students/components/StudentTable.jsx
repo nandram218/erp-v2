@@ -10,44 +10,64 @@ const StudentTable = ({
 
     const navigate = useNavigate();
 
-    const row = {
+    /* 🔥 CLASS ORDER FIX (LOW → HIGH) */
+    const classOrder = [
+        "PP3", "PP4", "PP5",
+        "Nursery", "LKG", "UKG",
+        "1st", "2nd", "3rd", "4th", "5th",
+        "6th", "7th", "8th", "9th", "10th",
+        "11th", "12th"
+    ];
+
+    const sortedStudents = [...students].sort((a, b) => {
+        const aIndex = classOrder.indexOf(a.class);
+        const bIndex = classOrder.indexOf(b.class);
+        return aIndex - bIndex;
+    });
+
+    /* 🔵 LEFT GRID (Transport tak) */
+    const leftGrid = {
         display: "grid",
         gridTemplateColumns: `
-    50px
-    50px
-    60px
-    200px
-    130px
-    120px
-    90px
-    70px
-    200px
-    130px
-    90px
-    70px
-    260px
-`,
+        40px 50px 60px 200px 120px 100px 80px 60px
+        160px 120px 80px 70px 80px 100px
+        `,
+        minWidth: "1360px",
         alignItems: "center",
         padding: "10px",
-        borderBottom: "1px solid #eee",
-        fontSize: "14px"
+        fontSize: "13px"
     };
 
     const cell = {
-        overflowX: "auto",
+        padding: "6px 8px",
+        borderRight: "1.5px solid #90a4ae",
+        overflow: "hidden",
         whiteSpace: "nowrap",
-        textOverflow: "ellipsis"
+        textOverflow: "ellipsis",
+        textAlign: "left"
     };
+
+    const headerCell = {
+        ...cell,
+        textAlign: "center",
+        fontWeight: "700",
+        color: "#fff"
+    };
+
+    const yesStyle = { color: "#1b5e20", fontWeight: "700" };
+    const noStyle = { color: "#b71c1c", fontWeight: "700" };
+    const routeStyle = { color: "#0d47a1", fontWeight: "700" };
 
     const btn = (bg) => ({
         background: bg,
         color: "#fff",
         border: "none",
-        padding: "5px 10px",
+        padding: "8px 14px",
         borderRadius: "6px",
-        marginRight: "5px",
         cursor: "pointer",
-        fontSize: "12px"
+        fontSize: "12px",
+        fontWeight: "700",
+        boxShadow: "0 4px 0 rgba(0,0,0,0.4)"
     });
 
     const handleDelete = (id) => {
@@ -60,150 +80,193 @@ const StudentTable = ({
         window.location.reload();
     };
 
-    // ✅ SAFE CHECK ALL (extra protection)
     const allSelected =
         students.length > 0 &&
         selectedIds.length === students.length;
 
     return (
         <div style={{
-            background: "#fff",
-            borderRadius: "12px",
-            overflow: "hidden",
-            boxShadow: "0 5px 20px rgba(0,0,0,0.1)"
+            background: "#ffffff",
+            borderRadius: "10px",
+            overflowX: "auto",
+            border: "2px solid #1a237e",
+            fontFamily: "Segoe UI, Arial",
+            width: "100%"
         }}>
 
-            {/* HEADER */}
-            <div style={{
-                ...row,
-                fontWeight: "bold",
-                background: "linear-gradient(90deg,#3f51b5,#5a55ae)",
-                color: "#fff",
-                fontSize: "13px"
-            }}>
+            {/* 🔝 HEADER */}
+            <div style={{ display: "flex" }}>
 
-                {/* SELECT ALL */}
-                <div>
-                    <input
-                        type="checkbox"
-                        checked={allSelected}
-                        onChange={(e) => handleSelectAll(e.target.checked)}
-                    />
+                <div style={{ ...leftGrid, background: "#1a237e" }}>
+
+                    <div style={headerCell}>
+                        <input
+                            type="checkbox"
+                            checked={allSelected}
+                            onChange={(e) => handleSelectAll(e.target.checked)}
+                        />
+                    </div>
+
+                    <div style={headerCell}>Sr</div>
+                    <div style={headerCell}>Photo</div>
+                    <div style={headerCell}>Name</div>
+                    <div style={headerCell}>Adm No</div>
+                    <div style={headerCell}>DOB</div>
+                    <div style={headerCell}>Class</div>
+                    <div style={headerCell}>Sec</div>
+                    <div style={headerCell}>Father</div>
+                    <div style={headerCell}>Mobile</div>
+                    <div style={headerCell}>Cat</div>
+                    <div style={headerCell}>RTE</div>
+                    <div style={headerCell}>Hostel</div>
+
+                    <div style={{
+                        ...headerCell,
+                        borderRight: "3px solid #000"
+                    }}>
+                        Transport
+                    </div>
                 </div>
 
-                <div>Sr</div>
-                <div>Photo</div>
-                <div>Name</div>
-                <div>Adm No</div>
-                <div>DOB</div>
-                <div>Class</div>
-                <div>Sec</div>
-                <div>Father</div>
-                <div>Mobile</div>
-                <div>Cat</div>
-                <div>RTE</div>
-                <div>Action</div>
+                <div style={{
+                    minWidth: "190px",
+                    background: "#1a237e",
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "700"
+                }}>
+                    Action
+                </div>
+
             </div>
 
             {/* DATA */}
-            {students.length === 0 ? (
+            {sortedStudents.length === 0 ? (
                 <div style={{ padding: "25px", textAlign: "center" }}>
                     No Students Found
                 </div>
             ) : (
-                students.map((s, i) => (
-                    <div
-                        key={s.id}
-                        style={row}
-                        onMouseEnter={(e) => e.currentTarget.style.background = "#f5f7ff"}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}
-                    >
+                sortedStudents.map((s, i) => {
+                    const next = sortedStudents[i + 1];
+                    const showBreak = next && next.class !== s.class;
 
-                        {/* CHECKBOX */}
-                        <div>
-                            <input
-                                type="checkbox"
-                                checked={selectedIds.includes(s.id)}
-                                onChange={() => handleSelect(s.id)}
-                            />
-                        </div>
+                    return (
+                        <React.Fragment key={s.id}>
 
-                        <div style={cell}>{i + 1}</div>
+                            <div style={{ display: "flex" }}>
 
-                        {/* PHOTO */}
-                        <div>
-                            <img
-                                src={s.photoPreview || "https://via.placeholder.com/40"}
-                                alt=""
-                                style={{
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: "50%",
-                                    objectFit: "cover",
-                                    cursor: "pointer"
-                                }}
-                                onClick={() => navigate(`/students/view/${s.id}`)}
-                            />
-                        </div>
+                                {/* LEFT GRID */}
+                                <div style={{
+                                    ...leftGrid,
+                                    background: i % 2 === 0 ? "#eef3f8" : "#ffffff",
+                                    borderBottom: "1px solid #cfd8dc"
+                                }}>
 
-                        <div style={cell}>{s.name}</div>
-                        <div style={cell}>{s.admissionNo}</div>
-                        <div style={cell}>{s.dob}</div>
-                        <div style={cell}>{s.class}</div>
-                        <div style={cell}>{s.section}</div>
-                        <div style={cell}>{s.fatherName}</div>
-                        <div style={cell}>{s.mobile || s.mobileNo}</div>
+                                    <div style={cell}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.includes(s.id)}
+                                            onChange={() => handleSelect(s.id)}
+                                        />
+                                    </div>
 
-                        {/* CATEGORY */}
-                        <div>
-                            <span style={{
-                                background: "#e3f2fd",
-                                padding: "4px 8px",
-                                borderRadius: "12px",
-                                fontSize: "12px"
-                            }}>
-                                {s.category}
-                            </span>
-                        </div>
+                                    <div style={cell}>{i + 1}</div>
 
-                        {/* RTE */}
-                        <div>
-                            <span style={{
-                                background: s.RTE ? "#c8e6c9" : "#ffcdd2",
-                                padding: "4px 8px",
-                                borderRadius: "12px",
-                                fontSize: "12px"
-                            }}>
-                                {s.RTE ? "Yes" : "No"}
-                            </span>
-                        </div>
+                                    <div style={cell}>
+                                        <img
+                                            src={s.photoPreview || "https://via.placeholder.com/40"}
+                                            alt=""
+                                            style={{
+                                                width: 36,
+                                                height: 36,
+                                                borderRadius: "50%",
+                                                objectFit: "cover",
+                                                cursor: "pointer"
+                                            }}
+                                            onClick={() => navigate(`/students/view/${s.id}`)}
+                                        />
+                                    </div>
 
-                        {/* ACTION */}
-                        <div>
-                            <button
-                                style={btn("#2196F3")}
-                                onClick={() => navigate(`/students/view/${s.id}`)}
-                            >
-                                View
-                            </button>
+                                    <div style={cell}>{s.name}</div>
+                                    <div style={cell}>{s.admissionNo}</div>
+                                    <div style={cell}>{s.dob}</div>
+                                    <div style={cell}>{s.class}</div>
+                                    <div style={cell}>{s.section}</div>
+                                    <div style={cell}>{s.fatherName}</div>
+                                    <div style={cell}>{s.mobile || s.mobileNo}</div>
+                                    <div style={cell}>{s.category}</div>
 
-                            <button
-                                style={btn("#4CAF50")}
-                                onClick={() => navigate(`/students/edit/${s.id}`)}
-                            >
-                                Edit
-                            </button>
+                                    <div style={cell}>
+                                        <span style={s.RTE ? yesStyle : noStyle}>
+                                            {s.RTE ? "Yes" : "No"}
+                                        </span>
+                                    </div>
 
-                            <button
-                                style={btn("#f44336")}
-                                onClick={() => handleDelete(s.id)}
-                            >
-                                Delete
-                            </button>
-                        </div>
+                                    <div style={cell}>
+                                        <span style={s.hostel ? yesStyle : noStyle}>
+                                            {s.hostel ? "Yes" : "No"}
+                                        </span>
+                                    </div>
 
-                    </div>
-                ))
+                                    {/* TRANSPORT LAST */}
+                                    <div style={{
+                                        ...cell,
+                                        borderRight: "none"
+                                    }}>
+                                        {s.transport ? (
+                                            <>
+                                                <span style={yesStyle}>Yes</span>{" "}
+                                                <span style={routeStyle}>({s.route || "-"})</span>
+                                            </>
+                                        ) : (
+                                            <span style={noStyle}>No</span>
+                                        )}
+                                    </div>
+
+                                </div>
+
+                                {/* ACTION */}
+                                <div style={{
+                                    minWidth: "190px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "8px",
+                                    borderBottom: "1px solid #cfd8dc"
+                                }}>
+                                    <button style={btn("#1b5e20")} onClick={() => navigate(`/students/view/${s.id}`)}>
+                                        View
+                                    </button>
+
+                                    <button style={btn("#0d47a1")} onClick={() => navigate(`/students/edit/${s.id}`)}>
+                                        Edit
+                                    </button>
+
+                                    <button style={btn("#b71c1c")} onClick={() => handleDelete(s.id)}>
+                                        Delete
+                                    </button>
+                                </div>
+
+                            </div>
+
+                            {/* 🔥 CLASS BREAK (PERFECT) */}
+                            {showBreak && (
+                                <div
+                                    style={{
+                                        width: "1360px",
+                                        height: "0px",
+                                        borderTop: "2px solid",
+                                        borderImage: "linear-gradient(90deg,#1a237e,#3949ab,#1a237e) 1",
+                                        margin: "6px 0"
+                                    }}
+                                />
+                            )}
+
+                        </React.Fragment>
+                    );
+                })
             )}
 
         </div>
