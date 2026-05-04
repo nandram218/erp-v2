@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 const StudentForm = () => {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -96,7 +96,20 @@ const StudentForm = () => {
 
     const [form, setForm] = useState(initialState);
 
+    const location = useLocation();
+
     useEffect(() => {
+
+        // ✅ 1. EDIT FROM TABLE (STATE)
+        if (location.state) {
+            setForm({
+                ...location.state,
+                id: location.state.id   // ✅ IMPORTANT
+            });
+            return;
+        }
+
+        // ✅ 2. EDIT FROM URL (ID)
         if (id) {
             const students = JSON.parse(localStorage.getItem("students")) || [];
 
@@ -107,11 +120,15 @@ const StudentForm = () => {
             if (existingStudent) {
                 setForm(existingStudent);
             }
-        } else {
+        }
+
+        // ✅ 3. ADD MODE (DRAFT)
+        else {
             const draft = localStorage.getItem("draftStudent");
             if (draft) setForm(JSON.parse(draft));
         }
-    }, [id]);
+
+    }, [id, location.state]);
 
     /* ================= HANDLERS ================= */
 
@@ -193,10 +210,12 @@ const StudentForm = () => {
             mobile: form.mobile || form.fatherMobile
         };
 
-        if (id) {
+        if (id || form.id) {
             // ✏️ EDIT MODE (replace existing)
             const updatedData = oldData.map((stu) =>
-                stu.id === Number(id) ? { ...finalData, id: Number(id) } : stu
+                stu.id === Number(id || form.id)
+                    ? { ...finalData, id: Number(id || form.id) }
+                    : stu
             );
 
             localStorage.setItem("students", JSON.stringify(updatedData));
@@ -209,7 +228,6 @@ const StudentForm = () => {
 
             localStorage.setItem("students", JSON.stringify([...oldData, newStudent]));
         }
-
         alert("Saved");
     };
 

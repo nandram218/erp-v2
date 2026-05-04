@@ -89,14 +89,22 @@ const StudentTable = ({
             background: "#ffffff",
             borderRadius: "10px",
             overflowX: "auto",
+            overflowY: "auto",
+            maxHeight: "80vh",
+            position: "relative",
             border: "2px solid #1a237e",
             fontFamily: "Segoe UI, Arial",
             width: "100%"
         }}>
 
             {/* 🔝 HEADER */}
-            <div style={{ display: "flex" }}>
-
+            <div style={{
+                display: "flex",
+                position: "sticky",
+                top: 0,
+                zIndex: 999,
+                background: "#1a237e"
+            }}>
                 <div style={{ ...leftGrid, background: "#1a237e" }}>
 
                     <div style={headerCell}>
@@ -185,7 +193,7 @@ const StudentTable = ({
                                                 objectFit: "cover",
                                                 cursor: "pointer"
                                             }}
-                                            onClick={() => navigate(`/students/view/${s.id}`)}
+                                            onClick={() => navigate("/students/add", { state: s })}
                                         />
                                     </div>
 
@@ -240,7 +248,10 @@ const StudentTable = ({
                                         View
                                     </button>
 
-                                    <button style={btn("#0d47a1")} onClick={() => navigate(`/students/edit/${s.id}`)}>
+                                    <button
+                                        style={btn("#0d47a1")}
+                                        onClick={() => navigate("/students/add", { state: s })}
+                                    >
                                         Edit
                                     </button>
 

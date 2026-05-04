@@ -1,0 +1,155 @@
+.certificate {
+    width: 100%;
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 20px;
+    border: 12px solid #111;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    background: #fff;
+
+    /* 🔥 FINAL BLINK KILLER */
+    contain: layout paint;
+    isolation: isolate;
+}
+
+/* INNER BORDER */
+.inner-border {
+    border: 6px solid gold;
+    padding: 30px;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+}
+
+/* ❌ REMOVED ::before WATERMARK COMPLETELY (MAIN BLINK CAUSE) */
+
+
+/* HEADER */
+.header h1 {
+    font-size: 34px;
+    font-weight: bold;
+}
+
+/* PHOTO */
+.photo-box {
+    margin: 10px 0;
+}
+
+.photo-box img {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 4px solid white;
+    object-fit: cover;
+}
+
+/* NAME */
+.student-name {
+    font-size: 40px;
+    margin: 10px 0;
+    letter-spacing: 2px;
+}
+
+/* TEXT */
+.text {
+    font-size: 18px;
+    margin: 20px;
+    line-height: 1.8;
+}
+
+/* DETAILS */
+.details {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* FOOTER */
+.footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+}
+
+/* ================= THEMES ================= */
+
+/* 🎓 ACADEMIC */
+.academic {
+    background: #0d47a1;
+    color: white;
+}
+
+.academic .student-name {
+    font-family: Georgia, serif;
+}
+
+/* 🏅 SPORTS */
+.sports {
+    background: #1b5e20;
+    color: #fff;
+}
+
+.sports .student-name {
+    font-family: Impact, sans-serif;
+}
+
+/* 🏏 CRICKET */
+.cricket {
+    background: #004d40;
+    color: #e0f2f1;
+}
+
+/* 🤼 KABADDI */
+.kabaddi {
+    background: #bf360c;
+    color: #ffe0b2;
+}
+
+/* 🎭 CULTURAL */
+.cultural {
+    background: #880e4f;
+    color: #fff;
+}
+
+.cultural .student-name {
+    font-family: "Brush Script MT", cursive;
+}
+
+/* 🎨 DRAWING */
+.drawing {
+    background: #4a148c;
+    color: white;
+}
+
+/* 🥇 GOLD MEDAL */
+.medal {
+    background: linear-gradient(135deg, #b8860b, #ffd700);
+    color: black;
+}
+
+.medal .student-name {
+    font-family: "Times New Roman", serif;
+}
+
+/* 🎂 BIRTHDAY */
+.birthday {
+    background: #e65100;
+    color: white;
+}
+
+/* ================= PRINT FIX ================= */
+
+@media print {
+    .certificate {
+        max-width: 100%;
+        margin: 0;
+        page-break-inside: avoid;
+    }
+}

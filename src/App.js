@@ -1,43 +1,5 @@
-import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import AppRoutes from "./routes/AppRoutes";
 
-import DashboardLayout from "./layouts/DashboardLayout";
-
-import DashboardPage from "./modules/dashboard/pages/DashboardPage";
-
-import StudentPage from "./modules/students/pages/StudentPage";
-import StudentForm from "./modules/students/StudentForm";
-import StudentListPage from "./modules/students/pages/StudentListPage";
-import StudentProfile from "./modules/students/pages/StudentProfile";
-import StudentIDCard from "./modules/students/pages/StudentIDCard";     // single card
-import StudentIDCards from "./modules/students/pages/StudentIDCards";   // bulk cards
-import CertificatePreview from "./modules/students/certificates/CertificatePreview";
-import CertificateSelector from "./modules/students/certificates/CertificateSelector";
-
-function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/certificate-selector" element={<CertificateSelector />} />
-        <Route path="/certificate" element={<CertificatePreview />} />
-        {/* ✅ Dashboard only */}
-        <Route path="/" element={<DashboardLayout />}>
-          <Route index element={<DashboardPage />} />
-        </Route>
-
-        {/* 🔥 Students WITHOUT DashboardLayout */}
-        <Route path="/students" element={<StudentPage />}>
-          <Route index element={<StudentListPage />} />
-          <Route path="add" element={<StudentForm />} />
-          <Route path="edit/:id" element={<StudentForm />} />
-          <Route path="view/:id" element={<StudentProfile />} />
-          <Route path="idcard/:id" element={<StudentIDCard />} />
-          <Route path="idcards" element={<StudentIDCards />} />
-        </Route>
-
-      </Routes>
-    </BrowserRouter>
-  );
+export default function App() {
+    return <AppRoutes />;
 }
-
-export default App;

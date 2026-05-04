@@ -7,7 +7,7 @@ const StudentIDCard = () => {
     const { id } = useParams();
 
     const students = JSON.parse(localStorage.getItem("students")) || [];
-    const s = students.find(st => st.id === Number(id));
+    const s = students.find(st => Number(st.id) === Number(id));
 
     if (!s) return <h3>No Student Found</h3>;
 

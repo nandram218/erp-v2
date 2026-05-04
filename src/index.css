@@ -100,3 +100,41 @@ code {
   background: linear-gradient(145deg, #2563eb, #1d4ed8);
   box-shadow: 0 5px 0 #1e3a8a;
 }
+
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 70vh;
+  /* scroll height */
+}
+
+/* HEADER FREEZE */
+.table-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #1a237e;
+  color: white;
+}
+
+/* optional smooth look */
+.table-header th,
+.table-header div {
+  background: #1a237e;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* FIX PRINT QUALITY */
+@media print {
+  #print-section {
+    zoom: 0.9;
+  }
+}
+
+/* BETTER CARD ALIGN */
+.id-card {
+  page-break-inside: avoid;
+}

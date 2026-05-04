@@ -1,0 +1,298 @@
+.container {
+    padding: 20px;
+    background: #f5f7fb;
+    min-height: 100vh;
+}
+
+.cert-page {
+    max-width: 1100px;
+    margin: auto;
+    position: relative;
+    padding-top: 60px;
+    /* 🔥 ye add karo */
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.top-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.search-box,
+.filter-box {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.cert-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.cert-btn {
+    padding: 12px;
+    background: #eee;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.2s;
+}
+
+.cert-btn:hover {
+    background: #ddd;
+}
+
+.cert-btn.active {
+    background: #4f46e5;
+    color: white;
+}
+
+.student-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.student-card {
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* wrapper (NEW ADD) */
+.generate-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+/* button (REPLACE OLD) */
+.generate-btn {
+    padding: 14px 28px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+
+    background: linear-gradient(145deg, #6366f1, #4338ca);
+    color: white;
+
+    box-shadow:
+        0 6px 0 #312e81,
+        0 10px 20px rgba(0, 0, 0, 0.25);
+
+    transition: all 0.15s ease;
+}
+
+.generate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 8px 0 #312e81,
+        0 14px 25px rgba(0, 0, 0, 0.3);
+}
+
+.generate-btn:active {
+    transform: translateY(4px);
+    box-shadow:
+        0 2px 0 #312e81,
+        0 5px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* 🎖 CERTIFICATE BUTTON 3D STYLE */
+.cert-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
+}
+
+.cert-btn {
+    height: 70px;
+    /* 🔥 fixed height (same size) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+
+    /* 3D */
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* 🎨 Strong colors (no white fade) */
+.cert-btn:nth-child(6n+1) {
+    background: linear-gradient(135deg, #4f46e5, #4338ca);
+}
+
+.cert-btn:nth-child(6n+2) {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+}
+
+.cert-btn:nth-child(6n+3) {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+.cert-btn:nth-child(6n+4) {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.cert-btn:nth-child(6n+5) {
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+}
+
+.cert-btn:nth-child(6n+6) {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+}
+
+.cert-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 0 rgba(0, 0, 0, 0.3);
+}
+
+.cert-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.cert-btn.active {
+    outline: 3px solid white;
+}
+
+.selected-preview {
+    margin: 10px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.selected-chip {
+    background: #4f46e5;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* 🔝 TOP ACTION BAR */
+.top-actions {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+}
+
+/* 🎯 COMMON 3D BUTTON */
+.action-btn {
+    padding: 12px 22px;
+    font-size: 14px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+
+    background: linear-gradient(145deg, #6366f1, #4338ca);
+    color: white;
+
+    box-shadow:
+        0 5px 0 #312e81,
+        0 8px 15px rgba(0, 0, 0, 0.25);
+
+    transition: all 0.15s ease;
+}
+
+/* hover */
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 7px 0 #312e81,
+        0 12px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* click */
+.action-btn:active {
+    transform: translateY(3px);
+    box-shadow:
+        0 2px 0 #312e81,
+        0 5px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* 🔝 TOP BAR ALIGN */
+.top-actions {
+    display: flex;
+    justify-content: space-between;
+    /* 🔥 left + right split */
+    align-items: center;
+    margin: 10px;
+}
+
+/* right group */
+.right-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* 🎯 BASE BUTTON */
+.action-btn {
+    padding: 12px 22px;
+    font-size: 14px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    color: white;
+
+    transition: all 0.15s ease;
+}
+
+/* 🔵 BACK (BLUE) */
+.back-btn {
+    background: linear-gradient(145deg, #3b82f6, #1e3a8a);
+    box-shadow:
+        0 5px 0 #1e40af,
+        4px 5px 10px rgba(0, 0, 0, 0.25);
+    /* 🔥 side wall */
+}
+
+/* 🟢 PRINT (GREEN) */
+.print-btn {
+    background: linear-gradient(145deg, #22c55e, #166534);
+    box-shadow:
+        0 5px 0 #14532d,
+        4px 5px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* 🟣 PDF (PURPLE) */
+.pdf-btn {
+    background: linear-gradient(145deg, #a855f7, #581c87);
+    box-shadow:
+        0 5px 0 #3b0764,
+        4px 5px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* hover */
+.action-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* click press effect */
+.action-btn:active {
+    transform: translateY(3px);
+    box-shadow:
+        0 2px 0 rgba(0, 0, 0, 0.5),
+        2px 3px 6px rgba(0, 0, 0, 0.2);
+}

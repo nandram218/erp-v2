@@ -1,115 +1,225 @@
-import React from "react";
-import { useNavigate, Outlet } from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+const btn3D = (bg, small = false) => ({
+    background: bg,
+    color: "#fff",
+    border: "none",
+    padding: small ? "6px 10px" : "12px 16px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700",
+    fontSize: small ? "11px" : "13px",
+    boxShadow: "0 5px 0 rgba(0,0,0,0.5)",
+    minWidth: small ? "120px" : "180px",
+    height: small ? "35px" : "50px"
+});
+
+const cardStyle = (color) => ({
+    flex: 1,
+    background: `linear-gradient(145deg, ${color}, #111)`,
+    color: "#fff",
+    padding: "14px",
+    borderRadius: "12px",
+    boxShadow: "0 6px 0 rgba(0,0,0,0.4)",
+    fontWeight: "700",
+    textAlign: "center",
+    minWidth: "180px",
+    height: "80px"
+});
 
 const StudentPage = () => {
+
     const navigate = useNavigate();
+    const students = JSON.parse(localStorage.getItem("students")) || [];
+
+    const [search, setSearch] = useState("");
+    const [cls, setCls] = useState("");
+    const [category, setCategory] = useState("");
+    const [gender, setGender] = useState("");
+    const [transport, setTransport] = useState("");
+    const [route, setRoute] = useState("");
+    const [hostel, setHostel] = useState("");
+
+    const filtered = useMemo(() => {
+        return students.filter(s => (
+            (search === "" || s.name?.toLowerCase().includes(search.toLowerCase())) &&
+            (cls === "" || s.class === cls) &&
+            (category === "" || s.category === category) &&
+            (gender === "" || s.gender === gender) &&
+            (transport === "" || String(s.transport) === transport) &&
+            (route === "" || s.route === route) &&
+            (hostel === "" || String(s.hostel) === hostel)
+        ));
+    }, [students, search, cls, category, gender, transport, route, hostel]);
+
+    const total = filtered.length;
+    const transportCount = filtered.filter(s => s.transport).length;
+    const hostelCount = filtered.filter(s => s.hostel).length;
+    const absent = Math.floor(total * 0.08);
+
+    const handlePrint = () => window.print();
 
     return (
-        <div style={styles.container}>
 
-            <h2 style={styles.title}>🎓 Student Module</h2>
+        <div style={{
+            padding: "12px 18px",
+            background: "#f3f6ff",
+            minHeight: "100vh"
+        }}>
 
-            <div style={styles.grid}>
+            {/* BACK */}
+            <button style={btn3D("#111", true)} onClick={() => navigate(-1)}>
+                ⬅ Back to Dashboard
+            </button>
+            {/* TITLE */}
+            <h2 style={{
+                textAlign: "center",
+                margin: "10px 0 15px 0",
+                fontSize: "26px",
+                fontWeight: "800"
+            }}>
+                STUDENTS MODULE
+            </h2>
 
-                {/* ADD STUDENT */}
-                <button
-                    style={{ ...styles.btn, ...styles.green }}
-                    onClick={() => navigate("/students/add")}
-                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(4px)"}
-                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
-                >
+            {/* 🔥 CENTER 4 BIG BUTTONS */}
+            <div style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: "15px",
+                flexWrap: "wrap",
+                marginBottom: "18px"
+            }}>
+
+                <button style={btn3D("#4caf50")} onClick={() => navigate("/students/add")}>
                     ➕ Add Student
                 </button>
 
-                {/* VIEW LIST */}
-                <button
-                    style={{ ...styles.btn, ...styles.blue }}
-                    onClick={() => navigate("/students")}
-                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(4px)"}
-                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
-                >
-                    📋 View Student List
+                <button style={btn3D("#2196f3")} onClick={() => navigate("/students/list")}>
+                    📋 Student List
                 </button>
 
-                {/* ID CARDS */}
-                <button
-                    style={{ ...styles.btn, ...styles.orange }}
-                    onClick={() => navigate("/students/idcards")}
-                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(4px)"}
-                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
-                >
-                    🪪 Generate ID Cards
+                <button style={btn3D("#ff9800")} onClick={() => navigate("/students/idcards")}>
+                    🪪 ID Cards
                 </button>
 
-                {/* CERTIFICATES */}
-                <button
-                    style={{ ...styles.btn, ...styles.purple }}
-                    onClick={() => navigate("/certificate-selector")}
-                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(4px)"}
-                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
-                >
-                    🎖 Generate Certificates
+                <button style={btn3D("#9c27b0")} onClick={() => navigate("/certificate-selector")}>
+                    🎖 Certificates
                 </button>
 
             </div>
 
-            {/* CHILD ROUTES */}
-            <Outlet />
+            {/* KPI */}
+            <div style={{
+                display: "flex",
+                gap: "10px",
+                marginBottom: "12px"
+            }}>
+                <div style={cardStyle("#1e3a8a")}>Total<br />{total}</div>
+                <div style={cardStyle("#065f46")}>Transport<br />{transportCount}</div>
+                <div style={cardStyle("#991b1b")}>Absent<br />{absent}</div>
+                <div style={cardStyle("#6d28d9")}>Hostel<br />{hostelCount}</div>
+            </div>
+
+            {/* FILTER */}
+            <div style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "8px",
+                marginBottom: "12px",
+                alignItems: "center"
+            }}>
+
+                <input placeholder="Search..." value={search}
+                    onChange={e => setSearch(e.target.value)} />
+
+                <select onChange={e => setCls(e.target.value)}>
+                    <option value="">Class</option>
+                    {[...new Set(students.map(s => s.class))].map(c =>
+                        <option key={c}>{c}</option>
+                    )}
+                </select>
+
+                <select onChange={e => setCategory(e.target.value)}>
+                    <option value="">Category</option>
+                    <option>General</option>
+                    <option>OBC</option>
+                    <option>SC</option>
+                </select>
+
+                <select onChange={e => setGender(e.target.value)}>
+                    <option value="">Gender</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                </select>
+
+                <select onChange={e => setTransport(e.target.value)}>
+                    <option value="">Transport</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+
+                <select onChange={e => setHostel(e.target.value)}>
+                    <option value="">Hostel</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+
+                <button onClick={() => {
+                    setSearch(""); setCls(""); setCategory("");
+                    setGender(""); setTransport("");
+                    setHostel(""); setRoute("");
+                }}>
+                    Reset
+                </button>
+
+                <button onClick={handlePrint}>
+                    🖨 Print Report
+                </button>
+
+            </div>
+
+            {/* TABLE */}
+            <div style={{ overflowX: "auto" }}>
+
+                <table width="100%" cellPadding="10"
+                    style={{
+                        borderCollapse: "collapse",
+                        border: "2px solid #3b82f6",
+                        background: "#fff",
+                        borderRadius: "10px",
+                        overflow: "hidden"
+                    }}>
+
+                    <thead style={{ background: "#e0e7ff" }}>
+                        <tr>
+                            <th style={{ border: "1px solid #93c5fd" }}>Name</th>
+                            <th style={{ border: "1px solid #93c5fd" }}>Class</th>
+                            <th style={{ border: "1px solid #93c5fd" }}>Gender</th>
+                            <th style={{ border: "1px solid #93c5fd" }}>Category</th>
+                            <th style={{ border: "1px solid #93c5fd" }}>Transport</th>
+                            <th style={{ border: "1px solid #93c5fd" }}>Hostel</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {filtered.map((s, i) => (
+                            <tr key={i}>
+                                <td style={{ border: "1px solid #c7d2fe" }}>{s.name}</td>
+                                <td style={{ border: "1px solid #c7d2fe" }}>{s.class}</td>
+                                <td style={{ border: "1px solid #c7d2fe" }}>{s.gender}</td>
+                                <td style={{ border: "1px solid #c7d2fe" }}>{s.category}</td>
+                                <td style={{ border: "1px solid #c7d2fe" }}>{s.transport ? "Yes" : "No"}</td>
+                                <td style={{ border: "1px solid #c7d2fe" }}>{s.hostel ? "Yes" : "No"}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+
+                </table>
+
+            </div>
 
         </div>
     );
 };
 
 export default StudentPage;
-
-/* ================= STYLES ================= */
-
-const styles = {
-    container: {
-        padding: "30px",
-        textAlign: "center",
-        background: "linear-gradient(135deg, #f5f7fa, #e4e8f0)",
-        minHeight: "100vh"
-    },
-
-    title: {
-        fontSize: "28px",
-        marginBottom: "30px",
-        fontWeight: "bold",
-        color: "#222"
-    },
-
-    grid: {
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: "20px"
-    },
-
-    btn: {
-        padding: "22px",
-        fontSize: "16px",
-        border: "none",
-        borderRadius: "14px",
-        cursor: "pointer",
-        color: "#fff",
-        fontWeight: "bold",
-        boxShadow: "0 6px 0 rgba(0,0,0,0.25)",
-        transition: "0.2s",
-    },
-
-    green: {
-        background: "linear-gradient(45deg, #4caf50, #2e7d32)"
-    },
-
-    blue: {
-        background: "linear-gradient(45deg, #2196f3, #1565c0)"
-    },
-
-    orange: {
-        background: "linear-gradient(45deg, #ff9800, #e65100)"
-    },
-
-    purple: {
-        background: "linear-gradient(45deg, #9c27b0, #6a1b9a)"
-    }
-};
