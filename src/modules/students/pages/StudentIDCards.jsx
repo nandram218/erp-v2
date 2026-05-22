@@ -3,7 +3,7 @@ import Barcode from "react-barcode";
 import QRCode from "react-qr-code";
 import { useNavigate } from "react-router-dom";
 import { useSchoolStore } from "../../../store/schoolStore";
-import { getStudents } from "../services/studentService";
+import { getStudents } from "../../../services/studentService";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -20,7 +20,7 @@ const templates = [
 
 const StudentIDCards = () => {
 
-    const { schoolData, loadSchoolData } = useSchoolStore();
+    const { schoolData, loadAll } = useSchoolStore();
 
     const school =
         schoolData?.schools?.english ||
@@ -36,10 +36,44 @@ const StudentIDCards = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        loadSchoolData();
-        setStudents(getStudents());
-    }, []);
+        loadAll();
 
+        try {
+            const data = getStudents();
+
+            console.log("ID CARD STUDENTS:", data); // 🔥 DEBUG
+
+            if (Array.isArray(data)) {
+                setStudents(data);
+            } else if (data && typeof data === "object") {
+                // 🔥 handle object format
+                setStudents(Object.values(data));
+            } else {
+                setStudents([]);
+            }
+
+        } catch (err) {
+            console.error("Student Load Error:", err);
+            setStudents([]);
+        }
+
+    }, []);
+    const getClass = (s) => {
+        return (
+            s.className ||
+            s.class ||
+            s.studentClass ||
+            s.class_name ||
+            ""
+        );
+    };
+    const filteredStudents = students.filter(s =>
+        (s.name || "").toLowerCase().includes(search.toLowerCase()) &&
+        (selectedClass ? getClass(s) === selectedClass : true)
+    );
+    const list = Array.isArray(filteredStudents)
+    ? filteredStudents.filter(s => s.name)
+    : [];
     const toggle = (id) => {
         setSelected(prev =>
             prev.includes(id)
@@ -47,27 +81,26 @@ const StudentIDCards = () => {
                 : [...prev, id]
         );
     };
-
-    const filteredStudents = students.filter(s =>
-        (s.name || "").toLowerCase().includes(search.toLowerCase()) &&
-        (selectedClass ? s.class === selectedClass : true)
-    );
-
-    const list =
-        selected.length > 0
-            ? students.filter(s => selected.includes(s.id))
-            : filteredStudents;
-
     const selectAll = () => setSelected(filteredStudents.map(s => s.id));
     const clearAll = () => setSelected([]);
 
     const handleClassSelect = (cls) => {
         setSelectedClass(cls);
         if (cls === "") return setSelected([]);
-        setSelected(students.filter(s => s.class === cls).map(s => s.id));
+        setSelected(
+            students
+                .filter(s => getClass(s) === cls)
+                .map(s => s.id)
+        );
     };
 
-    const classes = [...new Set(students.map(s => s.class))];
+    const classes = [
+        ...new Set(
+            students
+                .map(getClass)
+                .filter(Boolean)
+        )
+    ];
 
     const btn3d = (color) => ({
         background: color,
@@ -169,7 +202,7 @@ const StudentIDCards = () => {
                         width: "100%"
                     }}>
                         Father: {s.fatherName}<br />
-                        Class: {s.class}<br />
+                        Class: {getClass(s)}<br />
                         Contact: {s.fatherMobile || "N/A"}<br />
                         Blood: {s.bloodGroup || "-"}<br />
                         Address: {s.address || "N/A"}<br />

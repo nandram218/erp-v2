@@ -1,73 +1,79 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { certificateTemplates } from "./certificateTemplates";
+import { getTemplates } from "./certificateTemplates";
 import "./CertificateSelector.css";
+
 const CertificateSelector = () => {
     const [students, setStudents] = useState([]);
     const [search, setSearch] = useState("");
     const [selectedIds, setSelectedIds] = useState([]);
     const [selectedType, setSelectedType] = useState("");
     const [selectedClass, setSelectedClass] = useState("");
+
     const navigate = useNavigate();
 
+    // ✅ FIXED: ERP_DB SAFE LOAD
     useEffect(() => {
-        const data = JSON.parse(localStorage.getItem("students")) || [];
-        setStudents(data);
+        const db = JSON.parse(localStorage.getItem("ERP_DB") || "{}");
+        setStudents(db.students || []);
     }, []);
 
-    // filter
-    const filtered = students.filter(s => {
+    const templates = getTemplates();
+
+    // 🔍 FILTER
+    const filtered = students.filter((s) => {
         return (
-            s.name.toLowerCase().includes(search.toLowerCase()) &&
+            (s.name || "").toLowerCase().includes(search.toLowerCase()) &&
             (selectedClass ? s.class === selectedClass : true)
         );
     });
 
-    // toggle select
+    // ☑️ TOGGLE SELECT
     const toggle = (id) => {
-        setSelectedIds(prev =>
+        setSelectedIds((prev) =>
             prev.includes(id)
-                ? prev.filter(x => x !== id)
+                ? prev.filter((x) => x !== id)
                 : [...prev, id]
         );
     };
 
-    // generate
+    // 🚀 GENERATE
     const handleGenerate = () => {
         if (selectedIds.length === 0 || !selectedType) {
             alert("Select student & certificate type");
             return;
         }
 
-        const selectedStudents = students.filter(s =>
+        const selectedIds = students.filter((s) =>
             selectedIds.includes(s.id)
         );
 
         navigate("/certificate", {
             state: {
-                students: selectedStudents,
-                type: selectedType,
-
+                students: selectedIds,
+                type: selectedType
             }
         });
     };
 
     return (
         <div className="cert-page">
-            {/* 🎖 CERTIFICATE TYPE */}
+
+            {/* 🎖 CERTIFICATE TYPES */}
             <h3 className="section-title">🎖 Select Certificate Type</h3>
 
             <div className="cert-grid">
-                {Object.keys(certificateTemplates).map((key) => (
+                {Object.keys(templates).map((key) => (
                     <div
                         key={key}
                         className={`cert-btn ${selectedType === key ? "active" : ""}`}
                         onClick={() => setSelectedType(key)}
                     >
-                        {certificateTemplates[key].title}
+                        {templates[key].title}
                     </div>
                 ))}
             </div>
+
             {/* 🔍 SEARCH + FILTER */}
             <div className="top-bar">
 
@@ -80,51 +86,61 @@ const CertificateSelector = () => {
 
                 <select
                     className="filter-box"
+                    value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
                 >
                     <option value="">All Classes</option>
-                    {[...new Set(students.map(s => s.class))].map(c => (
-                        <option key={c}>{c}</option>
+                    {[...new Set(students.map(s => s.class))].map((c) => (
+                        <option key={c} value={c}>
+                            {c}
+                        </option>
                     ))}
                 </select>
 
             </div>
-            {/* 🟣 SELECTED STUDENTS PREVIEW (TOP) */}
+
+            {/* 🟣 SELECTED STUDENTS */}
             <div className="selected-preview">
 
                 {selectedIds.length > 0 && <h4>Selected Students:</h4>}
 
                 {students
-                    .filter(s => selectedIds.includes(s.id))
-                    .map(s => (
+                    .filter((s) => selectedIds.includes(s.id))
+                    .map((s) => (
                         <span key={s.id} className="selected-chip">
                             {s.name}
                         </span>
                     ))}
+
                 <div className="top-actions">
-                    <button className="action-btn" onClick={() => navigate(-1)}>
+                    <button
+                        className="action-btn"
+                        onClick={() => navigate(-1)}
+                    >
                         ⬅ Back
                     </button>
                 </div>
             </div>
-            {/* 🚀 GENERATE BUTTON */}
+
+            {/* 🚀 GENERATE */}
             <div className="generate-wrapper">
                 <button className="generate-btn" onClick={handleGenerate}>
                     🚀 Generate Certificate
                 </button>
             </div>
-            {/* ✅ SELECT ALL */}
+
+            {/* ☑️ SELECT ALL */}
             <div className="select-all">
                 <label>
                     <input
                         type="checkbox"
                         checked={
                             filtered.length > 0 &&
-                            filtered.every(s => selectedIds.includes(s.id))
+                            filtered.every((s) => selectedIds.includes(s.id))
                         }
                         onChange={(e) => {
                             if (e.target.checked) {
-                                setSelectedIds(filtered.map(s => s.id));
+                                setSelectedIds(filtered.map((s) => s.id));
                             } else {
                                 setSelectedIds([]);
                             }
@@ -157,4 +173,5 @@ const CertificateSelector = () => {
         </div>
     );
 };
+
 export default CertificateSelector;

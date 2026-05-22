@@ -1,282 +1,1175 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { transportService } from "./transportService";
 import { useNavigate } from "react-router-dom";
 
 export default function TransportRoutes() {
 
     const navigate = useNavigate();
-    const [store, setStore] = useState(transportService.get());
 
-    const emptyPoints = () =>
-        Array.from({ length: 5 }, (_, i) => ({
-            name: "",
-            fare: "",
-            pickup: "",
-            drop: ""
-        }));
+    const [store, setStore] =
+        useState(transportService.get());
 
-    const [selectedRoute, setSelectedRoute] = useState("");
+    const emptyPoint = () => ({
+        name: "",
+        fare: "",
+        pickup: "",
+        drop: "",
+    });
 
-    const [routeNo, setRouteNo] = useState("");
-    const [customRoute, setCustomRoute] = useState("");
-    const [routeName, setRouteName] = useState("");
-    const [fareType, setFareType] = useState("fixed");
-    const [fixedFare, setFixedFare] = useState("");
-    const [points, setPoints] = useState(emptyPoints());
+    const emptyPoints = () => [
+        emptyPoint(),
+        emptyPoint(),
+        emptyPoint(),
+    ];
 
-    // ================= RESET FORM =================
+    const [selectedRoute, setSelectedRoute] =
+        useState("");
+
+    const [routeNo, setRouteNo] =
+        useState("");
+
+    const [customRoute, setCustomRoute] =
+        useState("");
+
+    const [routeName, setRouteName] =
+        useState("");
+
+    const [fareType, setFareType] =
+        useState("fixed");
+
+    const [fixedFare, setFixedFare] =
+        useState("");
+
+    const [routeStatus, setRouteStatus] =
+        useState("active");
+
+    const [routeNote, setRouteNote] =
+        useState("");
+
+    const [points, setPoints] =
+        useState(emptyPoints());
+
+    /* =========================================
+       STATS
+    ========================================= */
+
+    const stats = useMemo(() => {
+
+        const routes =
+            store.routes || [];
+
+        const totalRoutes =
+            routes.length;
+
+        const totalPoints =
+            routes.reduce(
+                (acc, r) =>
+                    acc + (r.points?.length || 0),
+                0
+            );
+
+        const activeRoutes =
+            routes.filter(
+                (r) => r.status !== "inactive"
+            ).length;
+
+        return {
+            totalRoutes,
+            totalPoints,
+            activeRoutes,
+        };
+
+    }, [store]);
+
+    /* =========================================
+       RESET
+    ========================================= */
+
     const resetForm = () => {
-        setRouteNo("");
-        setCustomRoute("");
-        setRouteName("");
-        setFareType("fixed");
-        setFixedFare("");
-        setPoints(emptyPoints());
+
         setSelectedRoute("");
+
+        setRouteNo("");
+
+        setCustomRoute("");
+
+        setRouteName("");
+
+        setFareType("fixed");
+
+        setFixedFare("");
+
+        setRouteStatus("active");
+
+        setRouteNote("");
+
+        setPoints(emptyPoints());
     };
 
-    // ================= AUTO LOAD ON SELECT =================
+    /* =========================================
+       AUTO LOAD
+    ========================================= */
+
     const handleSelectRoute = (val) => {
+
         setSelectedRoute(val);
 
-        const r = store.routes.find(x => x.routeNo === val);
-        if (!r) return;
+        const route =
+            store.routes.find(
+                (r) => r.routeNo === val
+            );
 
-        setRouteNo(r.routeNo.replace("R", ""));
-        setRouteName(r.routeName);
-        setFareType(r.fareType);
-        setFixedFare(r.fixedFare || "");
-        setPoints(r.points.length ? r.points : emptyPoints());
-    };
+        if (!route) return;
 
-    // ================= SAVE =================
-    const saveRoute = () => {
-
-        const finalNo = routeNo === "custom" ? customRoute : routeNo;
-        const finalRoute = `R${finalNo}`;
-
-        if (!finalNo || !routeName)
-            return alert("⚠ Route No & Name required");
-
-        if (store.routes.find(r => r.routeNo === finalRoute))
-            return alert("❌ Duplicate Route Not Allowed");
-
-        const newRoute = {
-            routeNo: finalRoute,
-            routeName,
-            fareType,
-            fixedFare: fareType === "fixed" ? Number(fixedFare) : null,
-            points: points.filter(p => p.name)
-        };
-
-        const updated = {
-            ...store,
-            routes: [...store.routes, newRoute]
-        };
-
-        setStore(updated);
-        transportService.save(updated);
-
-        alert("✅ Route Saved");
-        resetForm();
-    };
-
-    // ================= UPDATE =================
-    const updateRoute = () => {
-
-        if (!selectedRoute)
-            return alert("⚠ Select Route to Edit");
-
-        if (!window.confirm("Are you sure to update?")) return;
-
-        const updatedRoutes = store.routes.map(r =>
-            r.routeNo === selectedRoute
-                ? {
-                    ...r,
-                    routeName,
-                    fareType,
-                    fixedFare,
-                    points
-                }
-                : r
+        setRouteNo(
+            route.routeNo.replace("R", "")
         );
 
-        const updated = { ...store, routes: updatedRoutes };
-        setStore(updated);
-        transportService.save(updated);
+        setRouteName(route.routeName || "");
 
-        alert("✏ Updated");
-        resetForm();
+        setFareType(
+            route.fareType || "fixed"
+        );
+
+        setFixedFare(
+            route.fixedFare || ""
+        );
+
+        setRouteStatus(
+            route.status || "active"
+        );
+
+        setRouteNote(
+            route.note || ""
+        );
+
+        const mappedPoints =
+            route.points?.length
+                ? route.points.map((p) => ({
+                    name:
+                        p.pointName || "",
+                    fare:
+                        p.fee || "",
+                    pickup:
+                        p.pickupTime || "",
+                    drop:
+                        p.dropTime || "",
+                }))
+                : emptyPoints();
+
+        setPoints(mappedPoints);
     };
 
-    // ================= DELETE =================
-    const deleteRoute = () => {
+    /* =========================================
+       SAVE
+    ========================================= */
 
-        if (!selectedRoute)
-            return alert("⚠ Select Route to Delete");
+    const saveRoute = () => {
 
-        if (!window.confirm("Are you sure to delete?")) return;
+        const finalNo =
+            routeNo === "custom"
+                ? customRoute
+                : routeNo;
 
-        const updated = {
+        const finalRoute =
+            `R${finalNo}`;
+
+        if (!finalNo || !routeName) {
+            return alert(
+                "⚠ Route No & Route Name required"
+            );
+        }
+
+        if (
+            store.routes.find(
+                (r) => r.routeNo === finalRoute
+            )
+        ) {
+            return alert(
+                "❌ Duplicate Route"
+            );
+        }
+
+        try {
+
+            transportService.createRoute({
+
+                routeNo: finalRoute,
+
+                routeName,
+
+                fareType,
+
+                fixedFare:
+                    fareType === "fixed"
+                        ? Number(fixedFare)
+                        : 0,
+
+                status: routeStatus,
+
+                note: routeNote,
+
+                points:
+                    points.filter(
+                        (p) => p.name
+                    ),
+            });
+
+            const fresh =
+                transportService.get();
+
+            setStore(fresh);
+
+            alert("✅ Route Saved");
+
+            resetForm();
+
+        } catch (err) {
+
+            alert(err.message);
+        }
+    };
+
+    /* =========================================
+       UPDATE
+    ========================================= */
+
+    const updateRoute = () => {
+
+        if (!selectedRoute) {
+            return alert(
+                "⚠ Select Route"
+            );
+        }
+
+        if (
+            !window.confirm(
+                "Update this route?"
+            )
+        ) {
+            return;
+        }
+
+        const updatedRoutes =
+            store.routes.map((r) => {
+
+                if (
+                    r.routeNo !== selectedRoute
+                ) {
+                    return r;
+                }
+
+                return {
+
+                    ...r,
+
+                    routeName,
+
+                    fareType,
+
+                    fixedFare:
+                        fareType === "fixed"
+                            ? Number(fixedFare)
+                            : 0,
+
+                    status: routeStatus,
+
+                    note: routeNote,
+
+                    updatedAt:
+                        new Date().toISOString(),
+
+                    points:
+                        points
+                            .filter(
+                                (p) => p.name
+                            )
+                            .map((p, index) => ({
+
+                                id:
+                                    r.points?.[index]?.id ||
+                                    Date.now() + index,
+
+                                pointName:
+                                    p.name,
+
+                                fee:
+                                    Number(
+                                        p.fare || 0
+                                    ),
+
+                                pickupTime:
+                                    p.pickup || "",
+
+                                dropTime:
+                                    p.drop || "",
+                            })),
+                };
+            });
+
+        const updatedDB = {
+
             ...store,
-            routes: store.routes.filter(r => r.routeNo !== selectedRoute),
-            mappings: store.mappings.filter(m => m.route !== selectedRoute)
+
+            routes: updatedRoutes,
         };
 
-        setStore(updated);
-        transportService.save(updated);
+        transportService.save(updatedDB);
 
-        alert("🗑 Deleted");
+        setStore(updatedDB);
+
+        alert("✏ Route Updated");
+
         resetForm();
     };
 
-    // ================= POINT =================
-    const handlePoint = (i, field, val) => {
+    /* =========================================
+       DELETE
+    ========================================= */
+
+    const deleteRoute = () => {
+
+        if (!selectedRoute) {
+            return alert(
+                "⚠ Select Route"
+            );
+        }
+
+        if (
+            !window.confirm(
+                "Delete this route?"
+            )
+        ) {
+            return;
+        }
+
+        const updatedDB = {
+
+            ...store,
+
+            routes:
+                store.routes.filter(
+                    (r) =>
+                        r.routeNo !==
+                        selectedRoute
+                ),
+
+            mappings:
+                store.mappings.filter(
+                    (m) =>
+                        m.route !==
+                        selectedRoute
+                ),
+        };
+
+        transportService.save(updatedDB);
+
+        setStore(updatedDB);
+
+        alert("🗑 Route Deleted");
+
+        resetForm();
+    };
+
+    /* =========================================
+       POINT HANDLER
+    ========================================= */
+
+    const handlePoint = (
+        index,
+        field,
+        value
+    ) => {
+
         const updated = [...points];
-        updated[i] = { ...updated[i], [field]: val };
+
+        updated[index] = {
+            ...updated[index],
+            [field]: value,
+        };
+
         setPoints(updated);
     };
 
     const addPoint = () => {
-        setPoints([...points, { name: "", fare: "", pickup: "", drop: "" }]);
+
+        setPoints([
+            ...points,
+            emptyPoint(),
+        ]);
+    };
+
+    const removePoint = (index) => {
+
+        if (points.length <= 1) return;
+
+        const updated =
+            points.filter(
+                (_, i) => i !== index
+            );
+
+        setPoints(updated);
     };
 
     return (
         <div style={styles.page}>
 
-            <button style={styles.btnGrey}
-                onClick={() => navigate("/master-setting/transport")}>
-                ⬅ Back
-            </button>
+            {/* TOP BAR */}
 
-            <h2>🛣 Route Builder (LOCK)</h2>
+            <div style={styles.topBar}>
 
+                <div>
+                    <h1 style={styles.title}>
+                        🚍 Transport Route Management
+                    </h1>
 
-            {/* ROUTE NO */}
-            <select onChange={e => setRouteNo(e.target.value)} value={routeNo}>
-                <option value="">Select Route No</option>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-                    <option key={n} value={n}>R{n}</option>
-                ))}
-                <option value="custom">Custom</option>
-            </select>
+                    <div style={styles.subtitle}>
+                        Professional ERP Transport Control
+                    </div>
+                </div>
 
-            {routeNo === "custom" && (
-                <input
-                    placeholder="Custom Route No"
-                    onChange={e => setCustomRoute(e.target.value)}
-                />
-            )}
+                <div style={styles.topActions}>
 
-            <input
-                placeholder="Route Name"
-                value={routeName}
-                onChange={e => setRouteName(e.target.value)}
-            />
+                    <button
+                        style={styles.secondaryBtn}
+                        onClick={() =>
+                            navigate("/master-setting/transport")
+                        }
+                    >
+                        ⬅ Back
+                    </button>
 
-            {/* FARE */}
-            <select onChange={e => setFareType(e.target.value)} value={fareType}>
-                <option value="fixed">Fixed Fare</option>
-                <option value="point">Point Wise</option>
-            </select>
+                    <button
+                        style={styles.primaryBtn}
+                        onClick={() =>
+                            navigate("/dashboard")
+                        }
+                    >
+                        🏠 Dashboard
+                    </button>
+                </div>
+            </div>
 
-            {fareType === "fixed" && (
-                <input
-                    placeholder="Fixed Fare"
-                    value={fixedFare}
-                    onChange={e => setFixedFare(e.target.value)}
-                />
-            )}
+            {/* STATS */}
 
-            {/* POINTS */}
-            <h3>Pickup Points</h3>
+            <div style={styles.statsGrid}>
 
-            {points.map((p, i) => (
-                <div key={i} style={styles.row}>
-                    <input
-                        placeholder={`Point ${i + 1}`}
-                        value={p.name}
-                        onChange={e => handlePoint(i, "name", e.target.value)}
-                    />
+                <div style={styles.statCard}>
+                    <div style={styles.statValue}>
+                        {stats.totalRoutes}
+                    </div>
 
-                    {fareType === "point" && (
+                    <div style={styles.statLabel}>
+                        Total Routes
+                    </div>
+                </div>
+
+                <div style={styles.statCard}>
+                    <div style={styles.statValue}>
+                        {stats.totalPoints}
+                    </div>
+
+                    <div style={styles.statLabel}>
+                        Pickup Points
+                    </div>
+                </div>
+
+                <div style={styles.statCard}>
+                    <div style={styles.statValue}>
+                        {stats.activeRoutes}
+                    </div>
+
+                    <div style={styles.statLabel}>
+                        Active Routes
+                    </div>
+                </div>
+
+            </div>
+
+            {/* FORM */}
+
+            <div style={styles.card}>
+
+                <div style={styles.sectionHeader}>
+                    🛣 Route Builder
+                </div>
+
+                <div style={styles.grid4}>
+
+                    <div>
+                        <label style={styles.label}>
+                            Route Number
+                        </label>
+
+                        <select
+                            style={styles.input}
+                            value={routeNo}
+                            onChange={(e) =>
+                                setRouteNo(
+                                    e.target.value
+                                )
+                            }
+                        >
+                            <option value="">
+                                Select
+                            </option>
+
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                                <option
+                                    key={n}
+                                    value={n}
+                                >
+                                    R{n}
+                                </option>
+                            ))}
+
+                            <option value="custom">
+                                Custom
+                            </option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style={styles.label}>
+                            Route Name
+                        </label>
+
                         <input
-                            placeholder="Fare"
-                            value={p.fare}
-                            onChange={e => handlePoint(i, "fare", e.target.value)}
+                            style={styles.input}
+                            placeholder="Talwandi Route"
+                            value={routeName}
+                            onChange={(e) =>
+                                setRouteName(
+                                    e.target.value
+                                )
+                            }
                         />
-                    )}
+                    </div>
 
-                    <input
-                        placeholder="Pickup Time"
-                        value={p.pickup}
-                        onChange={e => handlePoint(i, "pickup", e.target.value)}
-                    />
+                    <div>
+                        <label style={styles.label}>
+                            Fare Type
+                        </label>
 
-                    <input
-                        placeholder="Drop Time"
-                        value={p.drop}
-                        onChange={e => handlePoint(i, "drop", e.target.value)}
+                        <select
+                            style={styles.input}
+                            value={fareType}
+                            onChange={(e) =>
+                                setFareType(
+                                    e.target.value
+                                )
+                            }
+                        >
+                            <option value="fixed">
+                                Fixed Fare
+                            </option>
+
+                            <option value="point">
+                                Point Wise
+                            </option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style={styles.label}>
+                            Route Status
+                        </label>
+
+                        <select
+                            style={styles.input}
+                            value={routeStatus}
+                            onChange={(e) =>
+                                setRouteStatus(
+                                    e.target.value
+                                )
+                            }
+                        >
+                            <option value="active">
+                                Active
+                            </option>
+
+                            <option value="inactive">
+                                Inactive
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                {routeNo === "custom" && (
+
+                    <div style={{ marginTop: 16 }}>
+                        <label style={styles.label}>
+                            Custom Route No
+                        </label>
+
+                        <input
+                            style={styles.input}
+                            value={customRoute}
+                            onChange={(e) =>
+                                setCustomRoute(
+                                    e.target.value
+                                )
+                            }
+                        />
+                    </div>
+                )}
+
+                {fareType === "fixed" && (
+
+                    <div style={{ marginTop: 16 }}>
+                        <label style={styles.label}>
+                            Fixed Fare
+                        </label>
+
+                        <input
+                            style={styles.input}
+                            placeholder="1200"
+                            value={fixedFare}
+                            onChange={(e) =>
+                                setFixedFare(
+                                    e.target.value
+                                )
+                            }
+                        />
+                    </div>
+                )}
+
+                <div style={{ marginTop: 16 }}>
+                    <label style={styles.label}>
+                        Route Notes
+                    </label>
+
+                    <textarea
+                        style={styles.textarea}
+                        placeholder="Special notes..."
+                        value={routeNote}
+                        onChange={(e) =>
+                            setRouteNote(
+                                e.target.value
+                            )
+                        }
                     />
                 </div>
-            ))}
 
-            <button style={styles.btnBlue} onClick={addPoint}>
-                ➕ Add Point
-            </button>
+            </div>
 
-            {/* ACTION */}
-            <div style={styles.action}>
-                <button style={styles.btnGreen} onClick={saveRoute}>💾 Save</button>
-                <select
-                    value={selectedRoute}
-                    onChange={e => handleSelectRoute(e.target.value)}
-                    style={{ padding: 10 }}
+            {/* POINT TABLE */}
+
+            <div style={styles.card}>
+
+                <div style={styles.tableHeader}>
+
+                    <div style={styles.sectionHeader}>
+                        📍 Pickup Points
+                    </div>
+
+                    <button
+                        style={styles.primaryBtn}
+                        onClick={addPoint}
+                    >
+                        ➕ Add Point
+                    </button>
+                </div>
+
+                <div style={styles.tableWrapper}>
+
+                    <table style={styles.table}>
+
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Point</th>
+                                <th>Fare</th>
+                                <th>Pickup</th>
+                                <th>Drop</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {points.map((p, index) => (
+
+                                <tr key={index}>
+
+                                    <td>
+                                        {index + 1}
+                                    </td>
+
+                                    <td>
+                                        <input
+                                            style={styles.tableInput}
+                                            value={p.name}
+                                            onChange={(e) =>
+                                                handlePoint(
+                                                    index,
+                                                    "name",
+                                                    e.target.value
+                                                )
+                                            }
+                                        />
+                                    </td>
+
+                                    <td>
+                                        <input
+                                            style={styles.tableInput}
+                                            value={p.fare}
+                                            disabled={
+                                                fareType === "fixed"
+                                            }
+                                            onChange={(e) =>
+                                                handlePoint(
+                                                    index,
+                                                    "fare",
+                                                    e.target.value
+                                                )
+                                            }
+                                        />
+                                    </td>
+
+                                    <td>
+                                        <input
+                                            style={styles.tableInput}
+                                            value={p.pickup}
+                                            onChange={(e) =>
+                                                handlePoint(
+                                                    index,
+                                                    "pickup",
+                                                    e.target.value
+                                                )
+                                            }
+                                        />
+                                    </td>
+
+                                    <td>
+                                        <input
+                                            style={styles.tableInput}
+                                            value={p.drop}
+                                            onChange={(e) =>
+                                                handlePoint(
+                                                    index,
+                                                    "drop",
+                                                    e.target.value
+                                                )
+                                            }
+                                        />
+                                    </td>
+
+                                    <td>
+                                        <button
+                                            style={styles.deleteBtn}
+                                            onClick={() =>
+                                                removePoint(index)
+                                            }
+                                        >
+                                            ✖
+                                        </button>
+                                    </td>
+
+                                </tr>
+                            ))}
+
+                        </tbody>
+
+                    </table>
+                </div>
+            </div>
+
+            {/* ACTIONS */}
+
+            <div style={styles.actionBar}>
+
+                <button
+                    style={styles.successBtn}
+                    onClick={saveRoute}
                 >
-                    <option value="">Select Route</option>
-                    {store.routes.map(r => (
-                        <option key={r.routeNo} value={r.routeNo}>
+                    💾 Save Route
+                </button>
+
+                <select
+                    style={styles.routeSelect}
+                    value={selectedRoute}
+                    onChange={(e) =>
+                        handleSelectRoute(
+                            e.target.value
+                        )
+                    }
+                >
+                    <option value="">
+                        Select Route
+                    </option>
+
+                    {store.routes.map((r) => (
+
+                        <option
+                            key={r.routeNo}
+                            value={r.routeNo}
+                        >
                             {r.routeNo} - {r.routeName}
                         </option>
                     ))}
                 </select>
 
-                <button style={styles.btnBlue} onClick={updateRoute}>✏ Edit</button>
-                <button style={styles.btnRed} onClick={deleteRoute}>🗑 Delete</button>
+                <button
+                    style={styles.primaryBtn}
+                    onClick={updateRoute}
+                >
+                    ✏ Update
+                </button>
+
+                <button
+                    style={styles.dangerBtn}
+                    onClick={deleteRoute}
+                >
+                    🗑 Delete
+                </button>
+
             </div>
 
             {/* PREVIEW */}
-            <h3>📊 Full Route Details</h3>
 
-            {store.routes.map(r => (
-                <div key={r.routeNo} style={styles.card}>
-                    <b>{r.routeNo} - {r.routeName}</b>
+            <div style={styles.previewGrid}>
 
-                    {r.fareType === "fixed" && (
-                        <div>💰 Fixed Fare: ₹ {r.fixedFare}</div>
-                    )}
+                {store.routes.map((r) => (
 
-                    {r.points.map((p, i) => (
-                        <div key={i}>
-                            {p.name} → ₹{p.fare} ({p.pickup} - {p.drop})
+                    <div
+                        key={r.routeNo}
+                        style={{
+                            ...styles.routeCard,
+
+                            border:
+                                selectedRoute === r.routeNo
+                                    ? "2px solid #3b82f6"
+                                    : "1px solid #334155",
+                        }}
+                    >
+
+                        <div style={styles.routeTop}>
+
+                            <div>
+
+                                <div style={styles.routeNo}>
+                                    {r.routeNo}
+                                </div>
+
+                                <div style={styles.routeName}>
+                                    {r.routeName}
+                                </div>
+
+                            </div>
+
+                            <div
+                                style={{
+                                    ...styles.statusBadge,
+
+                                    background:
+                                        r.status === "inactive"
+                                            ? "#991b1b"
+                                            : "#166534",
+                                }}
+                            >
+                                {r.status || "active"}
+                            </div>
                         </div>
-                    ))}
-                </div>
-            ))}
+
+                        <div style={styles.routeMeta}>
+                            🚏 {r.points?.length || 0} Points
+                        </div>
+
+                        {r.fareType === "fixed" && (
+                            <div style={styles.routeMeta}>
+                                💰 Fixed Fare :
+                                ₹ {r.fixedFare}
+                            </div>
+                        )}
+
+                        <div style={styles.pointList}>
+
+                            {r.points?.map((p) => (
+
+                                <div
+                                    key={p.id}
+                                    style={styles.pointItem}
+                                >
+                                    <div>
+                                        <b>
+                                            {p.pointName}
+                                        </b>
+                                    </div>
+
+                                    <div>
+                                        ₹ {p.fee}
+                                    </div>
+
+                                    <div>
+                                        {p.pickupTime}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                    </div>
+                ))}
+
+            </div>
 
         </div>
     );
 }
 
 const styles = {
-    page: { background: "#0f172a", color: "#fff", padding: 20 },
-    row: { display: "flex", gap: 6, marginTop: 6 },
-    action: { marginTop: 10, display: "flex", gap: 10 },
 
-    btnGreen: { background: "#22c55e", padding: 10, color: "#fff" },
-    btnBlue: { background: "#3b82f6", padding: 10, color: "#fff" },
-    btnRed: { background: "#ef4444", padding: 10, color: "#fff" },
-    btnGrey: { background: "#64748b", padding: 10, color: "#fff" },
+    page: {
+        background: "#0f172a",
+        minHeight: "100vh",
+        padding: 24,
+        color: "#fff",
+    },
 
-    card: { background: "#1e293b", marginTop: 10, padding: 10 }
+    topBar: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 24,
+        flexWrap: "wrap",
+        gap: 16,
+    },
+
+    title: {
+        margin: 0,
+        fontSize: 30,
+        fontWeight: 700,
+    },
+
+    subtitle: {
+        color: "#94a3b8",
+        marginTop: 4,
+    },
+
+    topActions: {
+        display: "flex",
+        gap: 10,
+        flexWrap: "wrap",
+    },
+
+    statsGrid: {
+        display: "grid",
+        gridTemplateColumns:
+            "repeat(auto-fit,minmax(220px,1fr))",
+        gap: 16,
+        marginBottom: 24,
+    },
+
+    statCard: {
+        background: "#1e293b",
+        borderRadius: 16,
+        padding: 20,
+        border: "1px solid #334155",
+    },
+
+    statValue: {
+        fontSize: 32,
+        fontWeight: 700,
+    },
+
+    statLabel: {
+        color: "#94a3b8",
+        marginTop: 6,
+    },
+
+    card: {
+        background: "#1e293b",
+        borderRadius: 18,
+        padding: 20,
+        marginBottom: 24,
+        border: "1px solid #334155",
+    },
+
+    sectionHeader: {
+        fontSize: 22,
+        fontWeight: 700,
+        marginBottom: 20,
+    },
+
+    grid4: {
+        display: "grid",
+        gridTemplateColumns:
+            "repeat(auto-fit,minmax(220px,1fr))",
+        gap: 16,
+    },
+
+    label: {
+        display: "block",
+        marginBottom: 8,
+        color: "#cbd5e1",
+    },
+
+    input: {
+        width: "100%",
+        padding: 12,
+        borderRadius: 10,
+        border: "1px solid #334155",
+        background: "#0f172a",
+        color: "#fff",
+        boxSizing: "border-box",
+    },
+
+    textarea: {
+        width: "100%",
+        minHeight: 100,
+        padding: 12,
+        borderRadius: 10,
+        border: "1px solid #334155",
+        background: "#0f172a",
+        color: "#fff",
+        boxSizing: "border-box",
+    },
+
+    tableHeader: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 16,
+        flexWrap: "wrap",
+        gap: 12,
+    },
+
+    tableWrapper: {
+        overflowX: "auto",
+    },
+
+    table: {
+        width: "100%",
+        borderCollapse: "collapse",
+    },
+
+    tableInput: {
+        width: "100%",
+        padding: 10,
+        borderRadius: 8,
+        border: "1px solid #334155",
+        background: "#0f172a",
+        color: "#fff",
+        boxSizing: "border-box",
+    },
+
+    actionBar: {
+        display: "flex",
+        gap: 12,
+        flexWrap: "wrap",
+        marginBottom: 24,
+    },
+
+    routeSelect: {
+        minWidth: 250,
+        padding: 12,
+        borderRadius: 10,
+        border: "1px solid #334155",
+        background: "#1e293b",
+        color: "#fff",
+    },
+
+    previewGrid: {
+        display: "grid",
+        gridTemplateColumns:
+            "repeat(auto-fit,minmax(320px,1fr))",
+        gap: 18,
+    },
+
+    routeCard: {
+        background: "#1e293b",
+        borderRadius: 18,
+        padding: 18,
+    },
+
+    routeTop: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+
+    routeNo: {
+        fontSize: 24,
+        fontWeight: 700,
+    },
+
+    routeName: {
+        color: "#cbd5e1",
+        marginTop: 4,
+    },
+
+    routeMeta: {
+        marginTop: 10,
+        color: "#94a3b8",
+    },
+
+    pointList: {
+        marginTop: 16,
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+    },
+
+    pointItem: {
+        background: "#0f172a",
+        padding: 12,
+        borderRadius: 12,
+        border: "1px solid #334155",
+    },
+
+    statusBadge: {
+        padding: "6px 12px",
+        borderRadius: 999,
+        fontSize: 12,
+        textTransform: "uppercase",
+    },
+
+    primaryBtn: {
+        background: "#2563eb",
+        color: "#fff",
+        border: "none",
+        padding: "12px 18px",
+        borderRadius: 10,
+        cursor: "pointer",
+        fontWeight: 600,
+    },
+
+    successBtn: {
+        background: "#16a34a",
+        color: "#fff",
+        border: "none",
+        padding: "12px 18px",
+        borderRadius: 10,
+        cursor: "pointer",
+        fontWeight: 600,
+    },
+
+    dangerBtn: {
+        background: "#dc2626",
+        color: "#fff",
+        border: "none",
+        padding: "12px 18px",
+        borderRadius: 10,
+        cursor: "pointer",
+        fontWeight: 600,
+    },
+
+    secondaryBtn: {
+        background: "#475569",
+        color: "#fff",
+        border: "none",
+        padding: "12px 18px",
+        borderRadius: 10,
+        cursor: "pointer",
+        fontWeight: 600,
+    },
+
+    deleteBtn: {
+        background: "#dc2626",
+        color: "#fff",
+        border: "none",
+        borderRadius: 8,
+        padding: "10px 12px",
+        cursor: "pointer",
+    },
 };

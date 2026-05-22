@@ -8,9 +8,9 @@ const DashboardLayout = ({ children }) => {
 
     const location = useLocation();
     const navigate = useNavigate();
-    const { loadSchoolData } = useSchoolStore();
+    const { loadAll } = useSchoolStore();
     useEffect(() => {
-        loadSchoolData();                           // 🔥 HERE
+        loadAll();                           // 🔥 HERE
     }, []);
     const userRole = "admin"; // अभी temporary
     const fullScreenRoutes = [
@@ -71,6 +71,9 @@ const DashboardLayout = ({ children }) => {
                         <Link to="/students" style={linkStyle}>Students</Link>
                         <Link to="/staff" style={linkStyle}>Staff</Link>
                         <Link to="/fees" style={linkStyle}>Fees</Link>
+                        <Link to="/transport" style={linkStyle}>
+                            Transport
+                        </Link>
                         {userRole === "admin" && (
                             <li
                                 className={location.pathname.includes("master-setting") ? "active" : ""}

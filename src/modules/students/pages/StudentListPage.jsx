@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import StudentTable from "../components/StudentTable";
+import { useSchoolStore } from "../../../store/schoolStore";
+
+import { getStudents } from "../../../services/studentService";
 const searchBox3D = {
     width: "240px",
     padding: "10px 12px",
@@ -47,10 +50,7 @@ const select3D = {
 const StudentList = () => {
 
     const navigate = useNavigate();
-
-    const [students] = useState(
-        JSON.parse(localStorage.getItem("students")) || []
-    );
+    const students = useSchoolStore(state => state.students) || [];
 
     const [selectedIds, setSelectedIds] = useState([]);
     const [search, setSearch] = useState("");

@@ -1,50 +1,60 @@
-import React, { useState } from "react";
+import React from "react";
 import "./certificate.css";
 
 const Certificate = ({ data, school }) => {
-
-    // ✅ IMAGE LOAD CONTROL (BLINK STOP)
-    const [imgLoaded, setImgLoaded] = useState(false);
-
     return (
         <div className={`certificate ${data.theme}`}>
 
             <div className="inner-border">
 
-                <div className="header">
-                    <h1>{school?.name || ""}</h1>
-                    <p>{school?.address || ""}</p>
+                {/* HEADER - STATIC (NO RE-RENDER TRICK) */}
+                <div className="header" style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "15px"
+                }}>
+
+                    {/* 🏫 LOGO */}
+                    {school?.logo && (
+                        <img
+                            src={school.logo}
+                            alt="logo"
+                            style={{ height: "60px" }}
+                        />
+                    )}
+
+                    <div>
+                        <h1>{school?.name || ""}</h1>
+                        <p>{school?.address || ""}</p>
+                    </div>
+
                 </div>
 
+                {/* PHOTO - NO STATE, NO ONLOAD */}
                 <div className="photo-box">
                     <img
-                        src={data?.photo || "/default-user.png"}
+                        src={data.photo || "/default-user.png"}
                         alt="student"
-                        style={{
-                            opacity: imgLoaded ? 1 : 0,   // 🔥 NO FLASH
-                            transition: "opacity 0.3s ease"
-                        }}
-                        onLoad={() => setImgLoaded(true)}
-                        onError={(e) => {
-                            e.target.src = "/default-user.png";
-                        }}
+                        loading="eager"
+                        decoding="sync"
                     />
                 </div>
 
-                <h2 className="title">{data?.title}</h2>
-                <h1 className="student-name">{data?.name}</h1>
-                <p className="text">{data?.text}</p>
+                <h2 className="title">{data.title}</h2>
+                <h1 className="student-name">{data.name}</h1>
+                <p className="text">{data.text}</p>
 
                 <div className="details">
-                    <span><b>Class:</b> {data?.class}</span>
-                    <span><b>Father:</b> {data?.fatherName}</span>
-                    <span><b>Date:</b> {data?.date}</span>
+                    <span><b>Class:</b> {data.class}</span>
+                    <span><b>Father:</b> {data.fatherName}</span>
+                    <span><b>Date:</b> {data.date}</span>
                 </div>
 
                 <div className="footer">
                     <div>
                         {school?.sign && (
-                            <img src={school.sign} alt="sign" style={{ height: "40px" }} />
+                            <img src={school.sign} style={{ height: 40 }} />
                         )}
                         <div>Principal</div>
                     </div>

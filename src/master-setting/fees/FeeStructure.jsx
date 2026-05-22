@@ -1,19 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { classSubjectService } from "../classes-subjects/classSubjectService";
-import { feesService } from "./feesService";
+
+const STORAGE_KEY = "ERP_FEE_SETTINGS";
 
 export default function FeeStructure() {
 
     const [classes, setClasses] = useState([]);
-    const [fees, setFees] = useState({});
-    const [settings, setSettings] = useState(null);
 
-    // LOAD CLASSES
+    const [db, setDb] = useState({
+        settings: {},
+        classes: {}
+    });
+
+    /* =========================================
+       LOAD CLASSES
+    ========================================= */
+
     useEffect(() => {
-        const data = classSubjectService.getClasses() || [];
+
+        const raw =
+            classSubjectService.getClasses() || [];
 
         const unique = [];
-        data.forEach(c => {
+
+        raw.forEach((c) => {
+
             const name = c.stream
                 ? `${c.className}-${c.stream}`
                 : c.className;
@@ -24,67 +35,168 @@ export default function FeeStructure() {
         });
 
         setClasses(unique);
+
     }, []);
 
-    // LOAD SETTINGS
+    /* =========================================
+       LOAD FEES DB
+    ========================================= */
+
     useEffect(() => {
-        const saved = JSON.parse(localStorage.getItem("ERP_FEE_SETTINGS"));
-        setSettings(saved);
+
+        try {
+
+            const saved =
+                JSON.parse(
+                    localStorage.getItem(STORAGE_KEY)
+                );
+
+            if (saved) {
+                setDb(saved);
+            }
+
+        } catch (err) {
+
+            console.error(
+                "FeeStructure load error",
+                err
+            );
+        }
+
     }, []);
 
-    // HANDLE CHANGE
-    const handleChange = (cls, type, value) => {
-        setFees(prev => ({
-            ...prev,
-            [cls]: {
-                ...prev[cls],
-                [type]: Number(value)
-            }
-        }));
+    /* =========================================
+       TOTAL
+    ========================================= */
+
+    const getTotal = (feeTypes = {}) => {
+
+        return Object.values(feeTypes)
+
+            .reduce(
+                (a, b) =>
+                    a + Number(b.amount || 0),
+                0
+            );
     };
 
-    // TOTAL
-    const getTotal = (cls) => {
-        const data = fees[cls] || {};
-        return Object.values(data).reduce((a, b) => a + b, 0);
-    };
-
-    // SAVE
-    const handleSave = () => {
-        feesService.save({ fees, settings });
-        alert("✅ Fees Saved");
-    };
-
-    if (!settings) return <h3>⚠ Please setup Fee Settings first</h3>;
+    /* =========================================
+       RENDER
+    ========================================= */
 
     return (
-        <div style={{ padding: 20 }}>
 
-            <h2>💰 Fee Structure</h2>
+        <div style={styles.page}>
 
-            {classes.map((cls, i) => (
-                <div key={i} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
-                    <h3>{cls}</h3>
+            <h2 style={styles.title}>
+                💰 Fee Structure
+            </h2>
 
-                    {/* LOOP THROUGH SETTINGS */}
-                    {Object.values(settings.feeTypes).flat().map((type, j) => (
-                        <div key={j}>
-                            {type}
-                            <input
-                                type="number"
-                                placeholder="₹"
-                                onChange={(e) =>
-                                    handleChange(cls, type, e.target.value)
-                                }
-                            />
+            {classes.map((cls, i) => {
+
+                const classData =
+                    db.classes?.[cls];
+
+                const feeTypes =
+                    classData?.feeTypes || {};
+
+                return (
+
+                    <div
+                        key={i}
+                        style={styles.card}
+                    >
+
+                        <h3>
+                            {cls}
+                        </h3>
+
+                        {!Object.keys(feeTypes).length && (
+
+                            <div style={styles.empty}>
+                                ⚠ No Fee Setup
+                            </div>
+                        )}
+
+                        {Object.entries(feeTypes).map(
+                            ([name, data], j) => (
+
+                                <div
+                                    key={j}
+                                    style={styles.row}
+                                >
+
+                                    <div>
+                                        {name}
+                                    </div>
+
+                                    <div>
+                                        ₹ {data.amount}
+                                    </div>
+
+                                    <div>
+                                        {data.category}
+                                    </div>
+
+                                </div>
+                            )
+                        )}
+
+                        <div style={styles.total}>
+                            Total : ₹ {getTotal(feeTypes)}
                         </div>
-                    ))}
 
-                    <h4>Total: ₹ {getTotal(cls)}</h4>
-                </div>
-            ))}
+                    </div>
+                );
+            })}
 
-            <button onClick={handleSave}>Save All</button>
         </div>
     );
 }
+
+/* =============================================
+   STYLES
+============================================= */
+
+const styles = {
+
+    page: {
+        padding: 20,
+        background: "#0f172a",
+        minHeight: "100vh",
+        color: "#fff"
+    },
+
+    title: {
+        marginBottom: 20
+    },
+
+    card: {
+        background: "#1e293b",
+        padding: 20,
+        borderRadius: 16,
+        marginBottom: 20
+    },
+
+    row: {
+        display: "flex",
+        justifyContent: "space-between",
+        padding: 10,
+        background: "#0f172a",
+        borderRadius: 10,
+        marginTop: 10,
+        flexWrap: "wrap",
+        gap: 10
+    },
+
+    total: {
+        marginTop: 20,
+        fontWeight: "bold",
+        color: "#38bdf8"
+    },
+
+    empty: {
+        marginTop: 10,
+        color: "#f87171"
+    }
+};

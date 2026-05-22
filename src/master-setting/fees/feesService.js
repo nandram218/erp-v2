@@ -1,16 +1,47 @@
-const FEE_KEY = "ERP_FEES";
+const DB_KEY = "ERP_DB";
 
 export const feesService = {
 
-    save: (data) => {
-        localStorage.setItem(FEE_KEY, JSON.stringify(data));
+    getDB: () => {
+        return JSON.parse(localStorage.getItem(DB_KEY) || "{}");
+    },
+
+    saveDB: (db) => {
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
     },
 
     get: () => {
-        return JSON.parse(localStorage.getItem(FEE_KEY)) || {};
+        const db = feesService.getDB();
+        return db.fees || {};
+    },
+
+    save: (feesData) => {
+        const db = feesService.getDB();
+
+        db.fees = feesData;
+
+        feesService.saveDB(db);
+    },
+
+    getHistory: () => {
+        const db = feesService.getDB();
+        return db.feesHistory || [];
+    },
+
+    saveHistory: (history) => {
+        const db = feesService.getDB();
+
+        db.feesHistory = history;
+
+        feesService.saveDB(db);
     },
 
     reset: () => {
-        localStorage.removeItem(FEE_KEY);
+        const db = feesService.getDB();
+
+        db.fees = {};
+        db.feesHistory = [];
+
+        feesService.saveDB(db);
     }
 };

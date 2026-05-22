@@ -1,9 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import {
+    addStudent,
+    updateStudent,
+    generateStudentId
+} from "../../services/studentService";
+
+import { useSchoolStore } from "../../store/schoolStore";
+
 const StudentForm = () => {
     const navigate = useNavigate();
     const { id } = useParams();
+    const { schoolData } =
+        useSchoolStore();
 
+    const previewStudentId =
+        generateStudentId();
     const wrapper = {
         display: "flex",
         gap: "10px",
@@ -27,7 +39,8 @@ const StudentForm = () => {
         borderBottomLeftRadius: "30px"
     };
     /* ================= DATA ================= */
-
+const classes =
+                        JSON.parse(localStorage.getItem("ERP_CLASSES") || "[]");
     const classFees = {
         PP3: 500, PP4: 500, PP5: 600,
         Nursery: 600, LKG: 700, UKG: 800,
@@ -52,6 +65,20 @@ const StudentForm = () => {
     /* ================= STATE ================= */
 
     const initialState = {
+        // ================= GLOBAL IDS =================
+
+        schoolId:
+            schoolData?.schoolId || "",
+
+        branchId:
+            schoolData?.branchId || "",
+
+        sessionId:
+            schoolData?.sessionId || "",
+
+        studentId:
+            previewStudentId || "",
+
         admissionNo: "",
         admissionDate: "",
         name: "",
@@ -100,36 +127,162 @@ const StudentForm = () => {
 
     useEffect(() => {
 
+        // ================= GLOBAL IDS =================
+
+        setForm((prev) => ({
+
+            ...prev,
+
+            schoolId:
+                schoolData.schoolId,
+
+            branchId:
+                schoolData.branchId,
+
+            sessionId:
+                schoolData.sessionId,
+
+            studentId:
+                prev.studentId ||
+                previewStudentId
+        }));
+
+
         // ✅ 1. EDIT FROM TABLE (STATE)
+
         if (location.state) {
+
             setForm({
+
                 ...location.state,
-                id: location.state.id   // ✅ IMPORTANT
+
+                id:
+                    location.state.id,
+
+                schoolId:
+                    location.state.schoolId ||
+                    schoolData.schoolId,
+
+                branchId:
+                    location.state.branchId ||
+                    schoolData.branchId,
+
+                sessionId:
+                    location.state.sessionId ||
+                    schoolData.sessionId,
+
+                studentId:
+                    location.state.studentId ||
+                    previewStudentId
             });
+
             return;
         }
 
         // ✅ 2. EDIT FROM URL (ID)
-        if (id) {
-            const students = JSON.parse(localStorage.getItem("students")) || [];
 
-            const existingStudent = students.find(
-                (stu) => stu.id === Number(id)
+        if (id) {
+
+            const db = JSON.parse(
+                localStorage.getItem("ERP_DB") || "{}"
             );
 
+            const students =
+                db.students || [];
+
+            const existingStudent =
+                students.find(
+                    (stu) =>
+                        stu.id === Number(id)
+                );
+
             if (existingStudent) {
-                setForm(existingStudent);
+
+                setForm({
+
+                    ...existingStudent,
+
+                    schoolId:
+                        existingStudent.schoolId ||
+                        schoolData.schoolId,
+
+                    branchId:
+                        existingStudent.branchId ||
+                        schoolData.branchId,
+
+                    sessionId:
+                        existingStudent.sessionId ||
+                        schoolData.sessionId,
+
+                    studentId:
+                        existingStudent.studentId ||
+                        previewStudentId
+                });
             }
         }
 
         // ✅ 3. ADD MODE (DRAFT)
+
         else {
-            const draft = localStorage.getItem("draftStudent");
-            if (draft) setForm(JSON.parse(draft));
+
+            const draft =
+                localStorage.getItem(
+                    "draftStudent"
+                );
+
+            if (draft) {
+
+                const parsedDraft =
+                    JSON.parse(draft);
+
+                setForm({
+
+                    ...parsedDraft,
+
+                    schoolId:
+                        parsedDraft.schoolId ||
+                        schoolData.schoolId,
+
+                    branchId:
+                        parsedDraft.branchId ||
+                        schoolData.branchId,
+
+                    sessionId:
+                        parsedDraft.sessionId ||
+                        schoolData.sessionId,
+
+                    studentId:
+                        parsedDraft.studentId ||
+                        previewStudentId
+                });
+
+            } else {
+
+                setForm((prev) => ({
+
+                    ...prev,
+
+                    schoolId:
+                        schoolData.schoolId,
+
+                    branchId:
+                        schoolData.branchId,
+
+                    sessionId:
+                        schoolData.sessionId,
+
+                    studentId:
+                        previewStudentId
+                }));
+            }
         }
 
-    }, [id, location.state]);
-
+    }, [
+        id,
+        location.state,
+        schoolData,
+        previewStudentId
+    ]);
     /* ================= HANDLERS ================= */
 
     const handleChange = (e) => {
@@ -202,32 +355,21 @@ const StudentForm = () => {
     };
 
     const handleSave = () => {
-        const oldData = JSON.parse(localStorage.getItem("students")) || [];
 
-        // ✅ FINAL DATA FIX (mobile + address sab safe)
         const finalData = {
             ...form,
             mobile: form.mobile || form.fatherMobile
         };
 
         if (id || form.id) {
-            // ✏️ EDIT MODE (replace existing)
-            const updatedData = oldData.map((stu) =>
-                stu.id === Number(id || form.id)
-                    ? { ...finalData, id: Number(id || form.id) }
-                    : stu
-            );
-
-            localStorage.setItem("students", JSON.stringify(updatedData));
+            updateStudent(Number(id || form.id), finalData);
         } else {
-            // ➕ NEW ADD
-            const newStudent = {
+            addStudent({
                 ...finalData,
                 id: Date.now()
-            };
-
-            localStorage.setItem("students", JSON.stringify([...oldData, newStudent]));
+            });
         }
+
         alert("Saved");
     };
 
@@ -433,6 +575,79 @@ const StudentForm = () => {
             <div style={{ ...box, marginBottom: "5px" }}>
                 <h3>Academic</h3>
 
+                {/* ================= GLOBAL ERP IDS ================= */}
+
+                <div style={{
+                    background: "#f4f7ff",
+                    border: "1px solid #dbe4ff",
+                    borderRadius: "12px",
+                    padding: "15px",
+                    marginBottom: "20px"
+                }}>
+
+                    <h4 style={{
+                        marginBottom: "12px",
+                        color: "#3f51b5"
+                    }}>
+                        🌐 ERP Global Identity
+                    </h4>
+
+                    <div style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                            "repeat(4,1fr)",
+                        gap: "10px"
+                    }}>
+
+                        <div>
+                            <label>School ID</label>
+
+                            <input
+                                style={input}
+                                value={form.schoolId || ""}
+                                readOnly
+                            />
+                        </div>
+
+                        <div>
+                            <label>Branch ID</label>
+
+                            <input
+                                style={input}
+                                value={form.branchId || ""}
+                                readOnly
+                            />
+                        </div>
+
+                        <div>
+                            <label>Session ID</label>
+
+                            <input
+                                style={input}
+                                value={form.sessionId || ""}
+                                readOnly
+                            />
+                        </div>
+
+                        <div>
+                            <label>Student ID</label>
+
+                            <input
+                                style={{
+                                    ...input,
+                                    fontWeight: "bold",
+                                    color: "#673ab7"
+                                }}
+                                value={form.studentId || ""}
+                                readOnly
+                            />
+                        </div>
+
+                    </div>
+                </div>
+
+                {/* LEFT STRIP */}
+
                 {/* LEFT STRIP */}
                 <div style={leftStrip}></div>
 
@@ -441,22 +656,18 @@ const StudentForm = () => {
                 <div style={row4}>
                     <input style={input} name="admissionNo" value={form.admissionNo} placeholder="Admission No" onChange={handleChange} />
                     <input style={input} type="date" name="admissionDate" value={form.admissionDate} onChange={handleChange} />
+                   
+
                     <select style={input} value={form.class} onChange={handleClass}>
                         <option value="">Class</option>
-                        {(Object.keys(classFees) || []).map(c => <option key={c}>{c}</option>)}
-                    </select>
 
-                    <select style={input} name="section" value={form.section} onChange={handleChange}>
-                        <option value="">Section</option>
-                        {(sections || []).map(s => <option key={s}>{s}</option>)}
+                        {classes.map((c, i) => (
+                            <option key={i} value={c.className + (c.stream ? "-" + c.stream : "")}>
+                                {c.className} {c.stream ? `(${c.stream})` : ""}
+                            </option>
+                        ))}
                     </select>
-
-                    {(form.class === "11th" || form.class === "12th") && (
-                        <select style={input} name="stream" value={form.stream} onChange={handleChange}>
-                            <option value="">Stream</option>
-                            {(streams || []).map(s => <option key={s}>{s}</option>)}
-                        </select>
-                    )}
+                   
                 </div>
 
                 {/* PREVIOUS SCHOOL */}

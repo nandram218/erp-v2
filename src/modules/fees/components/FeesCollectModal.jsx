@@ -1,220 +1,96 @@
-```jsx
-import React, { useState, useEffect } from "react";
-import { feesService } from "../../../master-setting/fees/feesService";
+import React, { useMemo, useState } from "react";
+import * as feesService from "../feesService";
 
-export default function FeesCollectModal({ student, onClose, onSuccess }) {
+const FeesCollectModal = ({ student, onClose, onSuccess }) => {
 
     const [amount, setAmount] = useState("");
-    const [mode, setMode] = useState("cash");
-    const [fees, setFees] = useState({
-        total: 0,
-        paid: 0,
-        due: 0,
-        breakdown: {}
-    });
+    const [discount, setDiscount] = useState(0);
+    const [lateFee, setLateFee] = useState(0);
+    const [paymentMode, setPaymentMode] = useState("Cash");
 
-    // ================= LOAD FEES =================
-    useEffect(() => {
-        if (!student) return;
+    const dueAmount = Number(student?.dueAmount || 0);
 
-        const store = feesService.get() || {};
+    const finalPayable = useMemo(() => {
+        return (
+            Number(amount || 0) +
+            Number(lateFee || 0) -
+            Number(discount || 0)
+        );
+    }, [amount, lateFee, discount]);
 
-        const studentFee = store[student.id] || {
-            total: 0,
-            paid: 0,
-            history: []
+    const remaining = Math.max(dueAmount - finalPayable, 0);
+
+    const handleSubmit = () => {
+
+        const paymentData = {
+            amount: Number(amount),
+            discount: Number(discount),
+            lateFee: Number(lateFee),
+            finalAmount: finalPayable,
+            remainingDue: remaining,
+            paymentMode,
+            date: new Date().toISOString(),
         };
 
-        // 🔥 BASE (class fees)
-        const classFees = student.total || 0;
-
-        // 🔥 OPTIONAL
-        const transportFee = student.facilities?.transport ? 1000 : 0;
-        const hostelFee = student.facilities?.hostel ? 2000 : 0;
-
-        const total = classFees + transportFee + hostelFee;
-        const paid = studentFee.paid || 0;
-        const due = total - paid;
-
-        setFees({
-            total,
-            paid,
-            due,
-            breakdown: {
-                classFees,
-                transportFee,
-                hostelFee
-            }
+        const result = feesService.collectFeesPayment({
+            studentId: student.studentId,
+            paymentData,
         });
 
-    }, [student]);
-
-    if (!student) return null;
-
-    // ================= SAVE PAYMENT =================
-    const handleSave = () => {
-
-        if (!amount || Number(amount) <= 0) {
-            alert("Enter valid amount");
-            return;
-        }
-
-        const store = feesService.get() || {};
-
-        const existing = store[student.id] || {
-            total: fees.total,
-            paid: 0,
-            history: []
-        };
-
-        const newPaid = existing.paid + Number(amount);
-
-        const updated = {
-            ...store,
-            [student.id]: {
-                ...existing,
-                total: fees.total,
-                paid: newPaid,
-                history: [
-                    ...existing.history,
-                    {
-                        amount: Number(amount),
-                        date: new Date().toISOString(),
-                        mode
-                    }
-                ]
-            }
-        };
-
-        feesService.save(updated);
-
-        alert("✅ Payment Saved");
-
-        onSuccess && onSuccess();
-        onClose();
+        onSuccess?.(result);
+        onClose?.();
     };
 
     return (
-        <div style={styles.overlay}>
+        <div style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
 
-            <div style={styles.modal}>
+            <div style={{
+                background: "#fff",
+                padding: 20,
+                width: 500,
+                borderRadius: 12
+            }}>
 
-                <h3>💰 Collect Fees</h3>
+                <h3>Collect Fees</h3>
 
-                <p><b>{student.name}</b> ({student.className})</p>
-
-                {/* ================= BREAKDOWN ================= */}
-                <div style={styles.breakdown}>
-                    <div>📘 Class Fees: ₹{fees.breakdown.classFees}</div>
-                    <div>🚐 Transport: ₹{fees.breakdown.transportFee}</div>
-                    <div>🏠 Hostel: ₹{fees.breakdown.hostelFee}</div>
-                </div>
-
-                {/* ================= SUMMARY ================= */}
-                <div style={styles.summary}>
-                    <div>Total: ₹{fees.total}</div>
-                    <div>Paid: ₹{fees.paid}</div>
-                    <div style={{ color: "#ef4444" }}>Due: ₹{fees.due}</div>
-                </div>
-
-                {/* ================= INPUT ================= */}
                 <input
+                    placeholder="Amount"
                     type="number"
-                    placeholder="Enter Amount"
                     value={amount}
-                    onChange={e => setAmount(e.target.value)}
-                    style={styles.input}
+                    onChange={(e) => setAmount(e.target.value)}
                 />
 
-                <select value={mode} onChange={e => setMode(e.target.value)}>
-                    <option value="cash">Cash</option>
-                    <option value="online">Online</option>
-                    <option value="upi">UPI</option>
-                </select>
+                <input
+                    placeholder="Discount"
+                    type="number"
+                    value={discount}
+                    onChange={(e) => setDiscount(e.target.value)}
+                />
 
-                {/* ================= BUTTONS ================= */}
-                <div style={styles.row}>
-                    <button style={styles.btnSave} onClick={handleSave}>
-                        💾 Save
-                    </button>
+                <input
+                    placeholder="Late Fee"
+                    type="number"
+                    value={lateFee}
+                    onChange={(e) => setLateFee(e.target.value)}
+                />
 
-                    <button style={styles.btnClose} onClick={onClose}>
-                        ❌ Close
-                    </button>
-                </div>
+                <p>Final: ₹{finalPayable}</p>
+                <p>Remaining: ₹{remaining}</p>
+
+                <button onClick={handleSubmit}>Collect</button>
+                <button onClick={onClose}>Close</button>
 
             </div>
+
         </div>
     );
-}
-
-
-// ================= STYLES =================
-const styles = {
-
-    overlay: {
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        background: "rgba(0,0,0,0.6)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 999
-    },
-
-    modal: {
-        background: "#1e293b",
-        padding: 20,
-        borderRadius: 12,
-        width: 350,
-        color: "#fff",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.6)"
-    },
-
-    breakdown: {
-        marginTop: 10,
-        fontSize: 14,
-        opacity: 0.9
-    },
-
-    summary: {
-        marginTop: 10,
-        fontWeight: "bold"
-    },
-
-    input: {
-        width: "100%",
-        padding: 10,
-        marginTop: 10
-    },
-
-    row: {
-        display: "flex",
-        gap: 10,
-        marginTop: 15
-    },
-
-    btnSave: {
-        flex: 1,
-        background: "linear-gradient(145deg,#22c55e,#15803d)",
-        color: "#fff",
-        padding: 10,
-        border: "none",
-        borderRadius: 8,
-        cursor: "pointer"
-    },
-
-    btnClose: {
-        flex: 1,
-        background: "#ef4444",
-        color: "#fff",
-        padding: 10,
-        border: "none",
-        borderRadius: 8,
-        cursor: "pointer"
-    }
 };
-```
+
+export default FeesCollectModal;

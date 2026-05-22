@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSchoolStore } from "../../../store/schoolStore";
 
 const StudentProfile = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [student, setStudent] = useState(null);
-
+    const { schoolData, loadAll } = useSchoolStore();
     useEffect(() => {
-        const data = JSON.parse(localStorage.getItem("students")) || [];
-        const found = data.find((s) => s.id === Number(id));
+        const db = JSON.parse(localStorage.getItem("ERP_DB") || "{}");
+        const students = db.students || [];
+        const found = students.find((s) => s.id === Number(id));
         setStudent(found);
     }, [id]);
-
+    useEffect(() => {
+        loadAll();
+    }, []);
     if (!student) return <div style={{ padding: 20 }}>Loading...</div>;
 
     /* 🎨 DARK POLISHED THEME */
@@ -40,7 +44,11 @@ const StudentProfile = () => {
         fontWeight: "600",
         boxShadow: "0 4px 0 rgba(0,0,0,0.5)"
     });
-
+    const school =
+        schoolData?.schools?.english ||
+        schoolData?.schools?.single ||
+        schoolData || {};
+    console.log("schoolData 👉", schoolData);
     return (
         <div style={{
             padding: "30px",
@@ -83,7 +91,7 @@ const StudentProfile = () => {
                     borderBottom: "2px solid #1e40af"
                 }}>
                     <h2 style={{ margin: 0, letterSpacing: "1px" }}>
-                        🏫 YOUR SCHOOL NAME
+                        🏫 {school?.name || school?.schoolName || "Your School Name"}
                     </h2>
                     <p style={{ margin: 0, opacity: 0.9 }}>
                         Student Profile
@@ -101,12 +109,12 @@ const StudentProfile = () => {
                     color: "#cbd5f5"
                 }}>
                     <div style={{ fontWeight: "600" }}>
-                        🆔 Student ID: {student.id}
+                        🆔 Student ID: {student.studentId}
                     </div>
 
                     <button
                         onClick={() => {
-                            navigator.clipboard.writeText(student.id);
+                            navigator.clipboard.writeText(student.studentId);
                             alert("ID Copied!");
                         }}
                         style={btn3d("#3b82f6")}

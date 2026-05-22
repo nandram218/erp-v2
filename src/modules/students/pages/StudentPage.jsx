@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSchoolStore } from "../../../store/schoolStore";
 const btn3D = (bg, small = false) => ({
     background: bg,
     color: "#fff",
@@ -28,10 +29,10 @@ const cardStyle = (color) => ({
 });
 
 const StudentPage = () => {
+    const students = useSchoolStore(state => state.students) || [];
 
     const navigate = useNavigate();
-    const students = JSON.parse(localStorage.getItem("students")) || [];
-
+   
     const [search, setSearch] = useState("");
     const [cls, setCls] = useState("");
     const [category, setCategory] = useState("");

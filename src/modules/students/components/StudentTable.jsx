@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-
+import { getStudents } from "../../../services/studentService";
+import { deleteStudent } from "../../../services/studentService";
 const StudentTable = ({
     students = [],
     selectedIds = [],
@@ -73,11 +74,7 @@ const StudentTable = ({
     const handleDelete = (id) => {
         if (!window.confirm("Delete this student?")) return;
 
-        let data = JSON.parse(localStorage.getItem("students")) || [];
-        const updated = data.filter((stu) => stu.id !== id);
-        localStorage.setItem("students", JSON.stringify(updated));
-
-        window.location.reload();
+        deleteStudent(id);
     };
 
     const allSelected =

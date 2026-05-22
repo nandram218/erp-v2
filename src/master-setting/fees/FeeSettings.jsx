@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { classSubjectService } from "../classes-subjects/classSubjectService";
 
 const STORAGE_KEY = "ERP_FEE_SETTINGS";
 
-// ✅ TYPES (UNCHANGED)
+/* =========================================================
+   DEFAULT FEE TYPES
+========================================================= */
+
 const defaultTypes = {
+
     academic: [
         "Admission Fee",
         "Tuition Fee",
@@ -25,6 +29,7 @@ const defaultTypes = {
     ],
 
     facilities: [
+        "Transport Fee",
         "Hostel Fee",
         "Mess / Canteen Fee"
     ],
@@ -34,209 +39,636 @@ const defaultTypes = {
         "Activity Fee",
         "Cultural Fee",
         "Event Fee",
-        "Tour Fee",
+        "Tour Fee"
     ]
 };
 
+/* =========================================================
+   MONTHS
+========================================================= */
+
+const months = [
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+    "Jan",
+    "Feb",
+    "Mar"
+];
+
+/* =========================================================
+   MAIN COMPONENT
+========================================================= */
+
 export default function FeeSettings() {
 
+    /* =====================================================
+       STATES
+    ===================================================== */
+
     const [classes, setClasses] = useState([]);
+
     const [selectedClass, setSelectedClass] = useState("");
-    const [data, setData] = useState({});
-    const [tempData, setTempData] = useState({});
-    const [customType, setCustomType] = useState("");
+
     const [mode, setMode] = useState("view");
+
     const [showHelp, setShowHelp] = useState(false);
 
-    // 🔥 CURRENT DATA FIX (CORE)
-    const currentData =
-        mode === "view"
-            ? data[selectedClass] || {}
-            : tempData;
+    const [customType, setCustomType] = useState("");
 
-    // LOAD CLASSES
+    const [db, setDb] = useState({
+        settings: {
+            calculatorMode: "simple",
+
+            regularFrequency: "monthly",
+
+            specialFrequency: "quarterly",
+
+            regularMonths: ["Apr"],
+
+            specialMonths: ["Apr"]
+        },
+
+        classes: {}
+    });
+
+    const [tempClassData, setTempClassData] = useState({
+        feeTypes: {}
+    });
+
+    /* =====================================================
+       LOAD CLASSES
+    ===================================================== */
+
     useEffect(() => {
+
         const raw = classSubjectService.getClasses() || [];
+
         const unique = [];
 
-        raw.forEach(c => {
+        raw.forEach((c) => {
+
             const name = c.stream
                 ? `${c.className}-${c.stream}`
                 : c.className;
 
-            if (!unique.includes(name)) unique.push(name);
+            if (!unique.includes(name)) {
+                unique.push(name);
+            }
         });
 
         setClasses(unique);
+
     }, []);
 
-    // LOAD SAVED
+    /* =====================================================
+       LOAD SAVED
+    ===================================================== */
+
     useEffect(() => {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-        setData(saved);
+
+        const saved =
+            JSON.parse(localStorage.getItem(STORAGE_KEY));
+
+        if (saved) {
+            setDb(saved);
+        }
+
     }, []);
 
-    // INIT TEMP DATA
+    /* =====================================================
+       CURRENT CLASS DATA
+    ===================================================== */
+
     useEffect(() => {
+
         if (!selectedClass) return;
 
+        const cls =
+            db.classes?.[selectedClass];
+
         if (mode === "edit") {
-            setTempData(data[selectedClass] || {});
+
+            setTempClassData(
+                cls || { feeTypes: {} }
+            );
         }
 
         if (mode === "create") {
-            if (data[selectedClass]) {
+
+            if (cls) {
+
                 alert("⚠ Fees already exist. Use EDIT.");
-                setMode("view"); // ✅ FIXED
+
+                setMode("view");
+
                 return;
             }
-            setTempData({});
+
+            setTempClassData({
+                feeTypes: {}
+            });
         }
 
-    }, [selectedClass, mode]);
+        if (mode === "view") {
 
-    // TOGGLE
-    const toggleType = (type) => {
+            setTempClassData(
+                cls || { feeTypes: {} }
+            );
+        }
+
+    }, [selectedClass, mode, db]);
+
+    /* =====================================================
+       CURRENT
+    ===================================================== */
+
+    const feeTypes =
+        tempClassData.feeTypes || {};
+
+    /* =====================================================
+       TOGGLE TYPE
+    ===================================================== */
+
+    const toggleType = (type, section) => {
+
         if (mode === "view") return;
 
-        if (!selectedClass || !mode) {
-            alert("⚠ Select class & mode first");
-            return;
-        }
-
-        const cls = { ...tempData };
-
-        if (cls[type]) {
-            delete cls[type];
-        } else {
-            cls[type] = { amount: "", freq: "monthly" };
-        }
-
-        setTempData(cls);
-    };
-
-    // CHANGE
-    const handleChange = (type, field, value) => {
-        if (mode === "view") return;
-
-        const cls = { ...tempData };
-
-        cls[type] = {
-            ...cls[type],
-            [field]: field === "amount" ? Number(value) : value
+        const updated = {
+            ...feeTypes
         };
 
-        setTempData(cls);
+        if (updated[type]) {
+
+            delete updated[type];
+
+        } else {
+
+            updated[type] = {
+
+                amount: "",
+
+                category:
+                    section === "activities"
+                        ? "special"
+                        : "regular"
+            };
+        }
+
+        setTempClassData({
+            ...tempClassData,
+            feeTypes: updated
+        });
     };
 
-    // CUSTOM
+    /* =====================================================
+       HANDLE TYPE CHANGE
+    ===================================================== */
+
+    const handleTypeChange = (
+        type,
+        field,
+        value
+    ) => {
+
+        if (mode === "view") return;
+
+        const updated = {
+            ...feeTypes
+        };
+
+        updated[type] = {
+            ...updated[type],
+
+            [field]:
+                field === "amount"
+                    ? Number(value)
+                    : value
+        };
+
+        setTempClassData({
+            ...tempClassData,
+            feeTypes: updated
+        });
+    };
+
+    /* =====================================================
+       HANDLE SETTINGS
+    ===================================================== */
+
+    const handleSetting = (field, value) => {
+
+        setDb(prev => ({
+
+            ...prev,
+
+            settings: {
+
+                ...prev.settings,
+
+                [field]: value
+            }
+        }));
+    };
+
+    /* =====================================================
+       MONTH TOGGLE
+    ===================================================== */
+
+    const toggleMonth = (field, month) => {
+
+        const current =
+            db.settings[field] || [];
+
+        let updated = [];
+
+        if (current.includes(month)) {
+
+            updated =
+                current.filter(x => x !== month);
+
+        } else {
+
+            updated = [...current, month];
+        }
+
+        handleSetting(field, updated);
+    };
+
+    /* =====================================================
+       CUSTOM TYPE
+    ===================================================== */
+
     const addCustom = () => {
+
         if (!customType.trim()) return;
 
         defaultTypes.activities.push(customType);
+
         setCustomType("");
     };
 
-    // SAVE
+    /* =====================================================
+       SAVE
+    ===================================================== */
+
     const handleSave = () => {
-        if (!selectedClass) return alert("⚠ Select class first");
+
+        if (!selectedClass) {
+
+            alert("⚠ Select class first");
+
+            return;
+        }
 
         const updated = {
-            ...data,
-            [selectedClass]: tempData
+
+            ...db,
+
+            classes: {
+
+                ...db.classes,
+
+                [selectedClass]: tempClassData
+            }
         };
 
-        setData(updated);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        setDb(updated);
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(updated)
+        );
 
         alert("✅ Fees Saved Successfully");
-        setMode("view"); // ✅ FIXED
+
+        setMode("view");
     };
 
-    // RESET
+    /* =====================================================
+       RESET CLASS
+    ===================================================== */
+
     const resetClass = () => {
+
         if (!selectedClass) return;
 
-        if (!window.confirm("Clear class fee?")) return;
+        if (
+            !window.confirm(
+                "Clear class fee setup?"
+            )
+        ) return;
 
-        const updated = { ...data };
-        delete updated[selectedClass];
+        const updated = {
+            ...db
+        };
 
-        setData(updated);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        setTempData({});
+        delete updated.classes[selectedClass];
+
+        setDb(updated);
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(updated)
+        );
+
+        setTempClassData({
+            feeTypes: {}
+        });
     };
+
+    /* =====================================================
+       RESET ALL
+    ===================================================== */
 
     const resetAll = () => {
-        if (!window.confirm("Clear ALL?")) return;
+
+        if (
+            !window.confirm(
+                "Clear ALL fee setup?"
+            )
+        ) return;
 
         localStorage.removeItem(STORAGE_KEY);
-        setData({});
-        setTempData({});
+
+        setDb({
+            settings: {
+                calculatorMode: "simple",
+                regularFrequency: "monthly",
+                specialFrequency: "quarterly",
+                regularMonths: ["Apr"],
+                specialMonths: ["Apr"]
+            },
+
+            classes: {}
+        });
+
+        setTempClassData({
+            feeTypes: {}
+        });
     };
 
-    // ONE TIME TOTAL (FIXED)
-    const getOneTimeTotal = () => {
-        return Object.values(currentData || {})
-            .filter(f => f.freq === "one")
-            .reduce((a, b) => a + Number(b.amount || 0), 0);
+    /* =====================================================
+       TOTALS
+    ===================================================== */
+
+    const grandTotal = useMemo(() => {
+
+        return Object.values(feeTypes)
+            .reduce(
+                (a, b) =>
+                    a + Number(b.amount || 0),
+                0
+            );
+
+    }, [feeTypes]);
+
+    const regularTotal = useMemo(() => {
+
+        return Object.values(feeTypes)
+
+            .filter(x => x.category === "regular")
+
+            .reduce(
+                (a, b) =>
+                    a + Number(b.amount || 0),
+                0
+            );
+
+    }, [feeTypes]);
+
+    const specialTotal = useMemo(() => {
+
+        return Object.values(feeTypes)
+
+            .filter(x => x.category === "special")
+
+            .reduce(
+                (a, b) =>
+                    a + Number(b.amount || 0),
+                0
+            );
+
+    }, [feeTypes]);
+
+    /* =====================================================
+       DIVIDER
+    ===================================================== */
+
+    const divideAmount = (
+        amount,
+        freq
+    ) => {
+
+        if (!amount) return 0;
+
+        switch (freq) {
+
+            case "monthly":
+                return Math.round(amount / 12);
+
+            case "quarterly":
+                return Math.round(amount / 4);
+
+            case "three":
+                return Math.round(amount / 3);
+
+            case "half":
+                return Math.round(amount / 2);
+
+            case "yearly":
+                return amount;
+
+            case "one":
+                return amount;
+
+            default:
+                return amount;
+        }
     };
+
+    /* =====================================================
+       LABELS
+    ===================================================== */
+
+    const getFreqLabel = (
+        amount,
+        freq
+    ) => {
+
+        const value =
+            divideAmount(amount, freq);
+
+        switch (freq) {
+
+            case "monthly":
+                return `₹ ${value} / Month`;
+
+            case "quarterly":
+                return `₹ ${value} / Every Quarter`;
+
+            case "three":
+                return `₹ ${value} / 3 Times In Year`;
+
+            case "half":
+                return `₹ ${value} / Every 6 Months`;
+
+            case "yearly":
+                return `₹ ${value} / Year`;
+
+            case "one":
+                return `₹ ${value} One Time`;
+
+            default:
+                return `₹ ${value}`;
+        }
+    };
+
+    /* =====================================================
+       TITLES
+    ===================================================== */
 
     const getTitle = (key) => ({
+
         academic: "📘 Academic",
-        supportingAcademic: "🧪 Supporting",
-        facilities: "🏨 Facilities",
-        activities: "🎯 Activities"
+
+        supportingAcademic: "🧪 Supporting Academic",
+
+        facilities: "🚌 Facilities",
+
+        activities: "🎯 Special / Occasional"
+
     }[key]);
 
+    /* =====================================================
+       SETTINGS
+    ===================================================== */
+
+    const settings =
+        db.settings || {};
+
+    /* =====================================================
+       RETURN
+    ===================================================== */
+
     return (
+
         <div style={styles.page}>
 
-            {/* TOP */}
+            {/* =================================================
+                TOP BAR
+            ================================================= */}
+
             <div style={styles.top}>
-                <button style={styles.btn3d} onClick={() => window.history.back()}>
+
+                <button
+                    style={styles.btn3d}
+                    onClick={() => window.history.back()}
+                >
                     ⬅ Back
                 </button>
 
-                <button style={styles.btn3d} onClick={() => setShowHelp(!showHelp)}>
+                <button
+                    style={styles.btn3d}
+                    onClick={() =>
+                        setShowHelp(!showHelp)
+                    }
+                >
                     ❓ Help
                 </button>
+
             </div>
 
-            <h2 style={styles.title}>💰 Fee Setup</h2>
-            <h3 style={{ textAlign: "center", marginTop: 5 }}>
-                Mode: {mode ? mode.toUpperCase() : "NOT SELECTED"}
+            {/* =================================================
+                TITLE
+            ================================================= */}
+
+            <h2 style={styles.title}>
+                💰 Advanced Fee Setup
+            </h2>
+
+            <h3 style={styles.modeText}>
+                Mode : {mode.toUpperCase()}
             </h3>
+
+            {/* =================================================
+                HELP
+            ================================================= */}
+
             {showHelp && (
+
                 <div style={styles.helpBox}>
+
                     <ul>
-                        <li>Select class → choose mode</li>
-                        <li>Set Fees = new</li>
-                        <li>Edit Fees = modify</li>
-                        <li>Save = final commit</li>
+
+                        <li>
+                            Simple Plan →
+                            Grand Total ÷ Frequency
+                        </li>
+
+                        <li>
+                            Smart Split →
+                            Regular + Special Separate
+                        </li>
+
+                        <li>
+                            Professional Plan →
+                            Special fees auto add
+                            in selected month
+                        </li>
+
                     </ul>
+
                 </div>
             )}
 
-            {/* CLASS + MODE */}
-            <div style={{ display: "flex", gap: 10 }}>
+            {/* =================================================
+                CLASS + MODE
+            ================================================= */}
+
+            <div style={styles.topBar}>
 
                 <select
                     value={selectedClass}
-                    onChange={(e) => setSelectedClass(e.target.value)}
+                    onChange={(e) =>
+                        setSelectedClass(
+                            e.target.value
+                        )
+                    }
+                    style={styles.select}
                 >
-                    <option value="">Select Class</option>
+
+                    <option value="">
+                        Select Class
+                    </option>
+
                     {classes.map((c, i) => (
-                        <option key={i}>{c}</option>
+
+                        <option key={i}>
+                            {c}
+                        </option>
+
                     ))}
+
                 </select>
 
                 <button
                     style={{
                         ...styles.btn3d,
-                        background: mode === "create" ? "#16a34a" : "#3b82f6"
+                        background:
+                            mode === "create"
+                                ? "#16a34a"
+                                : "#2563eb"
                     }}
-                    onClick={() => setMode("create")}
+                    onClick={() =>
+                        setMode("create")
+                    }
                 >
                     ➕ Set Fees
                 </button>
@@ -244,126 +676,669 @@ export default function FeeSettings() {
                 <button
                     style={{
                         ...styles.btn3d,
-                        background: mode === "edit" ? "#f59e0b" : "#3b82f6"
+                        background:
+                            mode === "edit"
+                                ? "#f59e0b"
+                                : "#2563eb"
                     }}
-                    onClick={() => setMode("edit")}
+                    onClick={() =>
+                        setMode("edit")
+                    }
                 >
-                    ✏ Edit Fees
+                    ✏ Edit
                 </button>
 
                 <button
                     style={{
                         ...styles.btn3d,
-                        background: mode === "view" ? "#0ea5e9" : "#3b82f6"
+                        background:
+                            mode === "view"
+                                ? "#0ea5e9"
+                                : "#2563eb"
                     }}
-                    onClick={() => setMode("view")}
+                    onClick={() =>
+                        setMode("view")
+                    }
                 >
                     👀 View
                 </button>
 
             </div>
 
+            {/* =================================================
+                MAIN
+            ================================================= */}
+
             <div style={styles.flex}>
 
-                {/* FORM */}
+                {/* =============================================
+                    LEFT
+                ============================================= */}
+
                 <div style={styles.card}>
 
                     <h3>
-                        Setup Form ({mode || "No Mode Selected"})
+                        ⚙ Fee Structure Setup
                     </h3>
-                    <h4>One-Time Total: ₹ {getOneTimeTotal()}</h4>
 
-                    {!selectedClass && <p>⚠ Select class first</p>}
+                    {/* =========================================
+                        CALCULATOR MODE
+                    ========================================= */}
 
-                    {Object.entries(defaultTypes).map(([section, types]) => (
-                        <div key={section}>
+                    <div style={styles.modeBox}>
 
-                            <h4>{getTitle(section)}</h4>
+                        <h3>
+                            📊 Collection Method
+                        </h3>
 
-                            {types.map((type, i) => {
-                                const active = currentData[type];
+                        <label style={styles.radioRow}>
 
-                                return (
-                                    <div key={i} style={styles.row}>
+                            <input
+                                type="radio"
+                                checked={
+                                    settings.calculatorMode === "simple"
+                                }
+                                onChange={() =>
+                                    handleSetting(
+                                        "calculatorMode",
+                                        "simple"
+                                    )
+                                }
+                            />
 
-                                        <input
-                                            type="checkbox"
-                                            checked={!!active}
-                                            disabled={mode === "view"}
-                                            onChange={() => toggleType(type)}
-                                        />
+                            <b>
+                                Simple Fee Plan
+                            </b>
 
-                                        {type}
+                            <span>
+                                (All Total ÷ Frequency)
+                            </span>
 
-                                        {active && (
-                                            <>
-                                                <select
-                                                    disabled={mode === "view"}
-                                                    value={active.freq}
-                                                    onChange={(e) =>
-                                                        handleChange(type, "freq", e.target.value)
-                                                    }
-                                                >
-                                                    <option value="monthly">Monthly</option>
-                                                    <option value="quarterly">Quarterly</option>
-                                                    <option value="three">3 Times</option>
-                                                    <option value="half">Half Yearly</option>
-                                                    <option value="yearly">Yearly</option>
-                                                    <option value="one">One Time</option>
-                                                </select>
+                        </label>
 
-                                                <input
-                                                    type="number"
-                                                    placeholder="Amount"
-                                                    disabled={mode === "view"}
-                                                    value={active.amount || ""}
-                                                    onChange={(e) =>
-                                                        handleChange(type, "amount", e.target.value)
-                                                    }
-                                                />
-                                            </>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                        <label style={styles.radioRow}>
 
-                        </div>
-                    ))}
+                            <input
+                                type="radio"
+                                checked={
+                                    settings.calculatorMode === "smart"
+                                }
+                                onChange={() =>
+                                    handleSetting(
+                                        "calculatorMode",
+                                        "smart"
+                                    )
+                                }
+                            />
 
-                    {/* CUSTOM */}
-                    <div>
-                        <input
-                            value={customType}
-                            onChange={(e) => setCustomType(e.target.value)}
-                            placeholder="Custom Fee Type"
-                        />
-                        <button style={styles.btn3d} onClick={addCustom}>Add</button>
+                            <b>
+                                Smart Split Plan
+                            </b>
+
+                            <span>
+                                (Regular + Special Separate)
+                            </span>
+
+                        </label>
+
+                        <label style={styles.radioRow}>
+
+                            <input
+                                type="radio"
+                                checked={
+                                    settings.calculatorMode === "professional"
+                                }
+                                onChange={() =>
+                                    handleSetting(
+                                        "calculatorMode",
+                                        "professional"
+                                    )
+                                }
+                            />
+
+                            <b>
+                                Professional Dynamic Plan
+                            </b>
+
+                            <span>
+                                (Special fees auto add)
+                            </span>
+
+                        </label>
+
                     </div>
 
-                    {/* ACTION */}
-                    <div>
-                        <button style={styles.save} onClick={handleSave}>💾 Save</button>
-                        <button style={styles.btn3d} onClick={resetClass}>Reset Class</button>
-                        <button style={styles.btn3d} onClick={resetAll}>Reset All</button>
+                    {/* =========================================
+                        FREQUENCY
+                    ========================================= */}
+
+                    <div style={styles.freqBox}>
+
+                        {/* REGULAR */}
+
+                        <div style={styles.freqCard}>
+
+                            <h3>
+                                🟢 Regular Collection
+                            </h3>
+
+                            <select
+                                value={
+                                    settings.regularFrequency
+                                }
+                                onChange={(e) =>
+                                    handleSetting(
+                                        "regularFrequency",
+                                        e.target.value
+                                    )
+                                }
+                                style={styles.select}
+                            >
+
+                                <option value="monthly">
+                                    Monthly
+                                </option>
+
+                                <option value="quarterly">
+                                    Quarterly
+                                </option>
+
+                                <option value="three">
+                                    3 Times
+                                </option>
+
+                                <option value="half">
+                                    Half Yearly
+                                </option>
+
+                                <option value="yearly">
+                                    Yearly
+                                </option>
+
+                            </select>
+
+                            <div style={styles.monthGrid}>
+
+                                {months.map((m) => (
+
+                                    <button
+                                        key={m}
+                                        type="button"
+                                        onClick={() =>
+                                            toggleMonth(
+                                                "regularMonths",
+                                                m
+                                            )
+                                        }
+                                        style={{
+                                            ...styles.monthBtn,
+
+                                            background:
+                                                settings.regularMonths?.includes(m)
+                                                    ? "#16a34a"
+                                                    : "#334155"
+                                        }}
+                                    >
+                                        {m}
+                                    </button>
+
+                                ))}
+
+                            </div>
+
+                        </div>
+
+                        {/* SPECIAL */}
+
+                        <div style={styles.freqCard}>
+
+                            <h3>
+                                🔴 Special Collection
+                            </h3>
+
+                            <select
+                                value={
+                                    settings.specialFrequency
+                                }
+                                onChange={(e) =>
+                                    handleSetting(
+                                        "specialFrequency",
+                                        e.target.value
+                                    )
+                                }
+                                style={styles.select}
+                            >
+
+                                <option value="one">
+                                    One Time
+                                </option>
+
+                                <option value="quarterly">
+                                    Quarterly
+                                </option>
+
+                                <option value="three">
+                                    3 Times
+                                </option>
+
+                                <option value="half">
+                                    Half Yearly
+                                </option>
+
+                                <option value="yearly">
+                                    Yearly
+                                </option>
+
+                            </select>
+
+                            <div style={styles.monthGrid}>
+
+                                {months.map((m) => (
+
+                                    <button
+                                        key={m}
+                                        type="button"
+                                        onClick={() =>
+                                            toggleMonth(
+                                                "specialMonths",
+                                                m
+                                            )
+                                        }
+                                        style={{
+                                            ...styles.monthBtn,
+
+                                            background:
+                                                settings.specialMonths?.includes(m)
+                                                    ? "#dc2626"
+                                                    : "#334155"
+                                        }}
+                                    >
+                                        {m}
+                                    </button>
+
+                                ))}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    {/* =========================================
+                        TYPES
+                    ========================================= */}
+
+                    {Object.entries(defaultTypes).map(
+                        ([section, types]) => (
+
+                            <div key={section}>
+
+                                <h3 style={styles.sectionTitle}>
+                                    {getTitle(section)}
+                                </h3>
+
+                                {types.map((type, i) => {
+
+                                    const active =
+                                        feeTypes[type];
+
+                                    return (
+
+                                        <div
+                                            key={i}
+                                            style={styles.row}
+                                        >
+
+                                            <input
+                                                type="checkbox"
+                                                checked={!!active}
+                                                disabled={mode === "view"}
+                                                onChange={() =>
+                                                    toggleType(
+                                                        type,
+                                                        section
+                                                    )
+                                                }
+                                            />
+
+                                            <div style={styles.typeName}>
+                                                {type}
+                                            </div>
+
+                                            {active && (
+
+                                                <>
+
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Yearly Amount"
+                                                        value={
+                                                            active.amount || ""
+                                                        }
+                                                        disabled={mode === "view"}
+                                                        onChange={(e) =>
+                                                            handleTypeChange(
+                                                                type,
+                                                                "amount",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        style={styles.amountInput}
+                                                    />
+
+                                                    <select
+                                                        value={
+                                                            active.category
+                                                        }
+                                                        disabled={mode === "view"}
+                                                        onChange={(e) =>
+                                                            handleTypeChange(
+                                                                type,
+                                                                "category",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    >
+
+                                                        <option value="regular">
+                                                            Regular
+                                                        </option>
+
+                                                        <option value="special">
+                                                            Special
+                                                        </option>
+
+                                                    </select>
+
+                                                </>
+
+                                            )}
+
+                                        </div>
+                                    );
+                                })}
+
+                            </div>
+                        )
+                    )}
+
+                    {/* =========================================
+                        CUSTOM
+                    ========================================= */}
+
+                    <div style={styles.customBox}>
+
+                        <input
+                            value={customType}
+                            onChange={(e) =>
+                                setCustomType(
+                                    e.target.value
+                                )
+                            }
+                            placeholder="Custom Fee Type"
+                            style={styles.customInput}
+                        />
+
+                        <button
+                            style={styles.btn3d}
+                            onClick={addCustom}
+                        >
+                            ➕ Add
+                        </button>
+
+                    </div>
+
+                    {/* =========================================
+                        ACTIONS
+                    ========================================= */}
+
+                    <div style={styles.actionRow}>
+
+                        <button
+                            style={styles.saveBtn}
+                            onClick={handleSave}
+                        >
+                            💾 Save
+                        </button>
+
+                        <button
+                            style={styles.btn3d}
+                            onClick={resetClass}
+                        >
+                            ♻ Reset Class
+                        </button>
+
+                        <button
+                            style={styles.btn3d}
+                            onClick={resetAll}
+                        >
+                            🗑 Reset All
+                        </button>
+
                     </div>
 
                 </div>
 
-                {/* PREVIEW */}
+                {/* =============================================
+                    RIGHT
+                ============================================= */}
+
                 <div style={styles.card}>
-                    <h3>📊 Preview</h3>
+
+                    <h3>
+                        📊 Detailed Preview
+                    </h3>
 
                     {selectedClass && (
-                        <>
-                            <h4>{selectedClass}</h4>
 
-                            {Object.entries(currentData || {}).map(([k, v], i) => (
-                                <div key={i}>
-                                    {k} → ₹ {v.amount} ({v.freq})
+                        <>
+
+                            <h2>
+                                {selectedClass}
+                            </h2>
+
+                            {/* TOTALS */}
+
+                            <div style={styles.previewBox}>
+
+                                <div>
+                                    💰 Grand Total :
+                                    <b>
+                                        ₹ {grandTotal}
+                                    </b>
                                 </div>
-                            ))}
+
+                                <div>
+                                    🟢 Regular Total :
+                                    <b>
+                                        ₹ {regularTotal}
+                                    </b>
+                                </div>
+
+                                <div>
+                                    🔴 Special Total :
+                                    <b>
+                                        ₹ {specialTotal}
+                                    </b>
+                                </div>
+
+                            </div>
+
+                            {/* SIMPLE */}
+
+                            {settings.calculatorMode === "simple" && (
+
+                                <div style={styles.previewMode}>
+
+                                    <h3>
+                                        ✅ Simple Fee Plan
+                                    </h3>
+
+                                    <h2>
+                                        {
+                                            getFreqLabel(
+                                                grandTotal,
+                                                settings.regularFrequency
+                                            )
+                                        }
+                                    </h2>
+
+                                </div>
+                            )}
+
+                            {/* SMART */}
+
+                            {settings.calculatorMode === "smart" && (
+
+                                <div style={styles.previewMode}>
+
+                                    <h3>
+                                        ✅ Smart Split Plan
+                                    </h3>
+
+                                    <div style={styles.previewText}>
+
+                                        🟢 Regular :
+
+                                        <b>
+                                            {
+                                                getFreqLabel(
+                                                    regularTotal,
+                                                    settings.regularFrequency
+                                                )
+                                            }
+                                        </b>
+
+                                    </div>
+
+                                    <div style={styles.previewText}>
+
+                                        🔴 Special :
+
+                                        <b>
+                                            {
+                                                getFreqLabel(
+                                                    specialTotal,
+                                                    settings.specialFrequency
+                                                )
+                                            }
+                                        </b>
+
+                                    </div>
+
+                                </div>
+                            )}
+
+                            {/* PROFESSIONAL */}
+
+                            {settings.calculatorMode === "professional" && (
+
+                                <div style={styles.previewMode}>
+
+                                    <h3>
+                                        ✅ Professional Dynamic Plan
+                                    </h3>
+
+                                    <div style={styles.previewText}>
+
+                                        🟢 Regular Collection :
+
+                                        <b>
+                                            {
+                                                getFreqLabel(
+                                                    regularTotal,
+                                                    settings.regularFrequency
+                                                )
+                                            }
+                                        </b>
+
+                                    </div>
+
+                                    <div style={styles.previewText}>
+
+                                        🔴 Special Fees :
+
+                                        <b>
+                                            Auto Added In Selected Month
+                                        </b>
+
+                                    </div>
+
+                                </div>
+                            )}
+
+                            {/* MONTHS */}
+
+                            <div style={styles.previewMode}>
+
+                                <h3>
+                                    📅 Due Timing
+                                </h3>
+
+                                <div style={styles.previewText}>
+
+                                    🟢 Regular Months :
+
+                                    <b>
+                                        {
+                                            settings.regularMonths?.join(", ")
+                                        }
+                                    </b>
+
+                                </div>
+
+                                <div style={styles.previewText}>
+
+                                    🔴 Special Months :
+
+                                    <b>
+                                        {
+                                            settings.specialMonths?.join(", ")
+                                        }
+                                    </b>
+
+                                </div>
+
+                            </div>
+
+                            {/* BREAKDOWN */}
+
+                            <div style={{ marginTop: 20 }}>
+
+                                <h3>
+                                    📑 Fee Breakdown
+                                </h3>
+
+                                {Object.entries(feeTypes).map(
+                                    ([k, v], i) => (
+
+                                        <div
+                                            key={i}
+                                            style={styles.breakRow}
+                                        >
+
+                                            <span>
+                                                {k}
+                                            </span>
+
+                                            <span>
+                                                ₹ {v.amount}
+                                            </span>
+
+                                            <span>
+                                                {v.category}
+                                            </span>
+
+                                        </div>
+                                    )
+                                )}
+
+                            </div>
+
                         </>
+
                     )}
+
                 </div>
 
             </div>
@@ -372,22 +1347,202 @@ export default function FeeSettings() {
     );
 }
 
-/* STYLES (UNCHANGED) */
+/* =========================================================
+   STYLES
+========================================================= */
+
 const styles = {
-    page: { background: "#0f172a", color: "#fff", padding: 20, minHeight: "100vh" },
-    top: { display: "flex", justifyContent: "space-between" },
-    title: { textAlign: "center" },
-    flex: { display: "flex", gap: 20 },
-    card: { background: "#1e293b", padding: 20, borderRadius: 10, flex: 1 },
-    row: { display: "flex", gap: 10, marginTop: 8 },
-    btn3d: {
-        background: "#3b82f6",
-        padding: "8px 14px",
-        borderRadius: 8,
-        border: "none",
-        boxShadow: "0 4px 0 #1e40af",
+
+    page: {
+        background: "#0f172a",
+        minHeight: "100vh",
+        padding: 20,
         color: "#fff"
     },
-    save: { background: "green", padding: 10, borderRadius: 8 },
-    helpBox: { background: "#1e40af", padding: 10, marginTop: 10 }
+
+    top: {
+        display: "flex",
+        justifyContent: "space-between",
+        marginBottom: 10
+    },
+
+    title: {
+        textAlign: "center",
+        marginBottom: 5
+    },
+
+    modeText: {
+        textAlign: "center",
+        color: "#38bdf8"
+    },
+
+    topBar: {
+        display: "flex",
+        gap: 10,
+        marginTop: 20,
+        marginBottom: 20,
+        flexWrap: "wrap"
+    },
+
+    flex: {
+        display: "flex",
+        gap: 20,
+        flexWrap: "wrap"
+    },
+
+    card: {
+        flex: 1,
+        minWidth: 450,
+        background: "#1e293b",
+        borderRadius: 16,
+        padding: 20,
+        boxShadow: "0 0 20px rgba(0,0,0,0.4)"
+    },
+
+    btn3d: {
+        background: "#2563eb",
+        border: "none",
+        color: "#fff",
+        padding: "10px 16px",
+        borderRadius: 10,
+        cursor: "pointer",
+        boxShadow: "0 4px 0 #1d4ed8"
+    },
+
+    saveBtn: {
+        background: "#16a34a",
+        border: "none",
+        color: "#fff",
+        padding: "10px 18px",
+        borderRadius: 10,
+        cursor: "pointer",
+        boxShadow: "0 4px 0 #166534"
+    },
+
+    select: {
+        padding: 10,
+        borderRadius: 10
+    },
+
+    helpBox: {
+        background: "#1e40af",
+        padding: 15,
+        borderRadius: 12,
+        marginTop: 10
+    },
+
+    modeBox: {
+        background: "#0f172a",
+        padding: 15,
+        borderRadius: 12,
+        marginTop: 20,
+        marginBottom: 20
+    },
+
+    radioRow: {
+        display: "flex",
+        gap: 10,
+        alignItems: "center",
+        marginTop: 12,
+        flexWrap: "wrap"
+    },
+
+    freqBox: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+        gap: 20,
+        marginBottom: 20
+    },
+
+    freqCard: {
+        background: "#0f172a",
+        padding: 15,
+        borderRadius: 12
+    },
+
+    monthGrid: {
+        display: "grid",
+        gridTemplateColumns: "repeat(4,1fr)",
+        gap: 8,
+        marginTop: 15
+    },
+
+    monthBtn: {
+        border: "none",
+        color: "#fff",
+        padding: 8,
+        borderRadius: 8,
+        cursor: "pointer"
+    },
+
+    sectionTitle: {
+        marginTop: 25,
+        marginBottom: 10,
+        color: "#38bdf8"
+    },
+
+    row: {
+        display: "flex",
+        gap: 10,
+        alignItems: "center",
+        marginBottom: 10,
+        flexWrap: "wrap"
+    },
+
+    typeName: {
+        minWidth: 180
+    },
+
+    amountInput: {
+        padding: 8,
+        borderRadius: 8
+    },
+
+    customBox: {
+        display: "flex",
+        gap: 10,
+        marginTop: 20
+    },
+
+    customInput: {
+        flex: 1,
+        padding: 10,
+        borderRadius: 10
+    },
+
+    actionRow: {
+        display: "flex",
+        gap: 10,
+        marginTop: 25,
+        flexWrap: "wrap"
+    },
+
+    previewBox: {
+        background: "#0f172a",
+        padding: 15,
+        borderRadius: 12,
+        lineHeight: 2
+    },
+
+    previewMode: {
+        background: "#172554",
+        marginTop: 20,
+        padding: 15,
+        borderRadius: 12
+    },
+
+    previewText: {
+        marginTop: 10
+    },
+
+    breakRow: {
+        display: "flex",
+        justifyContent: "space-between",
+        background: "#0f172a",
+        padding: 10,
+        borderRadius: 10,
+        marginTop: 8,
+        flexWrap: "wrap",
+        gap: 10
+    }
 };

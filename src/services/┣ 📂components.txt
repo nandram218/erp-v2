@@ -1,0 +1,126 @@
+┣ 📂components
+┃ ┣ 📜DocumentHeader.jsx
+┃ ┗ 📜SchoolHeader.jsx
+┣ 📂layouts
+┃ ┗ 📜DashboardLayout.jsx
+┣ 📂master-setting
+┃ ┣ 📂academic
+┃ ┃ ┣ 📜academicService.js
+┃ ┃ ┣ 📜AcademicSettings.jsx
+┃ ┃ ┣ 📜academicStore.js
+┃ ┃ ┗ 📜index.js
+┃ ┣ 📂classes-subjects
+┃ ┃ ┣ 📜ClassManager.jsx
+┃ ┃ ┣ 📜classSubjectService.js
+┃ ┃ ┣ 📜index.js
+┃ ┃ ┣ 📜SubjectManager.jsx
+┃ ┃ ┗ 📜subjectPool.js
+┃ ┣ 📂exams
+┃ ┃ ┣ 📜ExamSchedule.jsx
+┃ ┃ ┣ 📜examService.js
+┃ ┃ ┣ 📜ExamSetup.jsx
+┃ ┃ ┗ 📜index.js
+┃ ┣ 📂fees
+┃ ┃ ┣ 📜FeeSettings.jsx
+┃ ┃ ┣ 📜feesService.js
+┃ ┃ ┣ 📜FeeStructure.jsx
+┃ ┃ ┗ 📜index.js
+┃ ┣ 📂hostel
+┃ ┃ ┣ 📜hostelService.js
+┃ ┃ ┣ 📜HostelSetup.jsx
+┃ ┃ ┗ 📜index.js
+┃ ┣ 📂school-profile
+┃ ┃ ┣ 📜index.js
+┃ ┃ ┣ 📜SchoolProfile.jsx
+┃ ┃ ┗ 📜schoolService.js
+┃ ┣ 📂security
+┃ ┃ ┣ 📜AccessControl.jsx
+┃ ┃ ┣ 📜index.js
+┃ ┃ ┣ 📜RoleManager.jsx
+┃ ┃ ┗ 📜securityService.js
+┃ ┣ 📂transport
+┃ ┃ ┣ 📜index.js
+┃ ┃ ┣ 📜TransportRoutes.jsx
+┃ ┃ ┣ 📜transportService.js
+┃ ┃ ┗ 📜TransportSettings.jsx
+┃ ┗ 📜MasterSettingDashboard.jsx
+┣ 📂modules
+┃ ┣ 📂dashboard
+┃ ┃ ┣ 📂components
+┃ ┃ ┃ ┗ 📜SummaryCards.jsx
+┃ ┃ ┗ 📂pages
+┃ ┃   ┣ 📜DashboardPage.jsx
+┃ ┃   ┗ 📜MainDashboard.jsx
+┃ ┣ 📂fees
+┃ ┃ ┣ 📂components
+┃ ┃ ┃ ┣ 📜FeesCollectModal.jsx
+┃ ┃ ┃ ┣ 📜FeesSummaryCards.jsx
+┃ ┃ ┃ ┣ 📜FeesTable.jsx
+┃ ┃ ┃ ┗ 📜ReceiptModal.jsx
+┃ ┃ ┣ 📂pages
+┃ ┃ ┃ ┣ 📜DueReportPage.jsx
+┃ ┃ ┃ ┣ 📜FeesHistoryPage.jsx
+┃ ┃ ┃ ┣ 📜FeesPage.jsx
+┃ ┃ ┃ ┗ 📜PrintReceipt.jsx
+┃ ┃ ┣ 📜feesCalculator.js
+┃ ┃ ┣ 📜feesConstants.js
+┃ ┃ ┣ 📜feesService.js
+┃ ┃ ┗ 📜feesUtils.js
+┃ ┣ 📂staff
+┃ ┃ ┗ 📂pages
+┃ ┃   ┗ 📜StaffPage.jsx
+┃ ┣ 📂students
+┃ ┃ ┣ 📂certificates
+┃ ┃ ┃ ┣ 📜certificate.css
+┃ ┃ ┃ ┣ 📜Certificate.jsx
+┃ ┃ ┃ ┣ 📜certificatePdfService.js
+┃ ┃ ┃ ┣ 📜CertificatePreview.jsx
+┃ ┃ ┃ ┣ 📜CertificateSelector.css
+┃ ┃ ┃ ┣ 📜CertificateSelector.jsx
+┃ ┃ ┃ ┣ 📜certificateService.js
+┃ ┃ ┃ ┗ 📜certificateTemplates.js
+┃ ┃ ┣ 📂components
+┃ ┃ ┃ ┣ 📜ERPSectionCard.jsx
+┃ ┃ ┃ ┣ 📜StudentBasic.jsx
+┃ ┃ ┃ ┣ 📜StudentFilters.jsx
+┃ ┃ ┃ ┣ 📜StudentHeader.jsx
+┃ ┃ ┃ ┣ 📜StudentTable.jsx
+┃ ┃ ┃ ┗ 📜SummarySidebar.jsx
+┃ ┃ ┣ 📂pages
+┃ ┃ ┃ ┣ 📜StudentForm_backup.jsx
+┃ ┃ ┃ ┣ 📜StudentIDCard.jsx
+┃ ┃ ┃ ┣ 📜StudentIDCards.jsx
+┃ ┃ ┃ ┣ 📜StudentListPage.jsx
+┃ ┃ ┃ ┣ 📜StudentPage.jsx
+┃ ┃ ┃ ┗ 📜StudentProfile.jsx
+┃ ┃ ┣ 📂styles
+┃ ┃ ┃ ┗ 📜studentFormStyles.js
+┃ ┃ ┗ 📜StudentForm.jsx
+┃ ┗ 📂transport
+┃   ┣ 📂pages
+┃   ┃ ┣ 📜TransportForm.jsx
+┃   ┃ ┗ 📜TransportPage.jsx
+┃   ┣ 📂services
+┃   ┃ ┣ 📜transportService.js
+┃   ┃ ┗ 📜transportSnapshotService.js
+┃   ┣ 📂styles
+┃   ┃ ┗ 📜transport.css
+┃   ┗ 📂utils
+┃     ┗ 📜transportHelpers.js
+┣ 📂routes
+┃ ┗ 📜AppRoutes.jsx
+┣ 📂services
+┃ ┣ 📜contextService.js
+┃ ┣ 📜feeEngine.js
+┃ ┣ 📜snapshotService.js
+┃ ┗ 📜studentService.js
+┣ 📂store
+┃ ┣ 📜index.js
+┃ ┗ 📜schoolStore.js
+┣ 📂styles
+┃ ┗ 📜appStyles.js
+┣ 📂utils
+┃ ┗ 📜downloadPDF.js
+┣ 📜App.js
+┣ 📜index.css
+┗ 📜index.js
