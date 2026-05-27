@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { classSubjectService } from "../classes-subjects/classSubjectService";
-
-const STORAGE_KEY = "ERP_FEE_SETTINGS";
+import {
+    getFeeSettings,
+    saveFeeSettings,
+    clearFeeSettings,
+} from "../../services/feeSettingsService";
 
 /* =========================================================
    DEFAULT FEE TYPES
@@ -133,8 +136,7 @@ export default function FeeSettings() {
 
     useEffect(() => {
 
-        const saved =
-            JSON.parse(localStorage.getItem(STORAGE_KEY));
+        const saved = getFeeSettings();
 
         if (saved) {
             setDb(saved);
@@ -341,10 +343,7 @@ export default function FeeSettings() {
 
         setDb(updated);
 
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(updated)
-        );
+        saveFeeSettings(updated);
 
         alert("✅ Fees Saved Successfully");
 
@@ -373,10 +372,7 @@ export default function FeeSettings() {
 
         setDb(updated);
 
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(updated)
-        );
+        saveFeeSettings(updated);
 
         setTempClassData({
             feeTypes: {}
@@ -395,7 +391,7 @@ export default function FeeSettings() {
             )
         ) return;
 
-        localStorage.removeItem(STORAGE_KEY);
+        clearFeeSettings();
 
         setDb({
             settings: {

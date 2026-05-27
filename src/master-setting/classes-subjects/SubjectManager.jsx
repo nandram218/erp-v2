@@ -1,22 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { classSubjectService } from "./classSubjectService";
 import { SUBJECT_POOL } from "./subjectPool";
+import { normalizeClassKey } from "./utils/classKeyNormalizer";
+import {
+    getSubjectSettings,
+    saveSubjectSettings,
+    clearSubjectSettings,
+    clearAllSubjectSettings,
+} from "../../services/subjectSettingsService";
 
-
-// 🔥 YAHI ADD KARNA HAI
-const normalizeClassKey = (className) => {
-    if (!className) return "";
-
-    return className
-        .replace(" (Science)", "-Science")
-        .replace(" (Commerce)", "-Commerce")
-        .replace(" (Arts)", "-Arts")
-        .replace(" (Agriculture)", "-Agriculture");
-};
-
-const STORAGE_KEY = "ERP_SUBJECTS";
-const MAP_KEY = "ERP_CLASS_SUBJECT_MAP";
+// 
 
 export default function SubjectManager() {
 
@@ -48,43 +43,34 @@ export default function SubjectManager() {
         setClasses(clean);
     }, []);
 
-    // LOAD SAVED (SAFE FOR OLD + NEW STRUCTURE)
-    useEffect(() => {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-
-        const formatted = {};
-
-        Object.keys(saved).forEach(cls => {
-            if (Array.isArray(saved[cls])) {
-                // 🔁 old format → convert
-                formatted[cls] = {
-                    scholastic: saved[cls],
-                    coScholastic: []
-                };
-            } else {
-                formatted[cls] = saved[cls];
-            }
-        });
-
-        setSelected(formatted);
-    }, []);
-
+  
     // LOAD POOL (FIXED)
     useEffect(() => {
         if (!selectedClass) return;
 
-        const poolData = SUBJECT_POOL();
+        const saved = getSubjectSettings(selectedClass);
 
+        const base = SUBJECT_POOL("RBSE", "Hindi");
         const cleanClass = normalizeClassKey(selectedClass);
 
-        setPool(
-            poolData[cleanClass] ||
-            poolData[selectedClass] || // fallback (safe)
-            { scholastic: [], coScholastic: [] }
-        );
+        const fallback =
+            base[cleanClass] ||
+            base[selectedClass] ||
+            { scholastic: [], coScholastic: [] };
+
+        const finalData =
+            saved && Object.keys(saved).length > 0
+                ? saved
+                : fallback;
+
+        setPool(finalData);
+
+        setSelected(prev => ({
+            ...prev,
+            [selectedClass]: finalData
+        }));
 
     }, [selectedClass]);
-
     // TOGGLE (TYPE BASED)
     const toggle = (sub, type) => {
 
@@ -104,10 +90,10 @@ export default function SubjectManager() {
             [type]: updatedList
         };
 
-        setSelected({
-            ...selected,
+        setSelected(prev => ({
+            ...prev,
             [selectedClass]: updated
-        });
+        }));
     };
 
     // CUSTOM ADD
@@ -116,7 +102,7 @@ export default function SubjectManager() {
 
         setPool({
             ...pool,
-            scholastic: [...pool.scholastic, customMain]
+            scholastic: [...new Set([...pool.scholastic, customMain.trim()])]
         });
 
         toggle(customMain, "scholastic");
@@ -128,7 +114,7 @@ export default function SubjectManager() {
 
         setPool({
             ...pool,
-            coScholastic: [...pool.coScholastic, customCo]
+            coScholastic: [...new Set([...pool.coScholastic, customCo.trim()])]
         });
 
         toggle(customCo, "coScholastic");
@@ -137,37 +123,57 @@ export default function SubjectManager() {
 
     // SAVE + AUTO MAP
     const handleSave = () => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(selected));
+        if (!selectedClass) return;
 
-        // 🔥 AUTO MAPPING
-        localStorage.setItem(MAP_KEY, JSON.stringify(selected));
-
-        alert("✅ Subjects & Mapping Saved Successfully");
+        saveSubjectSettings(
+            selectedClass,
+            selected[selectedClass] || {
+                scholastic: [],
+                coScholastic: []
+            }
+        );
     };
 
     // RESET SINGLE
     const resetSingle = () => {
-        if (!selectedClass) return alert("⚠ Please select a class first");
+        if (!selectedClass) {
+            alert("⚠ Please select a class first");
+            return;
+        }
 
-        if (!window.confirm("Selected class subjects will be permanently removed.")) return;
+        if (!window.confirm("Selected class subjects will be permanently removed.")) {
+            return;
+        }
+
+        clearSubjectSettings(selectedClass);
 
         const updated = { ...selected };
         delete updated[selectedClass];
 
         setSelected(updated);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        localStorage.setItem(MAP_KEY, JSON.stringify(updated));
-    };
 
+        const base = SUBJECT_POOL("RBSE", "Hindi");
+        const cleanClass = normalizeClassKey(selectedClass);
+        setPool(
+            base[cleanClass] ||
+            base[selectedClass] ||
+            { scholastic: [], coScholastic: [] }
+        );
+    };
     // RESET ALL
     const resetAll = () => {
-        if (!window.confirm("All subjects for all classes will be removed.")) return;
-
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(MAP_KEY);
+        if (!window.confirm("All subjects for all classes will be removed.")) {
+            return;
+        }
+      
+        clearAllSubjectSettings();
         setSelected({});
-    };
 
+        setPool({
+            scholastic: [],
+            coScholastic: []
+        });
+    };
     // TAGLINES
     const getTopMessage = () =>
         "Select a class to manage its subjects. Actions apply only to the selected class.";
@@ -238,7 +244,7 @@ export default function SubjectManager() {
                         <h3>Class: {selectedClass}</h3>
 
                         <h4>📗 Scholastic</h4>
-                        {pool.scholastic.map((s, i) => (
+                        {(pool?.scholastic || []).map((s, i) => (
                             <label key={i}>
                                 <input
                                     type="checkbox"
@@ -251,7 +257,7 @@ export default function SubjectManager() {
                         ))}
 
                         <h4>🎨 Co-Scholastic</h4>
-                        {pool.coScholastic.map((s, i) => (
+                        {(pool?.coScholastic || []).map((s, i) => (
                             <label key={i}>
                                 <input
                                     type="checkbox"

@@ -18,7 +18,20 @@ export const SUBJECT_POOL = (board, medium) => {
             scholastic: [lang1, lang2, "Maths", "EVS"],
             coScholastic: ["Drawing", "Music", "PT"]
         },
+        "PP3": {
+            scholastic: [lang1, lang2, "Maths", "Rhymes"],
+            coScholastic: ["Drawing", "Music", "Activity"]
+        },
 
+        "PP4": {
+            scholastic: [lang1, lang2, "Maths", "EVS"],
+            coScholastic: ["Drawing", "Music", "PT"]
+        },
+
+        "PP5": {
+            scholastic: [lang1, lang2, "Maths", "EVS"],
+            coScholastic: ["Drawing", "Music", "PT"]
+        },
         // 🔹 PRIMARY
         "1st": {
             scholastic: [lang1, lang2, "Maths", "EVS", "Computer"],

@@ -1,79 +1,25 @@
 // src/services/studentService.js
+// Student business logic — persistence via schoolStore → storageService (ERP_DB)
 
 import { useSchoolStore } from "../store/schoolStore";
 
-const DB_KEY = "ERP_DB";
-
-/* =========================================================
-   FEES STORAGE SERVICE
-========================================================= */
-
-export const feesService = {
-
-    /* ================= GET FULL DB ================= */
-
-    getDB: () => {
-        return JSON.parse(
-            localStorage.getItem(DB_KEY) || "{}"
-        );
-    },
-
-    /* ================= SAVE FULL DB ================= */
-
-    saveDB: (db) => {
-        localStorage.setItem(
-            DB_KEY,
-            JSON.stringify(db)
-        );
-    },
-
-    /* ================= GET FEES ================= */
-
-    get: () => {
-        const db = feesService.getDB();
-        return db.fees || {};
-    },
-
-    /* ================= SAVE FEES ================= */
-
-    save: (feesData) => {
-
-        const db = feesService.getDB();
-
-        db.fees = feesData;
-
-        feesService.saveDB(db);
-    },
-
-    /* ================= HISTORY ================= */
-
-    getHistory: () => {
-
-        const db = feesService.getDB();
-
-        return db.feesHistory || [];
-    },
-
-    saveHistory: (history) => {
-
-        const db = feesService.getDB();
-
-        db.feesHistory = history;
-
-        feesService.saveDB(db);
-    },
-
-    /* ================= RESET ================= */
-
-    reset: () => {
-
-        const db = feesService.getDB();
-
-        db.fees = {};
-        db.feesHistory = [];
-
-        feesService.saveDB(db);
+/** Match by studentId (canonical) or legacy numeric id */
+const matchesStudent = (student, identifier) => {
+    if (identifier === undefined || identifier === null || identifier === "") {
+        return false;
     }
+
+    const key = String(identifier);
+
+    if (student.studentId != null && String(student.studentId) === key) {
+        return true;
+    }
+
+    if (student.id != null && String(student.id) === key) {
+        return true;
+    }
+
+    return false;
 };
 
 /* =========================================================
@@ -184,7 +130,7 @@ export const addStudent = (
 ========================================================= */
 
 export const updateStudent = (
-    studentId,
+    identifier,
     updatedData = {}
 ) => {
 
@@ -196,8 +142,7 @@ export const updateStudent = (
     const updatedStudents =
         students.map((student) =>
 
-            String(student.studentId) ===
-                String(studentId)
+            matchesStudent(student, identifier)
 
                 ? {
                     ...student,
@@ -228,10 +173,8 @@ export const updateStudent = (
 
     setStudents(updatedStudents);
 
-    return updatedStudents.find(
-        (student) =>
-            String(student.studentId) ===
-            String(studentId)
+    return updatedStudents.find((student) =>
+        matchesStudent(student, identifier)
     );
 };
 
@@ -240,7 +183,7 @@ export const updateStudent = (
 ========================================================= */
 
 export const deleteStudent = (
-    studentId
+    identifier
 ) => {
 
     const {
@@ -250,10 +193,7 @@ export const deleteStudent = (
 
     const updatedStudents =
         students.filter(
-            (student) =>
-
-                String(student.studentId) !==
-                String(studentId)
+            (student) => !matchesStudent(student, identifier)
         );
 
     setStudents(updatedStudents);
@@ -266,7 +206,7 @@ export const deleteStudent = (
 ========================================================= */
 
 export const getStudentById = (
-    studentId
+    identifier
 ) => {
 
     const students =
@@ -274,11 +214,8 @@ export const getStudentById = (
             .getState()
             .students || [];
 
-    return students.find(
-        (student) =>
-
-            String(student.studentId) ===
-            String(studentId)
+    return students.find((student) =>
+        matchesStudent(student, identifier)
     );
 };
 

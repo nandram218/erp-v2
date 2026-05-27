@@ -1,4 +1,10 @@
-let STORAGE_KEY = "ERP_CLASSES";
+import {
+    getStorageCompat,
+    setStorageCompat,
+    STORAGE_KEYS,
+} from "../../services/storageService";
+
+const STORAGE_KEY = STORAGE_KEYS.ERP_CLASSES;
 
 // 🔥 ORDINAL HELPER
 const getOrdinal = (n) => {
@@ -11,12 +17,12 @@ const getOrdinal = (n) => {
 export const classSubjectService = {
 
     saveClasses: (data) => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        setStorageCompat(STORAGE_KEY, data);
     },
 
     // ✅ GET CLASSES (WITH DUPLICATE FIX)
     getClasses: () => {
-        const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        const data = getStorageCompat(STORAGE_KEY, []);
 
         const formatted = data.map(c => {
             if (c.stream) {

@@ -362,7 +362,10 @@ const classes =
         };
 
         if (id || form.id) {
-            updateStudent(Number(id || form.id), finalData);
+            updateStudent(
+                form.studentId || form.id || id,
+                finalData
+            );
         } else {
             addStudent({
                 ...finalData,

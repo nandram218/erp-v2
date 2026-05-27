@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSchoolStore } from "../../store/schoolStore";
+import {
+    getSchoolProfile,
+    saveSchoolProfile,
+} from "../../services/schoolProfileService";
 import { appStyles as styles } from "../../styles/appStyles";
 const SchoolProfile = () => {
     const { setSchoolData } = useSchoolStore();
@@ -30,7 +34,7 @@ const SchoolProfile = () => {
     });
 
     useEffect(() => {
-        const data = JSON.parse(localStorage.getItem("schoolProfile"));
+        const data = getSchoolProfile();
         if (data) {
             setMediumType(data.mediumType || "english");
             setSchools(data.schools || schools);
@@ -42,10 +46,8 @@ const SchoolProfile = () => {
 
         const payload = { mediumType, schools };
 
-        // 🔥 LOCAL STORAGE
-        localStorage.setItem("schoolProfile", JSON.stringify(payload));
+        saveSchoolProfile(payload);
 
-        // 🔥 STORE UPDATE (MOST IMPORTANT)
         setSchoolData(payload);
 
         setEditMode(false);

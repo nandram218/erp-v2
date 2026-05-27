@@ -1,13 +1,19 @@
-const DB_KEY = "ERP_DB";
+import {
+    getStorageCompat,
+    setStorageCompat,
+    STORAGE_KEYS,
+} from "../../services/storageService";
+
+const DB_KEY = STORAGE_KEYS.ERP_DB;
 
 export const feesService = {
 
     getDB: () => {
-        return JSON.parse(localStorage.getItem(DB_KEY) || "{}");
+        return getStorageCompat(DB_KEY, {});
     },
 
     saveDB: (db) => {
-        localStorage.setItem(DB_KEY, JSON.stringify(db));
+        setStorageCompat(DB_KEY, db);
     },
 
     get: () => {

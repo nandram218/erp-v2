@@ -2,13 +2,21 @@
    ERP FEES SERVICE - CLEAN PRODUCTION VERSION
 ========================================================= */
 
+import {
+    getStorageCompat,
+    setStorageCompat,
+    removeStorageCompat,
+    STORAGE_KEYS,
+} from "../../services/storageService";
+
 /* =========================
    STORAGE KEYS
+   (operational: ERP_RECEIPT_COUNTER — not feesConstants ERP_FEES_RECEIPT_COUNTER)
 ========================= */
 
-const FEES_DB_KEY = "ERP_FEES_DB";
-const RECEIPT_KEY = "ERP_RECEIPT_COUNTER";
-const LEDGER_KEY = "ERP_FEES_LEDGER";
+const FEES_DB_KEY = STORAGE_KEYS.ERP_FEES_DB;
+const RECEIPT_KEY = STORAGE_KEYS.ERP_RECEIPT_COUNTER;
+const LEDGER_KEY = STORAGE_KEYS.ERP_FEES_LEDGER;
 
 /* =========================
    LOCAL DB HELPERS
@@ -16,14 +24,14 @@ const LEDGER_KEY = "ERP_FEES_LEDGER";
 
 export const getFeesDB = () => {
     try {
-        return JSON.parse(localStorage.getItem(FEES_DB_KEY)) || [];
+        return getStorageCompat(FEES_DB_KEY, []);
     } catch {
         return [];
     }
 };
 
 export const saveFeesDB = (data) => {
-    localStorage.setItem(FEES_DB_KEY, JSON.stringify(data));
+    setStorageCompat(FEES_DB_KEY, data);
 };
 
 /* =========================
@@ -31,11 +39,11 @@ export const saveFeesDB = (data) => {
 ========================= */
 
 const getLedger = () => {
-    return JSON.parse(localStorage.getItem(LEDGER_KEY)) || [];
+    return getStorageCompat(LEDGER_KEY, []);
 };
 
 const saveLedger = (data) => {
-    localStorage.setItem(LEDGER_KEY, JSON.stringify(data));
+    setStorageCompat(LEDGER_KEY, data);
 };
 
 /* =========================
@@ -43,11 +51,11 @@ const saveLedger = (data) => {
 ========================= */
 
 export const getReceiptCounter = () =>
-    Number(localStorage.getItem(RECEIPT_KEY) || 1);
+    Number(getStorageCompat(RECEIPT_KEY, 1) ?? 1);
 
 export const createReceiptNumber = () => {
     const next = getReceiptCounter();
-    localStorage.setItem(RECEIPT_KEY, next + 1);
+    setStorageCompat(RECEIPT_KEY, next + 1);
     return `RCPT-${String(next).padStart(5, "0")}`;
 };
 
@@ -430,7 +438,7 @@ export const exportFeesData = () => {
 ========================= */
 
 export const resetFeesModule = () => {
-    localStorage.removeItem(FEES_DB_KEY);
-    localStorage.removeItem(RECEIPT_KEY);
-    localStorage.removeItem(LEDGER_KEY);
+    removeStorageCompat(FEES_DB_KEY);
+    removeStorageCompat(RECEIPT_KEY);
+    removeStorageCompat(LEDGER_KEY);
 };

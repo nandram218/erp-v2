@@ -1,6 +1,11 @@
 import { create } from "zustand";
-
-const KEY = "ERP_DB";
+import {
+    ERP_DB_KEY,
+    getStorageCompat,
+    setStorageCompat,
+    removeStorageCompat,
+    migrateLegacyStorage,
+} from "../services/storageService";
 
 // ================= GLOBAL CONTEXT =================
 
@@ -30,9 +35,11 @@ export const useSchoolStore = create((set, get) => ({
 
     loadAll: () => {
 
-        const raw = localStorage.getItem(KEY);
+        migrateLegacyStorage();
 
-        if (!raw) {
+        const db = getStorageCompat(ERP_DB_KEY, null);
+
+        if (!db) {
 
             set({
                 hydrated: true
@@ -42,8 +49,6 @@ export const useSchoolStore = create((set, get) => ({
         }
 
         try {
-
-            const db = JSON.parse(raw);
 
             set({
 
@@ -75,7 +80,7 @@ export const useSchoolStore = create((set, get) => ({
                 "ERP_DB corrupted, resetting..."
             );
 
-            localStorage.removeItem(KEY);
+            removeStorageCompat(ERP_DB_KEY);
 
             set({
                 hydrated: true
@@ -104,10 +109,7 @@ export const useSchoolStore = create((set, get) => ({
             hostel: state.hostel || {}
         };
 
-        localStorage.setItem(
-            KEY,
-            JSON.stringify(db)
-        );
+        setStorageCompat(ERP_DB_KEY, db);
     },
 
     // ================= SCHOOL =================

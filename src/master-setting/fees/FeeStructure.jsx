@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { classSubjectService } from "../classes-subjects/classSubjectService";
-
-const STORAGE_KEY = "ERP_FEE_SETTINGS";
+import { getFeeSettings } from "../../services/feeSettingsService";
 
 export default function FeeStructure() {
 
@@ -46,10 +45,7 @@ export default function FeeStructure() {
 
         try {
 
-            const saved =
-                JSON.parse(
-                    localStorage.getItem(STORAGE_KEY)
-                );
+            const saved = getFeeSettings();
 
             if (saved) {
                 setDb(saved);
