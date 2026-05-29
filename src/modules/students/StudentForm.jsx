@@ -13,6 +13,12 @@ import {
     removeStorageCompat 
 } from "../../services/storageService";
 import { STORAGE_KEYS } from "../../core/constants/storageKeys";
+import {
+    CLASS_FEES,
+    HOSTEL_FEE_CONST,
+    TRANSPORT_ROUTES
+} from "../../core/constants/feeConstants";
+import { getFeeSettings } from "../../services/feeSettingsService";
 
 const StudentForm = () => {
     const navigate = useNavigate();
@@ -47,26 +53,21 @@ const StudentForm = () => {
     /* ================= DATA ================= */
 const classes =
                         getStorageCompat(STORAGE_KEYS.ERP_CLASSES, []);
-    const classFees = {
-        PP3: 500, PP4: 500, PP5: 600,
-        Nursery: 600, LKG: 700, UKG: 800,
-        "1st": 1000, "2nd": 1100, "3rd": 1200,
-        "4th": 1300, "5th": 1400, "6th": 1500,
-        "7th": 1600, "8th": 1700, "9th": 1800,
-        "10th": 2000, "11th": 2500, "12th": 3000
-    };
+    const feeSettings = getFeeSettings();
+    const effectiveClassFees = feeSettings?.classFees ? feeSettings.classFees : CLASS_FEES;
+    const effectiveTransportRoutes = feeSettings?.routes ? feeSettings.routes : TRANSPORT_ROUTES;
+    const effectiveHostelFee = feeSettings?.hostelFee ? feeSettings.hostelFee : HOSTEL_FEE_CONST;
+
+    const classFees = effectiveClassFees;
 
     const streams = ["Science", "Commerce", "Arts"];
     const sections = ["A", "B", "C", "D"];
     const bloodGroups = ["A+", "B+", "O+", "AB+", "A-", "B-", "O-", "AB-"];
     const categories = ["GEN", "OBC", "SC", "ST"];
 
-    const routes = Array.from({ length: 8 }, (_, i) => ({
-        name: `Route ${i + 1}`,
-        fee: 500 + i * 100
-    }));
+    const routes = effectiveTransportRoutes;
 
-    const hostelFeeConst = 1500;
+    const hostelFeeConst = effectiveHostelFee;
 
     /* ================= STATE ================= */
 
