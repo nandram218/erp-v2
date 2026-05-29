@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSchoolStore } from "../../../store/schoolStore";
+import { getStorageCompat } from "../../../services/storageService";
+import { STORAGE_KEYS } from "../../../core/constants/storageKeys";
 
 const StudentProfile = () => {
     const { id } = useParams();
@@ -8,7 +10,7 @@ const StudentProfile = () => {
     const [student, setStudent] = useState(null);
     const { schoolData, loadAll } = useSchoolStore();
     useEffect(() => {
-        const db = JSON.parse(localStorage.getItem("ERP_DB") || "{}");
+        const db = getStorageCompat(STORAGE_KEYS.ERP_DB, {});
         const students = db.students || [];
         const found = students.find((s) => s.id === Number(id));
         setStudent(found);
