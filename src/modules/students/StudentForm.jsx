@@ -7,6 +7,12 @@ import {
 } from "../../services/studentService";
 
 import { useSchoolStore } from "../../store/schoolStore";
+import { 
+    getStorageCompat, 
+    setStorageCompat, 
+    removeStorageCompat 
+} from "../../services/storageService";
+import { STORAGE_KEYS } from "../../core/constants/storageKeys";
 
 const StudentForm = () => {
     const navigate = useNavigate();
@@ -40,7 +46,7 @@ const StudentForm = () => {
     };
     /* ================= DATA ================= */
 const classes =
-                        JSON.parse(localStorage.getItem("ERP_CLASSES") || "[]");
+                        getStorageCompat(STORAGE_KEYS.ERP_CLASSES, []);
     const classFees = {
         PP3: 500, PP4: 500, PP5: 600,
         Nursery: 600, LKG: 700, UKG: 800,
@@ -183,9 +189,7 @@ const classes =
 
         if (id) {
 
-            const db = JSON.parse(
-                localStorage.getItem("ERP_DB") || "{}"
-            );
+            const db = getStorageCompat(STORAGE_KEYS.ERP_DB, {});
 
             const students =
                 db.students || [];
@@ -226,14 +230,11 @@ const classes =
         else {
 
             const draft =
-                localStorage.getItem(
-                    "draftStudent"
-                );
+                getStorageCompat(STORAGE_KEYS.DRAFT_STUDENT, null);
 
             if (draft) {
 
-                const parsedDraft =
-                    JSON.parse(draft);
+                const parsedDraft = draft;
 
                 setForm({
 
@@ -377,13 +378,13 @@ const classes =
     };
 
     const handleDraft = () => {
-        localStorage.setItem("draftStudent", JSON.stringify(form));
+        setStorageCompat(STORAGE_KEYS.DRAFT_STUDENT, form);
         alert("Draft Saved");
     };
 
     const handleReset = () => {
         setForm(initialState);
-        localStorage.removeItem("draftStudent");
+        removeStorageCompat(STORAGE_KEYS.DRAFT_STUDENT);
     };
 
     /* ================= UI ================= */
