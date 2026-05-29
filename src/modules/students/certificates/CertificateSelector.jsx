@@ -44,13 +44,13 @@ const CertificateSelector = () => {
             return;
         }
 
-        const selectedIds = students.filter((s) =>
+        const selectedStudents = students.filter((s) =>
             selectedIds.includes(s.id)
         );
 
         navigate("/certificate", {
             state: {
-                students: selectedIds,
+                students: selectedStudents,
                 type: selectedType
             }
         });
