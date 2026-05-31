@@ -48,6 +48,18 @@ export const calculateStudentFees = ({
 }) => {
     
     // =========================
+    // DOUBLE SAFETY CHECK (PHASE 3B FINAL LOCK)
+    // =========================
+    
+    if (!FEE_ENGINE_CONFIG?.USE_FEE_ENGINE) {
+        console.log("[FeeEngine] Status:", FEE_ENGINE_CONFIG.USE_FEE_ENGINE);
+        return buildStudentFeesRecord({
+            student,
+            feeSettings
+        });
+    }
+    
+    // =========================
     // FEATURE FLAG CHECK
     // =========================
     
