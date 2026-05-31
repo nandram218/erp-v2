@@ -5,7 +5,17 @@
 const num = (v) => Number(v || 0);
 
 /* =========================================================
-   FEE ENGINE WRAPPER LAYER (PHASE 3B - STEP 2)
+   FEE ENGINE IMPORTS (PHASE 3B - STEP 3)
+========================================================= */
+
+import { FEE_ENGINE_CONFIG } from "../../core/fee-engine/feeEngineConfig.js";
+import { mapERPStudentToFeeEngineStudent } from "../../core/fee-engine/feeEngineMapper.js";
+import { mapERPFeeSettingsToFeeConfig } from "../../core/fee-engine/feeEngineMapper.js";
+import { mapFeeEngineResultToERPFeeResult } from "../../core/fee-engine/feeEngineMapper.js";
+import { calculateFee, isFeeEngineAvailable } from "../../core/fee-engine/feeEngineCoreBridge.js";
+
+/* =========================================================
+   FEE ENGINE WRAPPER LAYER (PHASE 3B - STEP 3)
 =========================================================
    Safe wrapper for future FeeEngineCore integration
    Currently USE_FEE_ENGINE = false, so legacy path active
@@ -41,10 +51,7 @@ export const calculateStudentFees = ({
     // FEATURE FLAG CHECK
     // =========================
     
-    // TODO: Import FEE_ENGINE_CONFIG when ready
-    // const { USE_FEE_ENGINE } = FEE_ENGINE_CONFIG;
-    
-    const USE_FEE_ENGINE = false; // Hardcoded false for safety
+    const { USE_FEE_ENGINE } = FEE_ENGINE_CONFIG;
     
     // =========================
     // LEGACY PATH (Current)
@@ -58,44 +65,49 @@ export const calculateStudentFees = ({
     }
     
     // =========================
-    // FEE ENGINE PATH (Future)
+    // FEE ENGINE PATH (Future - Bridge Integration)
     // =========================
-    
+
     if (USE_FEE_ENGINE === true) {
-        // TODO: Implement FeeEngineCore integration when ready
-        // 
-        // Step 1: Import required modules
-        // import { mapERPStudentToFeeEngineStudent } from "../../core/fee-engine/feeEngineMapper";
-        // import { mapERPFeeSettingsToFeeConfig } from "../../core/fee-engine/feeEngineMapper";
-        // import { FeeEngineCore } from "../../core/fee-engine/FeeEngineCore";
-        // import { mapFeeEngineResultToERPFeeResult } from "../../core/fee-engine/feeEngineMapper";
-        // import { FEE_ENGINE_CONFIG } from "../../core/fee-engine/feeEngineConfig";
-        //
-        // Step 2: Map ERP data to FeeEngine format
-        // const feeEngineStudent = mapERPStudentToFeeEngineStudent(student);
-        // const feeConfig = mapERPFeeSettingsToFeeConfig(feeSettings, context);
-        //
-        // Step 3: Execute FeeEngineCore calculation
-        // const feeResult = FeeEngineCore.calculate({
-        //     student: feeEngineStudent,
-        //     feeConfig
-        // });
-        //
-        // Step 4: Map result back to ERP format
-        // const erpFeeRecord = mapFeeEngineResultToERPFeeResult(
-        //     feeResult,
-        //     student,
-        //     0 // paidAmount
-        // );
-        //
-        // Step 5: Return ERP-compatible record
-        // return erpFeeRecord;
-        
-        // For now, still use legacy path
-        return buildStudentFeesRecord({
-            student,
-            feeSettings
-        });
+        // Check if bridge is available
+        if (!isFeeEngineAvailable()) {
+            console.warn("[FeesCalculator] FeeEngineCore bridge not available, falling back to legacy");
+            return buildStudentFeesRecord({
+                student,
+                feeSettings
+            });
+        }
+
+        try {
+            // Step 1: Map ERP Student to FeeEngine format
+            const feeEngineStudent = mapERPStudentToFeeEngineStudent(student);
+
+            // Step 2: Map ERP Fee Settings to FeeConfig
+            const feeConfig = mapERPFeeSettingsToFeeConfig(feeSettings, context);
+
+            // Step 3: Execute FeeEngineCore calculation via bridge
+            const feeResult = calculateFee({
+                student: feeEngineStudent,
+                feeConfig
+            });
+
+            // Step 4: Map FeeEngine result back to ERP format
+            const erpFeeRecord = mapFeeEngineResultToERPFeeResult(
+                feeResult,
+                student,
+                0 // paidAmount
+            );
+
+            // Step 5: Return ERP-compatible record
+            return erpFeeRecord;
+        } catch (error) {
+            console.error("[FeesCalculator] FeeEngine calculation error:", error);
+            // Fallback to legacy on error
+            return buildStudentFeesRecord({
+                student,
+                feeSettings
+            });
+        }
     }
     
     // Fallback to legacy
