@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useSchoolStore } from "../../../store/schoolStore";
 import { getStorageCompat } from "../../../services/storageService";
 import { STORAGE_KEYS } from "../../../core/constants/storageKeys";
+import { StudentPhoto } from "../../../media/MediaRenderer";
 
 const StudentProfile = () => {
     const { id } = useParams();
@@ -50,7 +51,9 @@ const StudentProfile = () => {
         schoolData?.schools?.english ||
         schoolData?.schools?.single ||
         schoolData || {};
-    console.log("schoolData 👉", schoolData);
+    if (process.env.NODE_ENV === "development") {
+        console.log("schoolData 👉", schoolData);
+    }
     return (
         <div style={{
             padding: "30px",
@@ -134,8 +137,9 @@ const StudentProfile = () => {
                     background: "#111827",
                     borderBottom: "1px solid #374151"
                 }}>
-                    <img
-                        src={student.photoPreview || "https://via.placeholder.com/120"}
+                    <StudentPhoto
+                        studentId={student.studentId || student.id}
+                        fallback={student.photoPreview || "https://via.placeholder.com/120"}
                         alt=""
                         style={{
                             width: 120,

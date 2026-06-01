@@ -6,6 +6,7 @@ import { useSchoolStore } from "../../../store/schoolStore";
 import { getStudents } from "../../../services/studentService";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { StudentPhoto } from "../../../media/MediaRenderer";
 
 /* ===== TEMPLATES ===== */
 const templates = [
@@ -41,7 +42,9 @@ const StudentIDCards = () => {
         try {
             const data = getStudents();
 
-            console.log("ID CARD STUDENTS:", data); // 🔥 DEBUG
+            if (process.env.NODE_ENV === "development") {
+                console.log("ID CARD STUDENTS:", data); // 🔥 DEBUG
+            }
 
             if (Array.isArray(data)) {
                 setStudents(data);
@@ -53,7 +56,9 @@ const StudentIDCards = () => {
             }
 
         } catch (err) {
-            console.error("Student Load Error:", err);
+            if (process.env.NODE_ENV === "development") {
+                console.error("Student Load Error:", err);
+            }
             setStudents([]);
         }
 
@@ -178,8 +183,9 @@ const StudentIDCards = () => {
                 }}>
 
                     {/* PHOTO TOP CENTER */}
-                    <img
-                        src={s.photo || school?.logo}
+                    <StudentPhoto
+                        studentId={s.studentId || s.id}
+                        fallback={s.photo || school?.logo}
                         style={{
                             width: 80,
                             height: 90,

@@ -1,5 +1,6 @@
 import React from "react";
 import "./certificate.css";
+import { StudentPhoto, SchoolLogo, SchoolSignature } from "../../../media/MediaRenderer";
 
 const Certificate = ({ data, school }) => {
     return (
@@ -17,8 +18,9 @@ const Certificate = ({ data, school }) => {
 
                     {/* 🏫 LOGO */}
                     {school?.logo && (
-                        <img
-                            src={school.logo}
+                        <SchoolLogo
+                            schoolId="default"
+                            fallback={school.logo}
                             alt="logo"
                             style={{ height: "60px" }}
                         />
@@ -33,8 +35,9 @@ const Certificate = ({ data, school }) => {
 
                 {/* PHOTO - NO STATE, NO ONLOAD */}
                 <div className="photo-box">
-                    <img
-                        src={data.photo || "/default-user.png"}
+                    <StudentPhoto
+                        studentId={data.studentId || data.id}
+                        fallback={data.photo || "/default-user.png"}
                         alt="student"
                         loading="eager"
                         decoding="sync"
@@ -54,7 +57,11 @@ const Certificate = ({ data, school }) => {
                 <div className="footer">
                     <div>
                         {school?.sign && (
-                            <img src={school.sign} style={{ height: 40 }} />
+                            <SchoolSignature
+                                schoolId="default"
+                                fallback={school.sign}
+                                style={{ height: 40 }}
+                            />
                         )}
                         <div>Principal</div>
                     </div>

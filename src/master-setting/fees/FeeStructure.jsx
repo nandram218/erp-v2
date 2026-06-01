@@ -53,10 +53,12 @@ export default function FeeStructure() {
 
         } catch (err) {
 
-            console.error(
-                "FeeStructure load error",
-                err
-            );
+            if (process.env.NODE_ENV === "development") {
+                console.error(
+                    "FeeStructure load error",
+                    err
+                );
+            }
         }
 
     }, []);

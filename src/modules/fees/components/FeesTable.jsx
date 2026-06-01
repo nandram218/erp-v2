@@ -95,14 +95,14 @@ const FeesTable = ({
                     </thead>
 
                     <tbody>
-                        {data.map((student) => {
+                        {data.map((student, index) => {
 
                             const checked = isSelected(student.studentId);
                             const status = getStatus(student);
 
                             return (
                                 <tr
-                                    key={student.studentId}
+                                    key={student.studentId || index}
                                     style={{
                                         background: checked ? "#eff6ff" : "#fff",
                                     }}

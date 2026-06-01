@@ -1,5 +1,6 @@
 import React from "react";
 import { useSchoolStore } from "../store/schoolStore";
+import { SchoolLogo } from "../media/MediaRenderer";
 
 const SchoolHeader = () => {
 
@@ -36,8 +37,9 @@ const SchoolHeader = () => {
                 gap: "10px",
                 minWidth: "220px"
             }}>
-                <img
-                    src={school?.logo || "https://via.placeholder.com/80"}
+                <SchoolLogo
+                    schoolId="default"
+                    fallback={school?.logo || "https://via.placeholder.com/80"}
                     alt="logo"
                     style={{
                         width: "55px",

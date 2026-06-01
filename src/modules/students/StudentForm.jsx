@@ -18,6 +18,7 @@ import {
     HOSTEL_FEE_CONST,
     TRANSPORT_ROUTES
 } from "../../core/constants/feeConstants";
+import { uploadMedia, EntityType, MediaType } from "../../media";
 import { getFeeSettings } from "../../services/feeSettingsService";
 
 const StudentForm = () => {
@@ -113,9 +114,7 @@ const classes =
         tcNo: "",
         lastClass: "",
 
-        photo: null,
-        photoPreview: "",
-        documents: [],
+    
 
         transport: false,
         route: "",
@@ -339,13 +338,30 @@ const classes =
         });
     };
 
-    const handlePhoto = (e) => {
+    const handlePhoto = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        
+        // Create preview URL for immediate display
+        const previewUrl = URL.createObjectURL(file);
+        
+        // Upload to media service if studentId exists
+        const studentId = form.studentId || form.id || id;
+        if (studentId) {
+            try {
+                await uploadMedia(EntityType.STUDENT, studentId, MediaType.PHOTO, file);
+            } catch (error) {
+                if (process.env.NODE_ENV === "development") {
+                    console.error("[StudentForm] Media upload error:", error);
+                }
+                // Continue with local preview even if upload fails
+            }
+        }
+        
         setForm({
             ...form,
             photo: file,
-            photoPreview: URL.createObjectURL(file)
+            photoPreview: previewUrl
         });
     };
 
@@ -725,7 +741,7 @@ const classes =
                     <h3>Photo</h3>
                     <input type="file" onChange={handlePhoto} />
                     {form.photoPreview && (
-                        <img src={form.photoPreview} alt="" style={{ width: 100, marginTop: 10 }} />
+                        <img src={form.photoPreview} alt="" style={{ width: 100, marginTop: 10 }} onError={(e) => { e.target.src = "/default-avatar.png"; }} />
                     )}
                 </div>
 

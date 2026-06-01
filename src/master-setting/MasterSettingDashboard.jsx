@@ -16,12 +16,18 @@ const MasterSettingDashboard = () => {
                 const res = await academicService.getSettings();
                 if (res?.success && res.data) {
                     setSettings(res.data);
-                    console.log("✅ Academic Settings Loaded:", res.data);
+                    if (process.env.NODE_ENV === "development") {
+                        console.log("✅ Academic Settings Loaded:", res.data);
+                    }
                 } else {
-                    console.warn("⚠ No Academic Settings found");
+                    if (process.env.NODE_ENV === "development") {
+                        console.warn("⚠ No Academic Settings found");
+                    }
                 }
             } catch (err) {
-                console.error("❌ Error loading settings:", err);
+                if (process.env.NODE_ENV === "development") {
+                    console.error("❌ Error loading settings:", err);
+                }
             }
         };
 
@@ -38,6 +44,17 @@ const MasterSettingDashboard = () => {
         { name: "Hostel", path: "hostel", color: "#795548" },
         { name: "Role & Access", path: "security", color: "#E91E63" }
     ];
+
+    if (!cards || cards.length === 0) {
+        return (
+            <div style={styles.page}>
+                <div style={{ padding: 40, textAlign: "center" }}>
+                    <h2>⚠️ No Settings Available</h2>
+                    <p>Master settings configuration is currently unavailable.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={styles.page}>

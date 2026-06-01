@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { getStudents } from "../../../services/studentService";
 import { deleteStudent } from "../../../services/studentService";
+import { StudentPhoto } from "../../../media/MediaRenderer";
 const StudentTable = ({
     students = [],
     selectedIds = [],
@@ -180,8 +181,9 @@ const StudentTable = ({
                                     <div style={cell}>{i + 1}</div>
 
                                     <div style={cell}>
-                                        <img
-                                            src={s.photoPreview || "https://via.placeholder.com/40"}
+                                        <StudentPhoto
+                                            studentId={s.studentId || s.id}
+                                            fallback={s.photoPreview || "https://via.placeholder.com/40"}
                                             alt=""
                                             style={{
                                                 width: 36,

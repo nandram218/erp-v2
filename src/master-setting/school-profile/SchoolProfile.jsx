@@ -6,6 +6,7 @@ import {
     saveSchoolProfile,
 } from "../../services/schoolProfileService";
 import { appStyles as styles } from "../../styles/appStyles";
+import { uploadMedia, EntityType, MediaType } from "../../media";
 const SchoolProfile = () => {
     const { setSchoolData } = useSchoolStore();
     const navigate = useNavigate();
@@ -73,11 +74,25 @@ const SchoolProfile = () => {
         }));
     };
 
-    const handleImage = (type, field, file) => {
+    const handleImage = async (type, field, file) => {
         if (!file) return;
+        
+        // Read file for local preview
         const reader = new FileReader();
-        reader.onload = () => {
+        reader.onload = async () => {
+            // Update local state for preview
             handleChange(type, field, reader.result);
+            
+            // Upload to media service
+            try {
+                const mediaType = field === "logo" ? MediaType.LOGO : MediaType.SIGNATURE;
+                await uploadMedia(EntityType.SCHOOL, "default", mediaType, file);
+            } catch (error) {
+                if (process.env.NODE_ENV === "development") {
+                    console.error("[SchoolProfile] Media upload error:", error);
+                }
+                // Continue with local preview even if upload fails
+            }
         };
         reader.readAsDataURL(file);
     };
@@ -146,7 +161,7 @@ const SchoolProfile = () => {
                         <label>Signature</label>
                         <input disabled={!editMode} type="file"
                             onChange={(e) => handleImage(type, "sign", e.target.files[0])} />
-                        {data.sign && <img src={data.sign} alt="" style={styles.preview} />}
+                        {data.sign && <img src={data.sign} alt="" style={styles.preview} onError={(e) => { e.target.src = "/default-avatar.png"; }} />}
                     </div>
                 </div>
 

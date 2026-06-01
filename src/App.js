@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
 import { useSchoolStore } from "./store/schoolStore";
 
@@ -7,14 +8,16 @@ export default function App() {
     const hydrated = useSchoolStore((state) => state.hydrated);
 
     useEffect(() => {
-        if (!hydrated) {
-            loadAll();
-        }
+        if (!hydrated) loadAll();
     }, [loadAll, hydrated]);
 
-    return !hydrated ? (
-        <div style={{ padding: 20 }}>Loading ERP...</div>
-    ) : (
-        <AppRoutes />
+    if (!hydrated) {
+        return <div style={{ padding: 20 }}>Loading ERP...</div>;
+    }
+
+    return (
+        <BrowserRouter>
+            <AppRoutes />
+        </BrowserRouter>
     );
 }
