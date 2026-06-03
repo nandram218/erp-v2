@@ -3,19 +3,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Certificate from "./Certificate";
 import { generateCertificate } from "./certificateService";
 import { downloadPDF } from "./certificatePdfService";
+import { getStorageCompat } from "../../../../services/storageService";
+import { STORAGE_KEYS } from "../../../../core/constants/storageKeys";
 
 const CertificatePreview = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
     const printRef = useRef();
 
-    // ✅ SAFE DB LOAD
-    let db = {};
-    try {
-        db = JSON.parse(localStorage.getItem("ERP_DB")) || {};
-    } catch {
-        db = {};
-    }
+    // ✅ SAFE DB LOAD - using storageService abstraction
+    const db = getStorageCompat(STORAGE_KEYS.ERP_DB, {});
 
     const schoolData = db.school || {};
 

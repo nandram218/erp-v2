@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTemplates } from "./certificateTemplates";
 import "./CertificateSelector.css";
+import { getStorageCompat } from "../../../../services/storageService";
+import { STORAGE_KEYS } from "../../../../core/constants/storageKeys";
 
 const CertificateSelector = () => {
     const [students, setStudents] = useState([]);
@@ -12,9 +14,9 @@ const CertificateSelector = () => {
 
     const navigate = useNavigate();
 
-    // ✅ FIXED: ERP_DB SAFE LOAD
+    // ✅ FIXED: ERP_DB SAFE LOAD - using storageService abstraction
     useEffect(() => {
-        const db = JSON.parse(localStorage.getItem("ERP_DB") || "{}");
+        const db = getStorageCompat(STORAGE_KEYS.ERP_DB, {});
         setStudents(db.students || []);
     }, []);
 

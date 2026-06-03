@@ -29,12 +29,6 @@ export const STORAGE_KEYS = Object.freeze({
     /** Receipt counter — modules/fees/feesService */
     ERP_RECEIPT_COUNTER: "ERP_RECEIPT_COUNTER",
 
-    /**
-     * Alternate receipt key in feesConstants.js (not yet unified).
-     * Keep until fees module migration dedupes keys.
-     */
-    ERP_FEES_RECEIPT_COUNTER: "ERP_FEES_RECEIPT_COUNTER",
-
     /** School profile (dual medium) — SchoolProfile */
     SCHOOL_PROFILE: "schoolProfile",
 

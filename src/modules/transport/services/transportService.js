@@ -3,6 +3,7 @@ import {
     setStorageCompat,
     STORAGE_KEYS,
 } from "../../../services/storageService";
+import { getSchoolId, getBranchId, getSessionId } from "../../../services/tenantContextService";
 
 const DB_KEY = STORAGE_KEYS.ERP_DB;
 
@@ -30,6 +31,11 @@ const getTransportDB = () => {
     const db = getDB();
 
     if (!db.transport) {
+        // Get tenant context for isolation
+        const schoolId = getSchoolId() || "";
+        const branchId = getBranchId() || "";
+        const sessionId = getSessionId() || "";
+
         db.transport = {
             routes: [],
             vehicles: [],
@@ -41,6 +47,10 @@ const getTransportDB = () => {
                 gpsTracking: false,
                 smsAlerts: false,
             },
+            // Tenant isolation fields
+            schoolId,
+            branchId,
+            sessionId,
         };
 
         saveDB(db);
@@ -91,6 +101,11 @@ export const createTransportRoute = (
                 String(payload.id)
         );
 
+    // Get tenant context for isolation
+    const schoolId = getSchoolId() || payload.schoolId || "";
+    const branchId = getBranchId() || payload.branchId || "";
+    const sessionId = getSessionId() || payload.sessionId || "";
+
     const route = {
         id:
             payload.id || uid(),
@@ -135,6 +150,11 @@ export const createTransportRoute = (
 
         updatedAt:
             new Date().toISOString(),
+
+        // Tenant isolation fields
+        schoolId,
+        branchId,
+        sessionId,
     };
 
     if (existing) {
@@ -233,6 +253,11 @@ export const assignStudentTransport = (
         return null;
     }
 
+    // Get tenant context for isolation
+    const schoolId = getSchoolId() || student.schoolId || "";
+    const branchId = getBranchId() || student.branchId || "";
+    const sessionId = getSessionId() || student.sessionId || "";
+
     return {
         routeId: route.id,
 
@@ -250,6 +275,11 @@ export const assignStudentTransport = (
 
         assignedAt:
             new Date().toISOString(),
+
+        // Tenant isolation fields
+        schoolId,
+        branchId,
+        sessionId,
     };
 };
 
@@ -258,6 +288,11 @@ export const saveStudentTransport = (
     transportData
 ) => {
     const db = getDB();
+
+    // Get tenant context for isolation
+    const schoolId = getSchoolId() || "";
+    const branchId = getBranchId() || "";
+    const sessionId = getSessionId() || "";
 
     db.students =
         (db.students || []).map(
@@ -268,8 +303,13 @@ export const saveStudentTransport = (
                 ) {
                     return {
                         ...student,
-                        transport:
-                            transportData,
+                        transport: {
+                            ...transportData,
+                            // Ensure tenant context in transport data
+                            schoolId: transportData.schoolId || schoolId,
+                            branchId: transportData.branchId || branchId,
+                            sessionId: transportData.sessionId || sessionId,
+                        },
                     };
                 }
 
@@ -347,6 +387,11 @@ export const getTransportDashboard =
 
 export const generateTransportSnapshot =
     (data) => {
+        // Get tenant context for isolation
+        const schoolId = getSchoolId() || data.schoolId || "";
+        const branchId = getBranchId() || data.branchId || "";
+        const sessionId = getSessionId() || data.sessionId || "";
+
         return {
             snapshotId: `TS-${Date.now()}`,
 
@@ -372,5 +417,10 @@ export const generateTransportSnapshot =
 
             generatedAt:
                 new Date().toISOString(),
+
+            // Tenant isolation fields
+            schoolId,
+            branchId,
+            sessionId,
         };
     };

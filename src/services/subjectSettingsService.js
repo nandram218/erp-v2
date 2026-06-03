@@ -5,11 +5,23 @@ import {
 } from "./storageService";
 
 import { STORAGE_KEYS } from "../core/constants/storageKeys";
+import { getSchoolId } from "./tenantContextService";
 
 // =============================
-// KEY GENERATOR (MULTI-CLASS SAFE)
+// KEY GENERATOR (TENANT-AWARE + LEGACY FALLBACK)
 // =============================
 const getKey = (classId) => {
+    const schoolId = getSchoolId();
+    if (schoolId) {
+        // New tenant-aware key
+        return `${STORAGE_KEYS.ERP_SUBJECTS}_${schoolId}_${classId}`;
+    }
+    // Legacy fallback for backward compatibility
+    return `${STORAGE_KEYS.ERP_SUBJECTS}_${classId}`;
+};
+
+// Legacy key for migration support
+const getLegacyKey = (classId) => {
     return `${STORAGE_KEYS.ERP_SUBJECTS}_${classId}`;
 };
 
@@ -19,7 +31,26 @@ const getKey = (classId) => {
 export const getSubjectSettings = (classId) => {
     if (!classId) return {};
 
-    return getStorageCompat(getKey(classId), {});
+    // Try tenant-aware key first
+    const tenantKey = getKey(classId);
+    const tenantData = getStorageCompat(tenantKey, {});
+    
+    // If tenant data exists, return it
+    if (Object.keys(tenantData).length > 0) {
+        return tenantData;
+    }
+
+    // Legacy fallback: try old key format for backward compatibility
+    const legacyKey = getLegacyKey(classId);
+    const legacyData = getStorageCompat(legacyKey, {});
+    
+    // If legacy data exists, migrate it to tenant-aware key
+    if (Object.keys(legacyData).length > 0) {
+        setStorageCompat(tenantKey, legacyData);
+        return legacyData;
+    }
+
+    return {};
 };
 
 // =============================
@@ -41,14 +72,26 @@ export const clearSubjectSettings = (classId) => {
 };
 
 // =============================
-// RESET ALL SUBJECT SETTINGS (ERP WIDE)
+// RESET ALL SUBJECT SETTINGS (TENANT-AWARE)
 // =============================
 export const clearAllSubjectSettings = () => {
-    Object.keys(localStorage).forEach((key) => {
-        if (key.includes(STORAGE_KEYS.ERP_SUBJECTS)) {
-            localStorage.removeItem(key);
-        }
-    });
+    const schoolId = getSchoolId();
+    
+    if (schoolId) {
+        // Clear only tenant-specific keys
+        Object.keys(localStorage).forEach((key) => {
+            if (key.includes(`${STORAGE_KEYS.ERP_SUBJECTS}_${schoolId}`)) {
+                localStorage.removeItem(key);
+            }
+        });
+    } else {
+        // Legacy fallback: clear all subject keys
+        Object.keys(localStorage).forEach((key) => {
+            if (key.includes(STORAGE_KEYS.ERP_SUBJECTS)) {
+                localStorage.removeItem(key);
+            }
+        });
+    }
 
     return true;
 };

@@ -8,10 +8,11 @@ import {
     removeStorageCompat,
     STORAGE_KEYS,
 } from "../../services/storageService";
+import { getSchoolId, getBranchId, getSessionId } from "../../services/tenantContextService";
 
 /* =========================
    STORAGE KEYS
-   (operational: ERP_RECEIPT_COUNTER — not feesConstants ERP_FEES_RECEIPT_COUNTER)
+   (operational: ERP_RECEIPT_COUNTER — consolidated from feesConstants)
 ========================= */
 
 const FEES_DB_KEY = STORAGE_KEYS.ERP_FEES_DB;
@@ -96,6 +97,11 @@ export const createStudentFeesRecord = ({ student = {} }) => {
     const totalFee =
         Number(student.totalFee || 0);
 
+    // Get tenant context for isolation
+    const schoolId = getSchoolId() || student.schoolId || "";
+    const branchId = getBranchId() || student.branchId || "";
+    const sessionId = getSessionId() || student.sessionId || "";
+
     const newRecord = {
         studentId: student.studentId,
 
@@ -126,6 +132,11 @@ export const createStudentFeesRecord = ({ student = {} }) => {
 
         payments: [],
 
+        // Tenant isolation fields
+        schoolId,
+        branchId,
+        sessionId,
+
         createdAt:
             new Date().toISOString(),
     };
@@ -146,6 +157,11 @@ export const syncStudentsToFeesDB = ({
     const db = getFeesDB();
 
     const updated = [...db];
+
+    // Get tenant context for isolation
+    const schoolId = getSchoolId() || "";
+    const branchId = getBranchId() || "";
+    const sessionId = getSessionId() || "";
 
     students.forEach((student) => {
 
@@ -189,6 +205,11 @@ export const syncStudentsToFeesDB = ({
                 student.mobile || "",
 
             totalFee,
+
+            // Tenant isolation fields
+            schoolId: schoolId || student.schoolId || "",
+            branchId: branchId || student.branchId || "",
+            sessionId: sessionId || student.sessionId || "",
         };
 
         /* =========================
@@ -316,6 +337,11 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
 
     const newPaid = (student.paidAmount || 0) + amount;
 
+    // Get tenant context for isolation
+    const schoolId = getSchoolId() || student.schoolId || "";
+    const branchId = getBranchId() || student.branchId || "";
+    const sessionId = getSessionId() || student.sessionId || "";
+
     const updatedStudent = {
         ...student,
         paidAmount: newPaid,
@@ -344,6 +370,10 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
         paymentMode: paymentData.paymentMode || "Cash",
         remarks: paymentData.remarks || "",
         paymentDate: new Date().toISOString(),
+        // Tenant isolation fields
+        schoolId,
+        branchId,
+        sessionId,
     };
 
     updatedStudent.payments = [
@@ -361,6 +391,10 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
         studentName: student.studentName,
         className: student.className,
         fatherName: student.fatherName,
+        // Tenant isolation fields
+        schoolId,
+        branchId,
+        sessionId,
     });
     saveLedger(ledger);
 

@@ -4,8 +4,9 @@
    CENTRAL STORAGE KEYS
 ========================= */
 
-export const FEES_DB_KEY = "ERP_FEES_DB";
-export const FEES_RECEIPT_KEY = "ERP_FEES_RECEIPT_COUNTER";
+// NOTE: Storage keys now centralized in core/constants/storageKeys.js
+// Use STORAGE_KEYS.ERP_FEES_DB, STORAGE_KEYS.ERP_RECEIPT_COUNTER, etc.
+// This file now contains only constants for UI/validation, not storage keys
 
 /* =========================
    PAYMENT STATUS
