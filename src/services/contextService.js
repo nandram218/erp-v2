@@ -1,36 +1,9 @@
-import { useSchoolStore } from "../store/schoolStore";
+import { getTenantContext, withTenantContext } from "./tenantContextService";
 
-// ================= GLOBAL CONTEXT =================
+// ================= GLOBAL CONTEXT (LEGACY WRAPPER) =================
+// This file now wraps the new tenantContextService for backward compatibility
+// New code should use tenantContextService directly
 
-export const getGlobalContext = () => {
+export const getGlobalContext = getTenantContext;
 
-    const state =
-        useSchoolStore.getState();
-
-    const school =
-        state.schoolData || {};
-
-    return {
-
-        schoolId:
-            school.schoolId || "",
-
-        branchId:
-            school.branchId || "",
-
-        sessionId:
-            school.sessionId || "",
-    };
-};
-
-// ================= AUTO ATTACH =================
-
-export const withGlobalContext = (
-    data = {}
-) => {
-
-    return {
-        ...data,
-        ...getGlobalContext(),
-    };
-};
+export const withGlobalContext = withTenantContext;

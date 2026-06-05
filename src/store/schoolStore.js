@@ -6,14 +6,7 @@ import {
     removeStorageCompat,
     migrateLegacyStorage,
 } from "../services/storageService";
-
-// ================= GLOBAL CONTEXT =================
-
-const GLOBAL_CONTEXT = {
-    schoolId: "SCH-IND-0001",
-    branchId: "MAIN",
-    sessionId: "2025-26",
-};
+import { getTenantContext } from "../services/tenantContextService";
 
 export const useSchoolStore = create((set, get) => ({
 
@@ -22,7 +15,10 @@ export const useSchoolStore = create((set, get) => ({
     hydrated: false,
 
     schoolData: {
-        ...GLOBAL_CONTEXT,
+        // Tenant context will be loaded from storage or auth
+        schoolId: "",
+        branchId: "",
+        sessionId: "",
     },
 
     students: [],
@@ -39,9 +35,13 @@ export const useSchoolStore = create((set, get) => ({
 
         const db = getStorageCompat(ERP_DB_KEY, null);
 
+        // Get tenant context from auth or storage fallback
+        const tenantContext = getTenantContext();
+
         if (!db) {
 
             set({
+                schoolData: tenantContext,
                 hydrated: true
             });
 
@@ -53,7 +53,8 @@ export const useSchoolStore = create((set, get) => ({
             set({
 
                 schoolData: {
-                    ...GLOBAL_CONTEXT,
+                    // Use tenant context as base, merge with stored school data
+                    ...tenantContext,
                     ...(db.school ?? {})
                 },
 
@@ -83,6 +84,7 @@ export const useSchoolStore = create((set, get) => ({
             removeStorageCompat(ERP_DB_KEY);
 
             set({
+                schoolData: tenantContext,
                 hydrated: true
             });
         }

@@ -2,6 +2,7 @@
 // Student business logic — persistence via schoolStore → storageService (ERP_DB)
 
 import { useSchoolStore } from "../store/schoolStore";
+import { getTenantContext } from "./tenantContextService";
 
 /** Match by studentId (canonical) or legacy numeric id */
 const matchesStudent = (student, identifier) => {
@@ -43,15 +44,15 @@ export const generateStudentId = () => {
     const state =
         useSchoolStore.getState();
 
-    const schoolData =
-        state.schoolData || {};
+    // Use tenant context service for consistent tenant context
+    const tenantContext = getTenantContext();
 
     const schoolId =
-        schoolData.schoolId ||
+        tenantContext.schoolId ||
         "SCH-DEMO";
 
     const sessionId =
-        schoolData.sessionId ||
+        tenantContext.sessionId ||
         "2025-26";
 
     const students =
@@ -74,12 +75,14 @@ export const addStudent = (
 
     const {
         students,
-        setStudents,
-        schoolData
+        setStudents
     } = useSchoolStore.getState();
 
     const studentId =
         generateStudentId();
+
+    // Use tenant context service for consistent tenant context
+    const tenantContext = getTenantContext();
 
     const finalStudent = {
 
@@ -92,17 +95,17 @@ export const addStudent = (
         studentId,
 
         /* =================
-           GLOBAL CONTEXT
+           TENANT CONTEXT
         ================= */
 
         schoolId:
-            schoolData.schoolId || "",
+            tenantContext.schoolId || "",
 
         branchId:
-            schoolData.branchId || "",
+            tenantContext.branchId || "",
 
         sessionId:
-            schoolData.sessionId || "",
+            tenantContext.sessionId || "",
 
         /* =================
            TIMESTAMPS
