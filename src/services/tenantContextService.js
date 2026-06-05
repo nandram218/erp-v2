@@ -9,6 +9,9 @@ import { getStorageCompat, STORAGE_KEYS } from "./storageService";
 // ================= AUTH CONTEXT STORAGE KEY =================
 const AUTH_CONTEXT_KEY = "ERP_AUTH_CONTEXT";
 
+// ================= SAFETY MODE CONFIGURATION (Phase 3.1 C) =================
+const SAFETY_MODE = true;
+
 // ================= DEFAULT FALLBACK CONTEXT =================
 // Used only when no other source is available (development mode)
 const DEFAULT_CONTEXT = {
@@ -91,6 +94,9 @@ export const clearAuthContext = () => {
  * 3. Storage fallback (if available)
  * 4. Default context (development mode only)
  * 
+ * Phase 3.1 C - Safety Mode: Prevents execution if tenant context is invalid
+ * Fallback allowed only in development mode
+ * 
  * @returns {Object} Tenant context with schoolId, branchId, sessionId
  */
 export const getTenantContext = () => {
@@ -119,6 +125,15 @@ export const getTenantContext = () => {
     }
 
     // Priority 3: Default context (development mode only)
+    // Phase 3.1 C - Safety Mode: Allow default fallback only in development
+    const isDevelopment = process.env.NODE_ENV === "development";
+
+    if (SAFETY_MODE && !isDevelopment) {
+        console.error("[TenantContextService] Safety mode blocked default fallback (production mode)");
+        console.error("[TenantContextService] Tenant context is invalid - service execution prevented");
+        return { schoolId: "", branchId: "", sessionId: "" };
+    }
+
     console.warn("[TenantContextService] Using default fallback context (development mode)");
     return { ...DEFAULT_CONTEXT };
 };
@@ -201,6 +216,8 @@ export const withTenantContext = (data = {}) => {
 };
 
 // ================= EXPORTS =================
+export { SAFETY_MODE };
+
 export default {
     setAuthContext,
     getAuthContext,
