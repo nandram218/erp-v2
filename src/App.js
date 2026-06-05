@@ -2,12 +2,16 @@ import React, { useEffect } from "react";
 import AppRoutes from "./routes/AppRoutes";
 import { useSchoolStore } from "./store/schoolStore";
 import { validateAppReadiness, getValidationSummary } from "./services/runtimeValidationService";
+import { registerDefaultServices } from "./core/serviceRegistry";
 
 export default function App() {
     const loadAll = useSchoolStore((state) => state.loadAll);
     const hydrated = useSchoolStore((state) => state.hydrated);
 
     useEffect(() => {
+        // Phase 3.1 D Safe Mode: Register default services on app initialization
+        registerDefaultServices();
+
         if (!hydrated) {
             loadAll();
         }

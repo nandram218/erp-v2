@@ -42,11 +42,15 @@ export const clearSubjectSettings = (classId) => {
 
 // =============================
 // RESET ALL SUBJECT SETTINGS (ERP WIDE)
+// Phase 3.1 D - Storage Consistency Fix
 // =============================
 export const clearAllSubjectSettings = () => {
-    Object.keys(localStorage).forEach((key) => {
+    // Phase 3.1 D: Use storageService instead of direct localStorage access
+    // This ensures tenant context integration and consistency
+    const allKeys = Object.keys(localStorage);
+    allKeys.forEach((key) => {
         if (key.includes(STORAGE_KEYS.ERP_SUBJECTS)) {
-            localStorage.removeItem(key);
+            removeStorageCompat(key);
         }
     });
 

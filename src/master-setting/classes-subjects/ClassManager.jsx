@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { classSubjectService } from "./classSubjectService";
 import { useNavigate } from "react-router-dom";
+import { getService } from "../../core/serviceRegistry";
+
+const classSubjectService = getService("classSubject");
+
 export default function ClassManager() {
     const navigate = useNavigate();
     const [config, setConfig] = useState({

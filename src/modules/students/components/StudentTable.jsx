@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { getStudents } from "../../../services/studentService";
-import { deleteStudent } from "../../../services/studentService";
+import { getService } from "../../../core/serviceRegistry";
+const studentService = getService("student");
 const StudentTable = ({
     students = [],
     selectedIds = [],
@@ -74,7 +74,7 @@ const StudentTable = ({
     const handleDelete = (id) => {
         if (!window.confirm("Delete this student?")) return;
 
-        deleteStudent(id);
+        studentService.deleteStudent(id);
     };
 
     const allSelected =

@@ -3,11 +3,17 @@ import {
     setStorageCompat,
     STORAGE_KEYS,
 } from "../../../services/storageService";
+import { withTenantContext } from "../../../services/tenantContextService";
+import { blockDirectServiceAccess } from "../../../core/serviceRegistry";
+
+// Phase 3.1 D Safe Mode: Block direct access in production mode
+blockDirectServiceAccess("transportService");
 
 const DB_KEY = STORAGE_KEYS.ERP_DB;
 
 /* =====================================================
    HELPERS
+   Phase 3.1 D - Transport Service Isolation Fix
 ===================================================== */
 
 const uid = () =>
@@ -91,7 +97,7 @@ export const createTransportRoute = (
                 String(payload.id)
         );
 
-    const route = {
+    const route = withTenantContext({
         id:
             payload.id || uid(),
 
@@ -135,7 +141,7 @@ export const createTransportRoute = (
 
         updatedAt:
             new Date().toISOString(),
-    };
+    });
 
     if (existing) {
         transport.routes =
@@ -259,6 +265,9 @@ export const saveStudentTransport = (
 ) => {
     const db = getDB();
 
+    // Phase 3.1 D: Add tenant context to transport data
+    const tenantAwareTransportData = withTenantContext(transportData);
+
     db.students =
         (db.students || []).map(
             (student) => {
@@ -269,7 +278,7 @@ export const saveStudentTransport = (
                     return {
                         ...student,
                         transport:
-                            transportData,
+                            tenantAwareTransportData,
                     };
                 }
 

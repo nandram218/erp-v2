@@ -3,9 +3,11 @@ import Barcode from "react-barcode";
 import QRCode from "react-qr-code";
 import { useNavigate } from "react-router-dom";
 import { useSchoolStore } from "../../../store/schoolStore";
-import { getStudents } from "../../../services/studentService";
+import { getService } from "../../../core/serviceRegistry";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+
+const studentService = getService("student");
 
 /* ===== TEMPLATES ===== */
 const templates = [
@@ -39,7 +41,7 @@ const StudentIDCards = () => {
         loadAll();
 
         try {
-            const data = getStudents();
+            const data = studentService.getStudents();
 
             console.log("ID CARD STUDENTS:", data); // 🔥 DEBUG
 

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-import { classSubjectService } from "./classSubjectService";
+import { getService } from "../../core/serviceRegistry";
 import { SUBJECT_POOL } from "./subjectPool";
 import { normalizeClassKey } from "./utils/classKeyNormalizer";
 import {
@@ -11,7 +10,7 @@ import {
     clearAllSubjectSettings,
 } from "../../services/subjectSettingsService";
 
-// 
+const classSubjectService = getService("classSubject");
 
 export default function SubjectManager() {
 

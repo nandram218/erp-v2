@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import {
-    addStudent,
-    updateStudent,
-    generateStudentId
-} from "../../services/studentService";
-
+import { getService } from "../../core/serviceRegistry";
 import { useSchoolStore } from "../../store/schoolStore";
 import { 
     getStorageCompat, 
@@ -18,7 +13,10 @@ import {
     HOSTEL_FEE_CONST,
     TRANSPORT_ROUTES
 } from "../../core/constants/feeConstants";
-import { getFeeSettings } from "../../services/feeSettingsService";
+
+const studentService = getService("student");
+// Note: feeSettingsService is deprecated - using unified fees service instead
+const feesService = getService("fees");
 
 const StudentForm = () => {
     const navigate = useNavigate();
@@ -27,7 +25,7 @@ const StudentForm = () => {
         useSchoolStore();
 
     const previewStudentId =
-        generateStudentId();
+        studentService.generateStudentId();
     const wrapper = {
         display: "flex",
         gap: "10px",
@@ -53,7 +51,7 @@ const StudentForm = () => {
     /* ================= DATA ================= */
 const classes =
                         getStorageCompat(STORAGE_KEYS.ERP_CLASSES, []);
-    const feeSettings = getFeeSettings();
+    const feeSettings = feesService.getFeeSettings ? feesService.getFeeSettings() : null;
     const effectiveClassFees = feeSettings?.classFees ? feeSettings.classFees : CLASS_FEES;
     const effectiveTransportRoutes = feeSettings?.routes ? feeSettings.routes : TRANSPORT_ROUTES;
     const effectiveHostelFee = feeSettings?.hostelFee ? feeSettings.hostelFee : HOSTEL_FEE_CONST;
@@ -364,12 +362,12 @@ const classes =
         };
 
         if (id || form.id) {
-            updateStudent(
+            studentService.updateStudent(
                 form.studentId || form.id || id,
                 finalData
             );
         } else {
-            addStudent({
+            studentService.addStudent({
                 ...finalData,
                 id: Date.now()
             });

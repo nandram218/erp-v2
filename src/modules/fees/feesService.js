@@ -1,5 +1,9 @@
 /* =========================================================
    ERP FEES SERVICE - CLEAN PRODUCTION VERSION
+   Phase 3.1 D - Service Unification Layer (Tenant Context Integration)
+   Phase 3.1 D Safe Mode - STRICT SaaS Enforcement
+   ⚠️ PRODUCTION MODE: Direct access to this service is BLOCKED
+   Use ServiceRegistry.getService("fees") instead
 ========================================================= */
 
 import {
@@ -8,6 +12,11 @@ import {
     removeStorageCompat,
     STORAGE_KEYS,
 } from "../../services/storageService";
+import { withTenantContext } from "../../services/tenantContextService";
+import { blockDirectServiceAccess } from "../../core/serviceRegistry";
+
+// Phase 3.1 D Safe Mode: Block direct access in production mode
+blockDirectServiceAccess("feesService");
 
 /* =========================
    STORAGE KEYS
@@ -96,7 +105,7 @@ export const createStudentFeesRecord = ({ student = {} }) => {
     const totalFee =
         Number(student.totalFee || 0);
 
-    const newRecord = {
+    const newRecord = withTenantContext({
         studentId: student.studentId,
 
         studentName:
@@ -128,7 +137,7 @@ export const createStudentFeesRecord = ({ student = {} }) => {
 
         createdAt:
             new Date().toISOString(),
-    };
+    });
 
     db.push(newRecord);
     saveFeesDB(db);
@@ -319,7 +328,7 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
     const updatedStudent = {
         ...student,
         paidAmount: newPaid,
-    
+
         dueAmount: Math.max(
             (student.totalFee || 0) - newPaid,
             0
@@ -333,7 +342,7 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
                 : "unpaid";
     const receiptNumber = createReceiptNumber();
 
-    const paymentEntry = {
+    const paymentEntry = withTenantContext({
         id: Date.now(),
         receiptNumber,
         studentId,
@@ -344,7 +353,7 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
         paymentMode: paymentData.paymentMode || "Cash",
         remarks: paymentData.remarks || "",
         paymentDate: new Date().toISOString(),
-    };
+    });
 
     updatedStudent.payments = [
         ...(student.payments || []),

@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSchoolStore } from "../../../store/schoolStore";
-import * as feesService from "../feesService";
-
+import { getService } from "../../../core/serviceRegistry";
 import FeesTable from "../components/FeesTable";
 import FeesCollectModal from "../components/FeesCollectModal";
 import ReceiptModal from "../components/ReceiptModal";
+
+const feesService = getService("fees");
 
 const FeesPage = () => {
 

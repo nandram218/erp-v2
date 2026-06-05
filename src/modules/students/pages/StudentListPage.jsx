@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import StudentTable from "../components/StudentTable";
 import { useSchoolStore } from "../../../store/schoolStore";
 
-import { getStudents } from "../../../services/studentService";
+import { getService } from "../../../core/serviceRegistry";
+const studentService = getService("student");
 const searchBox3D = {
     width: "240px",
     padding: "10px 12px",

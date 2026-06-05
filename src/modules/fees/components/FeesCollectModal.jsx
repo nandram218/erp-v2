@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from "react";
-import * as feesService from "../feesService";
+import { getService } from "../../../core/serviceRegistry";
+
+const feesService = getService("fees");
 
 const FeesCollectModal = ({ student, onClose, onSuccess }) => {
 

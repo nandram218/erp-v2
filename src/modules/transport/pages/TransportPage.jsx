@@ -8,13 +8,8 @@ import "../styles/transport.css";
 
 import TransportForm from "./TransportForm";
 
-import {
-    createTransportRoute,
-    getTransportDashboard,
-    getTransportRoutes,
-    removeTransportRoute,
-    toggleRouteStatus,
-} from "../services/transportService";
+import { getService } from "../../../core/serviceRegistry";
+const transportService = getService("transport");
 
 const TransportPage = () => {
     const [routes, setRoutes] = useState([]);
@@ -29,9 +24,9 @@ const TransportPage = () => {
     const [search, setSearch] = useState("");
 
     const loadData = () => {
-        setRoutes(getTransportRoutes());
+        setRoutes(transportService.getTransportRoutes());
 
-        setDashboard(getTransportDashboard());
+        setDashboard(transportService.getTransportDashboard());
     };
 
     useEffect(() => {
@@ -50,7 +45,7 @@ const TransportPage = () => {
     }, [routes, search]);
 
     const handleSave = (payload) => {
-        createTransportRoute(payload);
+        transportService.createTransportRoute(payload);
 
         loadData();
 
@@ -73,13 +68,13 @@ const TransportPage = () => {
 
         if (!confirmDelete) return;
 
-        removeTransportRoute(id);
+        transportService.removeTransportRoute(id);
 
         loadData();
     };
 
     const handleStatusToggle = (id) => {
-        toggleRouteStatus(id);
+        transportService.toggleRouteStatus(id);
 
         loadData();
     };

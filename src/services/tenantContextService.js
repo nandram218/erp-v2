@@ -12,6 +12,9 @@ const AUTH_CONTEXT_KEY = "ERP_AUTH_CONTEXT";
 // ================= SAFETY MODE CONFIGURATION (Phase 3.1 C) =================
 const SAFETY_MODE = true;
 
+// ================= STRICT MODE CONFIGURATION (Phase 3.1 D Hardening) =================
+const STRICT_MODE = true;
+
 // ================= DEFAULT FALLBACK CONTEXT =================
 // Used only when no other source is available (development mode)
 const DEFAULT_CONTEXT = {
@@ -204,14 +207,39 @@ export const getTenantKeySuffix = () => {
 // ================= AUTO ATTACH =================
 /**
  * Auto-attach tenant context to data object
+ * Phase 3.1 D Enforcement - Tenant Safety Upgrade
+ * Phase 3.1 D Hardening - STRICT SaaS Enforcement
  * 
  * @param {Object} data - Data object to enhance
  * @returns {Object} Data object with tenant context attached
+ * @throws {Error} If tenant context is invalid in production mode (STRICT_MODE)
  */
 export const withTenantContext = (data = {}) => {
+    const context = getTenantContext();
+    
+    // Phase 3.1 D Hardening: STRICT MODE enforcement
+    if (!isTenantContextValid()) {
+        const isDevelopment = process.env.NODE_ENV === "development";
+        
+        if (STRICT_MODE && !isDevelopment) {
+            // Phase 3.1 D Hardening: STRICT MODE - Throw error in production
+            console.error("[TENANT BLOCK] Invalid or missing tenant context");
+            console.error("[TENANT BLOCK] Operation blocked - data:", data);
+            throw new Error("[TENANT BLOCK] Invalid or missing tenant context. Cannot proceed with operation.");
+        } else if (SAFETY_MODE && !isDevelopment) {
+            // Phase 3.1 D Enforcement: SAFETY MODE - Throw controlled error
+            console.error("[TenantContextService] Cannot attach tenant context - tenant context is invalid");
+            console.error("[TenantContextService] Data:", data);
+            throw new Error("Tenant context is invalid. Cannot proceed with operation.");
+        } else {
+            // Development mode: Log warning and proceed with empty context
+            console.warn("[TenantContextService] Tenant context is invalid - proceeding with empty context (development mode)");
+        }
+    }
+    
     return {
         ...data,
-        ...getTenantContext(),
+        ...context,
     };
 };
 

@@ -1,8 +1,15 @@
 // src/services/studentService.js
 // Student business logic — persistence via schoolStore → storageService (ERP_DB)
+// Phase 3.1 D Safe Mode - STRICT SaaS Enforcement
+// ⚠️ PRODUCTION MODE: Direct access to this service is BLOCKED
+// Use ServiceRegistry.getService("student") instead
 
 import { useSchoolStore } from "../store/schoolStore";
 import { getTenantContext } from "./tenantContextService";
+import { blockDirectServiceAccess } from "../core/serviceRegistry";
+
+// Phase 3.1 D Safe Mode: Block direct access in production mode
+blockDirectServiceAccess("studentService");
 
 /** Match by studentId (canonical) or legacy numeric id */
 const matchesStudent = (student, identifier) => {

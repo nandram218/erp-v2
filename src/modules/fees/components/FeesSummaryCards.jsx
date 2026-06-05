@@ -1,7 +1,8 @@
 // src/modules/fees/components/FeesSummaryCards.jsx
 
 import React, { useEffect, useState } from "react";
-import * as feesService from "../feesService";
+import { getService } from "../../../core/serviceRegistry";
+const feesService = getService("fees");
 
 const FeesSummaryCards = () => {
     const [stats, setStats] = useState({

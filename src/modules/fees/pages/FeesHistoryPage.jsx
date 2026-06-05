@@ -3,7 +3,8 @@ import React, {
     useState,
 } from "react";
 
-import * as feesService from "../feesService";
+import { getService } from "../../../core/serviceRegistry";
+const feesService = getService("fees");
 
 const FeesHistoryPage = () => {
 

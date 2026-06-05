@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { classSubjectService } from "../classes-subjects/classSubjectService";
-import { getFeeSettings } from "../../services/feeSettingsService";
+import { getService } from "../../core/serviceRegistry";
+const classSubjectService = getService("classSubject");
+// Note: feeSettingsService is deprecated - using unified fees service instead
+const feesService = getService("fees");
 
 export default function FeeStructure() {
 
@@ -45,7 +47,7 @@ export default function FeeStructure() {
 
         try {
 
-            const saved = getFeeSettings();
+            const saved = feesService.getFeeSettings ? feesService.getFeeSettings() : null;
 
             if (saved) {
                 setDb(saved);

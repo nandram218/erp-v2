@@ -1,7 +1,8 @@
 // src/modules/fees/pages/DueReportPage.jsx
 
 import React, { useEffect, useState } from "react";
-import * as feesService from "../feesService";
+import { getService } from "../../../core/serviceRegistry";
+const feesService = getService("fees");
 
 const DueReportPage = () => {
     const [students, setStudents] =

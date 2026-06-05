@@ -1,8 +1,21 @@
+/**
+ * CLASS SUBJECT SERVICE
+ * Phase 3.1 D - Service Unification Layer (Tenant Context Integration)
+ * Phase 3.1 D Safe Mode - STRICT SaaS Enforcement
+ * ⚠️ PRODUCTION MODE: Direct access to this service is BLOCKED
+ * Use ServiceRegistry.getService("classSubject") instead
+ */
+
 import {
     getStorageCompat,
     setStorageCompat,
     STORAGE_KEYS,
 } from "../../services/storageService";
+import { withTenantContext } from "../../services/tenantContextService";
+import { blockDirectServiceAccess } from "../../core/serviceRegistry";
+
+// Phase 3.1 D Safe Mode: Block direct access in production mode
+blockDirectServiceAccess("classSubjectService");
 
 const STORAGE_KEY = STORAGE_KEYS.ERP_CLASSES;
 
@@ -17,7 +30,9 @@ const getOrdinal = (n) => {
 export const classSubjectService = {
 
     saveClasses: (data) => {
-        setStorageCompat(STORAGE_KEY, data);
+        // Phase 3.1 D: Add tenant context to saved classes
+        const tenantAwareData = data.map(cls => withTenantContext(cls));
+        setStorageCompat(STORAGE_KEY, tenantAwareData);
     },
 
     // ✅ GET CLASSES (WITH DUPLICATE FIX)
@@ -136,6 +151,7 @@ export const classSubjectService = {
             });
         }
 
-        return classes;
+        // Phase 3.1 D: Add tenant context to generated classes
+        return classes.map(cls => withTenantContext(cls));
     }
 };

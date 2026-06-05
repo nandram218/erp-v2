@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import * as feesService from "../feesService";
+import { getService } from "../../../core/serviceRegistry";
+const feesService = getService("fees");
 
 const PrintReceipt = () => {
     const { id } = useParams();

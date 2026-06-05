@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { classSubjectService } from "../classes-subjects/classSubjectService";
-import {
-    getFeeSettings,
-    saveFeeSettings,
-    clearFeeSettings,
-} from "../../services/feeSettingsService";
+import { getService } from "../../core/serviceRegistry";
+const classSubjectService = getService("classSubject");
+// Note: feeSettingsService is deprecated - using unified fees service instead
+const feesService = getService("fees");
 
 /* =========================================================
    DEFAULT FEE TYPES
@@ -136,7 +134,7 @@ export default function FeeSettings() {
 
     useEffect(() => {
 
-        const saved = getFeeSettings();
+        const saved = feesService.getFeeSettings ? feesService.getFeeSettings() : null;
 
         if (saved) {
             setDb(saved);
@@ -343,7 +341,9 @@ export default function FeeSettings() {
 
         setDb(updated);
 
-        saveFeeSettings(updated);
+        if (feesService.saveFeeSettings) {
+            feesService.saveFeeSettings(updated);
+        }
 
         alert("✅ Fees Saved Successfully");
 
@@ -372,7 +372,9 @@ export default function FeeSettings() {
 
         setDb(updated);
 
-        saveFeeSettings(updated);
+        if (feesService.saveFeeSettings) {
+            feesService.saveFeeSettings(updated);
+        }
 
         setTempClassData({
             feeTypes: {}
@@ -391,7 +393,9 @@ export default function FeeSettings() {
             )
         ) return;
 
-        clearFeeSettings();
+        if (feesService.clearFeeSettings) {
+            feesService.clearFeeSettings();
+        }
 
         setDb({
             settings: {

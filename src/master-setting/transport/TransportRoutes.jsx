@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { transportService } from "./transportService";
 import { useNavigate } from "react-router-dom";
+import { getService } from "../../core/serviceRegistry";
+
+const transportService = getService("masterTransport");
 
 export default function TransportRoutes() {
 
