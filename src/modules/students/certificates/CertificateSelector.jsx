@@ -1,22 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTemplates } from "./certificateTemplates";
+import { useSchoolStore } from "../../../store/schoolStore";
 import "./CertificateSelector.css";
 
 const CertificateSelector = () => {
-    const [students, setStudents] = useState([]);
+    const students = useSchoolStore(state => state.students) || [];
     const [search, setSearch] = useState("");
     const [selectedIds, setSelectedIds] = useState([]);
     const [selectedType, setSelectedType] = useState("");
     const [selectedClass, setSelectedClass] = useState("");
 
     const navigate = useNavigate();
-
-    // ✅ FIXED: ERP_DB SAFE LOAD
-    useEffect(() => {
-        const db = JSON.parse(localStorage.getItem("ERP_DB") || "{}");
-        setStudents(db.students || []);
-    }, []);
 
     const templates = getTemplates();
 

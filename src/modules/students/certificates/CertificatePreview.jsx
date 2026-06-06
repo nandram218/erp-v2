@@ -3,21 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Certificate from "./Certificate";
 import { generateCertificate } from "./certificateService";
 import { downloadPDF } from "./certificatePdfService";
+import { useSchoolStore } from "../../../store/schoolStore";
 
 const CertificatePreview = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
     const printRef = useRef();
-
-    // ✅ SAFE DB LOAD
-    let db = {};
-    try {
-        db = JSON.parse(localStorage.getItem("ERP_DB")) || {};
-    } catch {
-        db = {};
-    }
-
-    const schoolData = db.school || {};
+    const schoolData = useSchoolStore(state => state.schoolData) || {};
 
     const school =
         schoolData?.schools?.english ||
