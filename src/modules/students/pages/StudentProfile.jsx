@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSchoolStore } from "../../../store/schoolStore";
-import { getStorageCompat } from "../../../services/storageService";
-import { STORAGE_KEYS } from "../../../core/constants/storageKeys";
+import { getService } from "../../../core/serviceRegistry";
+
+const studentService = getService("student");
 
 const StudentProfile = () => {
     const { id } = useParams();
@@ -10,9 +11,8 @@ const StudentProfile = () => {
     const [student, setStudent] = useState(null);
     const { schoolData, loadAll } = useSchoolStore();
     useEffect(() => {
-        const db = getStorageCompat(STORAGE_KEYS.ERP_DB, {});
-        const students = db.students || [];
-        const found = students.find((s) => s.id === Number(id));
+        // Phase 4.1: Use studentService instead of direct storage access
+        const found = studentService.getStudentById(id);
         setStudent(found);
     }, [id]);
     useEffect(() => {

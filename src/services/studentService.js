@@ -39,7 +39,17 @@ const matchesStudent = (student, identifier) => {
 ========================================================= */
 
 export const getStudents = () => {
-    return useSchoolStore.getState().students || [];
+    const students = useSchoolStore.getState().students || [];
+    const tenantContext = getTenantContext();
+    
+    // Phase 4.1: Filter students by current tenant context
+    return students.filter(student => {
+        return (
+            (!tenantContext.schoolId || student.schoolId === tenantContext.schoolId) &&
+            (!tenantContext.branchId || student.branchId === tenantContext.branchId) &&
+            (!tenantContext.sessionId || student.sessionId === tenantContext.sessionId)
+        );
+    });
 };
 
 /* =========================================================
@@ -223,8 +233,19 @@ export const getStudentById = (
         useSchoolStore
             .getState()
             .students || [];
+    
+    const tenantContext = getTenantContext();
 
-    return students.find((student) =>
+    // Phase 4.1: Filter students by current tenant context before lookup
+    const tenantFilteredStudents = students.filter(student => {
+        return (
+            (!tenantContext.schoolId || student.schoolId === tenantContext.schoolId) &&
+            (!tenantContext.branchId || student.branchId === tenantContext.branchId) &&
+            (!tenantContext.sessionId || student.sessionId === tenantContext.sessionId)
+        );
+    });
+
+    return tenantFilteredStudents.find((student) =>
         matchesStudent(student, identifier)
     );
 };
@@ -237,6 +258,7 @@ export const studentExists = (
     studentId
 ) => {
 
+    // Phase 4.1: studentExists already uses getStudentById which now has tenant filtering
     return !!getStudentById(
         studentId
     );
