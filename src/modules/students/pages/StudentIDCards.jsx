@@ -43,8 +43,6 @@ const StudentIDCards = () => {
         try {
             const data = studentService.getStudents();
 
-            console.log("ID CARD STUDENTS:", data); // 🔥 DEBUG
-
             if (Array.isArray(data)) {
                 setStudents(data);
             } else if (data && typeof data === "object") {
@@ -59,20 +57,17 @@ const StudentIDCards = () => {
             setStudents([]);
         }
 
-    }, []);
+    }, [loadAll]);
+    // Phase 4.2.1: Use studentService.normalizeStudentSchema() for schema drift handling
     const getClass = (s) => {
-        return (
-            s.className ||
-            s.class ||
-            s.studentClass ||
-            s.class_name ||
-            ""
-        );
+        const normalized = studentService.normalizeStudentSchema(s);
+        return normalized.class;
     };
-    const filteredStudents = students.filter(s =>
-        (s.name || "").toLowerCase().includes(search.toLowerCase()) &&
-        (selectedClass ? getClass(s) === selectedClass : true)
-    );
+    // Phase 4.2.1: Use studentService.getStudentsFiltered() - PURE FUNCTION
+    const filteredStudents = studentService.getStudentsFiltered(students, {
+        search,
+        class: selectedClass
+    });
     const list = Array.isArray(filteredStudents)
     ? filteredStudents.filter(s => s.name)
     : [];
@@ -89,11 +84,9 @@ const StudentIDCards = () => {
     const handleClassSelect = (cls) => {
         setSelectedClass(cls);
         if (cls === "") return setSelected([]);
-        setSelected(
-            students
-                .filter(s => getClass(s) === cls)
-                .map(s => s.id)
-        );
+        // Phase 4.2.1: Use studentService.getStudentsFiltered() - PURE FUNCTION
+        const filtered = studentService.getStudentsFiltered(students, { class: cls });
+        setSelected(filtered.map(s => s.id));
     };
 
     const classes = [

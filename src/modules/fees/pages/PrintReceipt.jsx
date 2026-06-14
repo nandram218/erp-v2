@@ -75,7 +75,7 @@ const PrintReceipt = () => {
                     <h2>School Fees Receipt</h2>
                     <p>
                         Receipt No:{" "}
-                        {receipt.receiptNo}
+                        {receipt.receiptNumber}
                     </p>
                 </div>
 

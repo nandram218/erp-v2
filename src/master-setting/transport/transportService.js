@@ -210,20 +210,22 @@ export const transportService = {
 
             active,
 
-            points:
+            pickupPoints:
                 safeArray(points).map(
                     (point) => ({
 
                         id: uid(),
 
-                        pointName:
+                        pickupPointName:
                             point.name ||
                             point.pointName ||
+                            point.pickupPointName ||
                             "",
 
-                        fee: Number(
+                        routeFee: Number(
                             point.fare ||
                             point.fee ||
+                            point.routeFee ||
                             0
                         ),
 
@@ -324,7 +326,7 @@ export const transportService = {
         }
 
         return (
-            route.points || []
+            route.pickupPoints || route.points || []
         ).find(
             (point) =>
                 String(point.id) ===

@@ -1,6 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSchoolStore } from "../../../store/schoolStore";
+import { getService } from "../../../core/serviceRegistry";
+
+const studentService = getService("student");
+
 const btn3D = (bg, small = false) => ({
     background: bg,
     color: "#fff",
@@ -29,6 +33,7 @@ const cardStyle = (color) => ({
 });
 
 const StudentPage = () => {
+    // Phase 4.2.1: Move useSchoolStore to top level (React Hook rules)
     const students = useSchoolStore(state => state.students) || [];
 
     const navigate = useNavigate();
@@ -42,21 +47,27 @@ const StudentPage = () => {
     const [hostel, setHostel] = useState("");
 
     const filtered = useMemo(() => {
-        return students.filter(s => (
-            (search === "" || s.name?.toLowerCase().includes(search.toLowerCase())) &&
-            (cls === "" || s.class === cls) &&
-            (category === "" || s.category === category) &&
-            (gender === "" || s.gender === gender) &&
-            (transport === "" || String(s.transport) === transport) &&
-            (route === "" || s.route === route) &&
-            (hostel === "" || String(s.hostel) === hostel)
-        ));
+        // Phase 4.2.1: Use studentService.getStudentsFiltered() - PURE FUNCTION
+        return studentService.getStudentsFiltered(students, {
+            search,
+            class: cls,
+            category,
+            gender,
+            transport,
+            route,
+            hostel
+        });
     }, [students, search, cls, category, gender, transport, route, hostel]);
 
-    const total = filtered.length;
-    const transportCount = filtered.filter(s => s.transport).length;
-    const hostelCount = filtered.filter(s => s.hostel).length;
-    const absent = Math.floor(total * 0.08);
+    const kpis = useMemo(() => {
+        // Phase 4.2.1: Use studentService.getStudentKPIs() - PURE FUNCTION
+        return studentService.getStudentKPIs(filtered);
+    }, [filtered]);
+
+    const total = kpis.total;
+    const transportCount = kpis.transportCount;
+    const hostelCount = kpis.hostelCount;
+    const absent = kpis.absent;
 
     const handlePrint = () => window.print();
 

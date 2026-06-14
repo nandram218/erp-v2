@@ -1,48 +1,75 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getService } from "../../core/serviceRegistry";
+import { getFeeSettings, saveFeeSettings, clearFeeSettings } from "../../services/feeSettingsService";
 const classSubjectService = getService("classSubject");
-// Note: feeSettingsService is deprecated - using unified fees service instead
-const feesService = getService("fees");
 
 /* =========================================================
-   DEFAULT FEE TYPES
+   MIGRATION FUNCTION
+   Convert old format to canonical format
 ========================================================= */
 
-const defaultTypes = {
+const migrateToCanonical = (oldData) => {
+    const canonical = {
+        schoolId: oldData.schoolId || "",
+        academicYear: oldData.academicYear || "2024-25",
+        classes: {},
+        transportRoutes: [],
+        hostelFee: { enabled: false, amount: 0 }
+    };
 
-    academic: [
-        "Admission Fee",
-        "Tuition Fee",
-        "Exam Fee",
-        "Annual Fee",
-        "Extra Class Fee",
-        "Development Fee",
-        "Registration Fee",
-    ],
+    // Migrate classes
+    Object.entries(oldData.classes || {}).forEach(([className, classData]) => {
+        const feeTypes = classData.feeTypes || {};
+        const compulsoryFees = [];
+        const optionalFees = [];
 
-    supportingAcademic: [
-        "Computer Fee",
-        "Lab Fee",
-        "Smart Class Fee",
-        "E-Learning Fee",
-        "Library Fee",
-        "ID Card + Diary Fee"
-    ],
+        Object.entries(feeTypes).forEach(([feeName, feeData]) => {
+            const fee = {
+                id: `fee_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                name: feeName,
+                amount: feeData.amount || 0
+            };
 
-    facilities: [
-        "Transport Fee",
-        "Hostel Fee",
-        "Mess / Canteen Fee"
-    ],
+            if (feeData.category === "compulsory") {
+                compulsoryFees.push(fee);
+            } else {
+                optionalFees.push(fee);
+            }
+        });
 
-    activities: [
-        "Sports Fee",
-        "Activity Fee",
-        "Cultural Fee",
-        "Event Fee",
-        "Tour Fee"
-    ]
+        canonical.classes[className] = {
+            compulsoryFees,
+            optionalFees
+        };
+    });
+
+    return canonical;
 };
+
+/* =========================================================
+   PREDEFINED FEE TYPE CATALOG
+========================================================= */
+
+const feeTypeCatalog = [
+    { id: "admission", name: "Admission Fee", defaultCategory: "academicCompulsory" },
+    { id: "tuition", name: "Tuition Fee", defaultCategory: "academicCompulsory" },
+    { id: "exam", name: "Exam Fee", defaultCategory: "academicCompulsory" },
+    { id: "library", name: "Library Fee", defaultCategory: "supportingAcademicOptional" },
+    { id: "computer", name: "Computer Fee", defaultCategory: "supportingAcademicOptional" },
+    { id: "lab", name: "Lab Fee", defaultCategory: "supportingAcademicOptional" },
+    { id: "smartClass", name: "Smart Class Fee", defaultCategory: "supportingAcademicOptional" },
+    { id: "eLearning", name: "E-Learning Fee", defaultCategory: "supportingAcademicOptional" },
+    { id: "event", name: "Event Fee", defaultCategory: "supportingAcademicOptional" },
+    { id: "sports", name: "Sports Fee", defaultCategory: "supportingAcademicOptional" },
+    { id: "activity", name: "Activity Fee", defaultCategory: "supportingAcademicOptional" },
+    { id: "cultural", name: "Cultural Fee", defaultCategory: "supportingAcademicOptional" },
+    { id: "tour", name: "Tour Fee", defaultCategory: "supportingAcademicOptional" },
+    { id: "annual", name: "Annual Fee", defaultCategory: "academicCompulsory" },
+    { id: "extraClass", name: "Extra Class Fee", defaultCategory: "supportingAcademicOptional" },
+    { id: "development", name: "Development Fee", defaultCategory: "academicCompulsory" },
+    { id: "registration", name: "Registration Fee", defaultCategory: "academicCompulsory" },
+    { id: "idCard", name: "ID Card + Diary Fee", defaultCategory: "supportingAcademicOptional" },
+];
 
 /* =========================================================
    MONTHS
@@ -82,25 +109,20 @@ export default function FeeSettings() {
     const [showHelp, setShowHelp] = useState(false);
 
     const [customType, setCustomType] = useState("");
+    const [selectedFeeType, setSelectedFeeType] = useState("");
+    const [selectedFeeCategory, setSelectedFeeCategory] = useState("academicCompulsory");
 
     const [db, setDb] = useState({
-        settings: {
-            calculatorMode: "simple",
-
-            regularFrequency: "monthly",
-
-            specialFrequency: "quarterly",
-
-            regularMonths: ["Apr"],
-
-            specialMonths: ["Apr"]
-        },
-
-        classes: {}
+        schoolId: "",
+        academicYear: "2024-25",
+        classes: {},
+        transportRoutes: [],
+        hostelFee: { enabled: false, amount: 0 }
     });
 
     const [tempClassData, setTempClassData] = useState({
-        feeTypes: {}
+        compulsoryFees: [],
+        optionalFees: []
     });
 
     /* =====================================================
@@ -133,13 +155,19 @@ export default function FeeSettings() {
     ===================================================== */
 
     useEffect(() => {
-
-        const saved = feesService.getFeeSettings ? feesService.getFeeSettings() : null;
-
+        const saved = getFeeSettings();
         if (saved) {
-            setDb(saved);
+            // If saved data is in old format, migrate to canonical
+            if (saved.settings && saved.classes) {
+                // Old format detected - migrate to canonical
+                const migrated = migrateToCanonical(saved);
+                setDb(migrated);
+                saveFeeSettings(migrated);
+            } else {
+                // Already in canonical format
+                setDb(saved);
+            }
         }
-
     }, []);
 
     /* =====================================================
@@ -156,7 +184,7 @@ export default function FeeSettings() {
         if (mode === "edit") {
 
             setTempClassData(
-                cls || { feeTypes: {} }
+                cls || { compulsoryFees: [], optionalFees: [] }
             );
         }
 
@@ -172,14 +200,15 @@ export default function FeeSettings() {
             }
 
             setTempClassData({
-                feeTypes: {}
+                compulsoryFees: [],
+                optionalFees: []
             });
         }
 
         if (mode === "view") {
 
             setTempClassData(
-                cls || { feeTypes: {} }
+                cls || { compulsoryFees: [], optionalFees: [] }
             );
         }
 
@@ -189,42 +218,60 @@ export default function FeeSettings() {
        CURRENT
     ===================================================== */
 
-    const feeTypes =
-        tempClassData.feeTypes || {};
+    const compulsoryFees = tempClassData.compulsoryFees || [];
+    const optionalFees = tempClassData.optionalFees || [];
 
     /* =====================================================
-       TOGGLE TYPE
+       ADD FEE FROM CATALOG
     ===================================================== */
 
-    const toggleType = (type, section) => {
-
+    const addFeeFromCatalog = (feeTypeId, amount) => {
         if (mode === "view") return;
+        if (!feeTypeId || !amount) return;
 
-        const updated = {
-            ...feeTypes
+        const feeType = feeTypeCatalog.find(ft => ft.id === feeTypeId);
+        if (!feeType) return;
+
+        const fee = {
+            id: `fee_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            name: feeType.name,
+            amount: Number(amount)
         };
 
-        if (updated[type]) {
-
-            delete updated[type];
-
+        // Automatically route to correct bucket based on category
+        if (selectedFeeCategory === "academicCompulsory") {
+            setTempClassData({
+                ...tempClassData,
+                compulsoryFees: [...compulsoryFees, fee]
+            });
         } else {
-
-            updated[type] = {
-
-                amount: "",
-
-                category:
-                    section === "activities"
-                        ? "special"
-                        : "regular"
-            };
+            setTempClassData({
+                ...tempClassData,
+                optionalFees: [...optionalFees, fee]
+            });
         }
 
-        setTempClassData({
-            ...tempClassData,
-            feeTypes: updated
-        });
+        setSelectedFeeType("");
+    };
+
+    /* =====================================================
+       REMOVE FEE
+    ===================================================== */
+
+    const removeFee = (feeId, type) => {
+        if (mode === "view") return;
+
+        if (type === "compulsory") {
+            setTempClassData({
+                ...tempClassData,
+                compulsoryFees: compulsoryFees.filter(f => f.id !== feeId)
+            });
+        } else {
+            setTempClassData({
+                ...tempClassData,
+                optionalFees: optionalFees.filter(f => f.id !== feeId)
+            });
+        }
     };
 
     /* =====================================================
@@ -232,121 +279,71 @@ export default function FeeSettings() {
     ===================================================== */
 
     const handleTypeChange = (
-        type,
+        feeId,
         field,
-        value
+        value,
+        type
     ) => {
 
         if (mode === "view") return;
 
-        const updated = {
-            ...feeTypes
-        };
+        const fees = type === "compulsory" ? compulsoryFees : optionalFees;
+        const updated = fees.map(fee =>
+            fee.id === feeId
+                ? { ...fee, [field]: field === "amount" ? Number(value) : value }
+                : fee
+        );
 
-        updated[type] = {
-            ...updated[type],
-
-            [field]:
-                field === "amount"
-                    ? Number(value)
-                    : value
-        };
-
-        setTempClassData({
-            ...tempClassData,
-            feeTypes: updated
-        });
+        if (type === "compulsory") {
+            setTempClassData({
+                ...tempClassData,
+                compulsoryFees: updated
+            });
+        } else {
+            setTempClassData({
+                ...tempClassData,
+                optionalFees: updated
+            });
+        }
     };
 
     /* =====================================================
-       HANDLE SETTINGS
+       HANDLE HOSTEL FEE
     ===================================================== */
 
-    const handleSetting = (field, value) => {
-
+    const handleHostelFee = (field, value) => {
         setDb(prev => ({
-
             ...prev,
-
-            settings: {
-
-                ...prev.settings,
-
-                [field]: value
+            hostelFee: {
+                ...prev.hostelFee,
+                [field]: field === "amount" ? Number(value) : value
             }
         }));
     };
 
-    /* =====================================================
-       MONTH TOGGLE
-    ===================================================== */
 
-    const toggleMonth = (field, month) => {
-
-        const current =
-            db.settings[field] || [];
-
-        let updated = [];
-
-        if (current.includes(month)) {
-
-            updated =
-                current.filter(x => x !== month);
-
-        } else {
-
-            updated = [...current, month];
-        }
-
-        handleSetting(field, updated);
-    };
-
-    /* =====================================================
-       CUSTOM TYPE
-    ===================================================== */
-
-    const addCustom = () => {
-
-        if (!customType.trim()) return;
-
-        defaultTypes.activities.push(customType);
-
-        setCustomType("");
-    };
 
     /* =====================================================
        SAVE
     ===================================================== */
 
     const handleSave = () => {
-
         if (!selectedClass) {
-
             alert("⚠ Select class first");
-
             return;
         }
 
         const updated = {
-
             ...db,
-
             classes: {
-
                 ...db.classes,
-
                 [selectedClass]: tempClassData
             }
         };
 
         setDb(updated);
-
-        if (feesService.saveFeeSettings) {
-            feesService.saveFeeSettings(updated);
-        }
-
+        saveFeeSettings(updated);
         alert("✅ Fees Saved Successfully");
-
         setMode("view");
     };
 
@@ -371,13 +368,11 @@ export default function FeeSettings() {
         delete updated.classes[selectedClass];
 
         setDb(updated);
-
-        if (feesService.saveFeeSettings) {
-            feesService.saveFeeSettings(updated);
-        }
+        saveFeeSettings(updated);
 
         setTempClassData({
-            feeTypes: {}
+            compulsoryFees: [],
+            optionalFees: []
         });
     };
 
@@ -386,31 +381,25 @@ export default function FeeSettings() {
     ===================================================== */
 
     const resetAll = () => {
-
         if (
             !window.confirm(
                 "Clear ALL fee setup?"
             )
         ) return;
 
-        if (feesService.clearFeeSettings) {
-            feesService.clearFeeSettings();
-        }
+        clearFeeSettings();
 
         setDb({
-            settings: {
-                calculatorMode: "simple",
-                regularFrequency: "monthly",
-                specialFrequency: "quarterly",
-                regularMonths: ["Apr"],
-                specialMonths: ["Apr"]
-            },
-
-            classes: {}
+            schoolId: "",
+            academicYear: "2024-25",
+            classes: {},
+            transportRoutes: [],
+            hostelFee: { enabled: false, amount: 0 }
         });
 
         setTempClassData({
-            feeTypes: {}
+            compulsoryFees: [],
+            optionalFees: []
         });
     };
 
@@ -419,43 +408,18 @@ export default function FeeSettings() {
     ===================================================== */
 
     const grandTotal = useMemo(() => {
+        const compulsoryTotal = compulsoryFees.reduce((sum, fee) => sum + fee.amount, 0);
+        const optionalTotal = optionalFees.reduce((sum, fee) => sum + fee.amount, 0);
+        return compulsoryTotal + optionalTotal;
+    }, [compulsoryFees, optionalFees]);
 
-        return Object.values(feeTypes)
-            .reduce(
-                (a, b) =>
-                    a + Number(b.amount || 0),
-                0
-            );
+    const compulsoryTotal = useMemo(() => {
+        return compulsoryFees.reduce((sum, fee) => sum + fee.amount, 0);
+    }, [compulsoryFees]);
 
-    }, [feeTypes]);
-
-    const regularTotal = useMemo(() => {
-
-        return Object.values(feeTypes)
-
-            .filter(x => x.category === "regular")
-
-            .reduce(
-                (a, b) =>
-                    a + Number(b.amount || 0),
-                0
-            );
-
-    }, [feeTypes]);
-
-    const specialTotal = useMemo(() => {
-
-        return Object.values(feeTypes)
-
-            .filter(x => x.category === "special")
-
-            .reduce(
-                (a, b) =>
-                    a + Number(b.amount || 0),
-                0
-            );
-
-    }, [feeTypes]);
+    const optionalTotal = useMemo(() => {
+        return optionalFees.reduce((sum, fee) => sum + fee.amount, 0);
+    }, [optionalFees]);
 
     /* =====================================================
        DIVIDER
@@ -722,245 +686,26 @@ export default function FeeSettings() {
                     </h3>
 
                     {/* =========================================
-                        CALCULATOR MODE
+                        NOTE
                     ========================================= */}
 
                     <div style={styles.modeBox}>
 
                         <h3>
-                            📊 Collection Method
+                            ℹ️ Information
                         </h3>
 
-                        <label style={styles.radioRow}>
+                        <p>
+                            Configure compulsory and optional fees for each class.
+                        </p>
 
-                            <input
-                                type="radio"
-                                checked={
-                                    settings.calculatorMode === "simple"
-                                }
-                                onChange={() =>
-                                    handleSetting(
-                                        "calculatorMode",
-                                        "simple"
-                                    )
-                                }
-                            />
+                        <p>
+                            Totals are calculated at runtime in StudentForm.
+                        </p>
 
-                            <b>
-                                Simple Fee Plan
-                            </b>
-
-                            <span>
-                                (All Total ÷ Frequency)
-                            </span>
-
-                        </label>
-
-                        <label style={styles.radioRow}>
-
-                            <input
-                                type="radio"
-                                checked={
-                                    settings.calculatorMode === "smart"
-                                }
-                                onChange={() =>
-                                    handleSetting(
-                                        "calculatorMode",
-                                        "smart"
-                                    )
-                                }
-                            />
-
-                            <b>
-                                Smart Split Plan
-                            </b>
-
-                            <span>
-                                (Regular + Special Separate)
-                            </span>
-
-                        </label>
-
-                        <label style={styles.radioRow}>
-
-                            <input
-                                type="radio"
-                                checked={
-                                    settings.calculatorMode === "professional"
-                                }
-                                onChange={() =>
-                                    handleSetting(
-                                        "calculatorMode",
-                                        "professional"
-                                    )
-                                }
-                            />
-
-                            <b>
-                                Professional Dynamic Plan
-                            </b>
-
-                            <span>
-                                (Special fees auto add)
-                            </span>
-
-                        </label>
-
-                    </div>
-
-                    {/* =========================================
-                        FREQUENCY
-                    ========================================= */}
-
-                    <div style={styles.freqBox}>
-
-                        {/* REGULAR */}
-
-                        <div style={styles.freqCard}>
-
-                            <h3>
-                                🟢 Regular Collection
-                            </h3>
-
-                            <select
-                                value={
-                                    settings.regularFrequency
-                                }
-                                onChange={(e) =>
-                                    handleSetting(
-                                        "regularFrequency",
-                                        e.target.value
-                                    )
-                                }
-                                style={styles.select}
-                            >
-
-                                <option value="monthly">
-                                    Monthly
-                                </option>
-
-                                <option value="quarterly">
-                                    Quarterly
-                                </option>
-
-                                <option value="three">
-                                    3 Times
-                                </option>
-
-                                <option value="half">
-                                    Half Yearly
-                                </option>
-
-                                <option value="yearly">
-                                    Yearly
-                                </option>
-
-                            </select>
-
-                            <div style={styles.monthGrid}>
-
-                                {months.map((m) => (
-
-                                    <button
-                                        key={m}
-                                        type="button"
-                                        onClick={() =>
-                                            toggleMonth(
-                                                "regularMonths",
-                                                m
-                                            )
-                                        }
-                                        style={{
-                                            ...styles.monthBtn,
-
-                                            background:
-                                                settings.regularMonths?.includes(m)
-                                                    ? "#16a34a"
-                                                    : "#334155"
-                                        }}
-                                    >
-                                        {m}
-                                    </button>
-
-                                ))}
-
-                            </div>
-
-                        </div>
-
-                        {/* SPECIAL */}
-
-                        <div style={styles.freqCard}>
-
-                            <h3>
-                                🔴 Special Collection
-                            </h3>
-
-                            <select
-                                value={
-                                    settings.specialFrequency
-                                }
-                                onChange={(e) =>
-                                    handleSetting(
-                                        "specialFrequency",
-                                        e.target.value
-                                    )
-                                }
-                                style={styles.select}
-                            >
-
-                                <option value="one">
-                                    One Time
-                                </option>
-
-                                <option value="quarterly">
-                                    Quarterly
-                                </option>
-
-                                <option value="three">
-                                    3 Times
-                                </option>
-
-                                <option value="half">
-                                    Half Yearly
-                                </option>
-
-                                <option value="yearly">
-                                    Yearly
-                                </option>
-
-                            </select>
-
-                            <div style={styles.monthGrid}>
-
-                                {months.map((m) => (
-
-                                    <button
-                                        key={m}
-                                        type="button"
-                                        onClick={() =>
-                                            toggleMonth(
-                                                "specialMonths",
-                                                m
-                                            )
-                                        }
-                                        style={{
-                                            ...styles.monthBtn,
-
-                                            background:
-                                                settings.specialMonths?.includes(m)
-                                                    ? "#dc2626"
-                                                    : "#334155"
-                                        }}
-                                    >
-                                        {m}
-                                    </button>
-
-                                ))}
-
-                            </div>
-
-                        </div>
+                        <p>
+                            Transport routes are configured in Transport Setup module.
+                        </p>
 
                     </div>
 
@@ -968,124 +713,222 @@ export default function FeeSettings() {
                         TYPES
                     ========================================= */}
 
-                    {Object.entries(defaultTypes).map(
-                        ([section, types]) => (
+                    {/* Academic Compulsory Fees */}
+                    <div>
+                        <h3 style={styles.sectionTitle}>
+                            Academic Compulsory
+                        </h3>
 
-                            <div key={section}>
+                        {compulsoryFees.map((fee) => (
+                            <div key={fee.id} style={styles.row}>
+                                <input
+                                    type="text"
+                                    value={fee.name}
+                                    disabled={mode === "view"}
+                                    onChange={(e) =>
+                                        handleTypeChange(
+                                            fee.id,
+                                            "name",
+                                            e.target.value,
+                                            "compulsory"
+                                        )
+                                    }
+                                    style={styles.typeName}
+                                />
 
-                                <h3 style={styles.sectionTitle}>
-                                    {getTitle(section)}
-                                </h3>
+                                <input
+                                    type="number"
+                                    placeholder="Amount"
+                                    value={fee.amount || ""}
+                                    disabled={mode === "view"}
+                                    onChange={(e) =>
+                                        handleTypeChange(
+                                            fee.id,
+                                            "amount",
+                                            e.target.value,
+                                            "compulsory"
+                                        )
+                                    }
+                                    style={styles.amountInput}
+                                />
 
-                                {types.map((type, i) => {
-
-                                    const active =
-                                        feeTypes[type];
-
-                                    return (
-
-                                        <div
-                                            key={i}
-                                            style={styles.row}
-                                        >
-
-                                            <input
-                                                type="checkbox"
-                                                checked={!!active}
-                                                disabled={mode === "view"}
-                                                onChange={() =>
-                                                    toggleType(
-                                                        type,
-                                                        section
-                                                    )
-                                                }
-                                            />
-
-                                            <div style={styles.typeName}>
-                                                {type}
-                                            </div>
-
-                                            {active && (
-
-                                                <>
-
-                                                    <input
-                                                        type="number"
-                                                        placeholder="Yearly Amount"
-                                                        value={
-                                                            active.amount || ""
-                                                        }
-                                                        disabled={mode === "view"}
-                                                        onChange={(e) =>
-                                                            handleTypeChange(
-                                                                type,
-                                                                "amount",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        style={styles.amountInput}
-                                                    />
-
-                                                    <select
-                                                        value={
-                                                            active.category
-                                                        }
-                                                        disabled={mode === "view"}
-                                                        onChange={(e) =>
-                                                            handleTypeChange(
-                                                                type,
-                                                                "category",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                    >
-
-                                                        <option value="regular">
-                                                            Regular
-                                                        </option>
-
-                                                        <option value="special">
-                                                            Special
-                                                        </option>
-
-                                                    </select>
-
-                                                </>
-
-                                            )}
-
-                                        </div>
-                                    );
-                                })}
-
+                                {mode !== "view" && (
+                                    <button
+                                        onClick={() => removeFee(fee.id, "compulsory")}
+                                        style={{ color: "red", border: "none", background: "none", cursor: "pointer" }}
+                                    >
+                                        Remove
+                                    </button>
+                                )}
                             </div>
-                        )
-                    )}
+                        ))}
+
+                        {mode !== "view" && (
+                            <div style={styles.row}>
+                                <select
+                                    value={selectedFeeType}
+                                    onChange={(e) => {
+                                        setSelectedFeeType(e.target.value);
+                                        const feeType = feeTypeCatalog.find(ft => ft.id === e.target.value);
+                                        if (feeType) {
+                                            setSelectedFeeCategory(feeType.defaultCategory);
+                                        }
+                                    }}
+                                    style={styles.typeName}
+                                >
+                                    <option value="">Select Fee Type</option>
+                                    {feeTypeCatalog.map(ft => (
+                                        <option key={ft.id} value={ft.id}>{ft.name}</option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="number"
+                                    placeholder="Amount"
+                                    id="newFeeAmount"
+                                    style={styles.amountInput}
+                                />
+                                <button
+                                    onClick={() => {
+                                        const amount = document.getElementById("newFeeAmount").value;
+                                        addFeeFromCatalog(selectedFeeType, amount);
+                                        document.getElementById("newFeeAmount").value = "";
+                                    }}
+                                    style={{ padding: "5px 10px", cursor: "pointer" }}
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Supporting Academic Optional Fees */}
+                    <div>
+                        <h3 style={styles.sectionTitle}>
+                            Supporting Academic Optional
+                        </h3>
+
+                        {optionalFees.map((fee) => (
+                            <div key={fee.id} style={styles.row}>
+                                <input
+                                    type="text"
+                                    value={fee.name}
+                                    disabled={mode === "view"}
+                                    onChange={(e) =>
+                                        handleTypeChange(
+                                            fee.id,
+                                            "name",
+                                            e.target.value,
+                                            "optional"
+                                        )
+                                    }
+                                    style={styles.typeName}
+                                />
+
+                                <input
+                                    type="number"
+                                    placeholder="Amount"
+                                    value={fee.amount || ""}
+                                    disabled={mode === "view"}
+                                    onChange={(e) =>
+                                        handleTypeChange(
+                                            fee.id,
+                                            "amount",
+                                            e.target.value,
+                                            "optional"
+                                        )
+                                    }
+                                    style={styles.amountInput}
+                                />
+
+                                {mode !== "view" && (
+                                    <button
+                                        onClick={() => removeFee(fee.id, "optional")}
+                                        style={{ color: "red", border: "none", background: "none", cursor: "pointer" }}
+                                    >
+                                        Remove
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+
+                        {mode !== "view" && (
+                            <div style={styles.row}>
+                                <select
+                                    value={selectedFeeType}
+                                    onChange={(e) => {
+                                        setSelectedFeeType(e.target.value);
+                                        const feeType = feeTypeCatalog.find(ft => ft.id === e.target.value);
+                                        if (feeType) {
+                                            setSelectedFeeCategory(feeType.defaultCategory);
+                                        }
+                                    }}
+                                    style={styles.typeName}
+                                >
+                                    <option value="">Select Fee Type</option>
+                                    {feeTypeCatalog.map(ft => (
+                                        <option key={ft.id} value={ft.id}>{ft.name}</option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="number"
+                                    placeholder="Amount"
+                                    id="newOptionalFeeAmount"
+                                    style={styles.amountInput}
+                                />
+                                <button
+                                    onClick={() => {
+                                        const amount = document.getElementById("newOptionalFeeAmount").value;
+                                        addFeeFromCatalog(selectedFeeType, amount);
+                                        document.getElementById("newOptionalFeeAmount").value = "";
+                                    }}
+                                    style={{ padding: "5px 10px", cursor: "pointer" }}
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     {/* =========================================
-                        CUSTOM
+                        HOSTEL FEE
                     ========================================= */}
 
-                    <div style={styles.customBox}>
+                    <div style={styles.hostelBox}>
+                        <h3>Hostel Fee</h3>
+                        <label style={styles.radioRow}>
+                            <input
+                                type="checkbox"
+                                checked={db.hostelFee.enabled}
+                                onChange={(e) =>
+                                    handleHostelFee("enabled", e.target.checked)
+                                }
+                            />
+                            <b>Enable Hostel Fee</b>
+                        </label>
 
-                        <input
-                            value={customType}
-                            onChange={(e) =>
-                                setCustomType(
-                                    e.target.value
-                                )
-                            }
-                            placeholder="Custom Fee Type"
-                            style={styles.customInput}
-                        />
+                        {db.hostelFee.enabled && (
+                            <div>
+                                <input
+                                    type="number"
+                                    placeholder="Hostel Fee Amount"
+                                    value={db.hostelFee.amount}
+                                    onChange={(e) =>
+                                        handleHostelFee("amount", e.target.value)
+                                    }
+                                    style={styles.amountInput}
+                                />
+                            </div>
+                        )}
+                    </div>
 
-                        <button
-                            style={styles.btn3d}
-                            onClick={addCustom}
-                        >
-                            ➕ Add
-                        </button>
+                    {/* =========================================
+                        TRANSPORT NOTE
+                    ========================================= */}
 
+                    <div style={styles.noteBox}>
+                        <h3>Transport Routes</h3>
+                        <p>Transport routes are configured in the Transport Setup module.</p>
+                        <p>Routes will be automatically available in StudentForm.</p>
                     </div>
 
                     {/* =========================================
@@ -1149,123 +992,45 @@ export default function FeeSettings() {
                                 </div>
 
                                 <div>
-                                    🟢 Regular Total :
+                                    🟢 Compulsory Total :
                                     <b>
-                                        ₹ {regularTotal}
+                                        ₹ {compulsoryTotal}
                                     </b>
                                 </div>
 
                                 <div>
-                                    🔴 Special Total :
+                                    🔴 Optional Total :
                                     <b>
-                                        ₹ {specialTotal}
+                                        ₹ {optionalTotal}
+                                    </b>
+                                </div>
+
+                                <div>
+                                    🏠 Hostel Fee :
+                                    <b>
+                                        ₹ {db.hostelFee.enabled ? db.hostelFee.amount : 0}
                                     </b>
                                 </div>
 
                             </div>
 
-                            {/* SIMPLE */}
+                            {/* NOTE */}
 
-                            {settings.calculatorMode === "simple" && (
+                            <div style={styles.previewMode}>
 
-                                <div style={styles.previewMode}>
+                                <h3>
+                                    ℹ️ Note
+                                </h3>
 
-                                    <h3>
-                                        ✅ Simple Fee Plan
-                                    </h3>
+                                <p>
+                                    Totals are calculated at runtime in StudentForm.
+                                </p>
 
-                                    <h2>
-                                        {
-                                            getFreqLabel(
-                                                grandTotal,
-                                                settings.regularFrequency
-                                            )
-                                        }
-                                    </h2>
+                                <p>
+                                    Transport fees are added when student selects route.
+                                </p>
 
-                                </div>
-                            )}
-
-                            {/* SMART */}
-
-                            {settings.calculatorMode === "smart" && (
-
-                                <div style={styles.previewMode}>
-
-                                    <h3>
-                                        ✅ Smart Split Plan
-                                    </h3>
-
-                                    <div style={styles.previewText}>
-
-                                        🟢 Regular :
-
-                                        <b>
-                                            {
-                                                getFreqLabel(
-                                                    regularTotal,
-                                                    settings.regularFrequency
-                                                )
-                                            }
-                                        </b>
-
-                                    </div>
-
-                                    <div style={styles.previewText}>
-
-                                        🔴 Special :
-
-                                        <b>
-                                            {
-                                                getFreqLabel(
-                                                    specialTotal,
-                                                    settings.specialFrequency
-                                                )
-                                            }
-                                        </b>
-
-                                    </div>
-
-                                </div>
-                            )}
-
-                            {/* PROFESSIONAL */}
-
-                            {settings.calculatorMode === "professional" && (
-
-                                <div style={styles.previewMode}>
-
-                                    <h3>
-                                        ✅ Professional Dynamic Plan
-                                    </h3>
-
-                                    <div style={styles.previewText}>
-
-                                        🟢 Regular Collection :
-
-                                        <b>
-                                            {
-                                                getFreqLabel(
-                                                    regularTotal,
-                                                    settings.regularFrequency
-                                                )
-                                            }
-                                        </b>
-
-                                    </div>
-
-                                    <div style={styles.previewText}>
-
-                                        🔴 Special Fees :
-
-                                        <b>
-                                            Auto Added In Selected Month
-                                        </b>
-
-                                    </div>
-
-                                </div>
-                            )}
+                            </div>
 
                             {/* MONTHS */}
 
@@ -1277,25 +1042,9 @@ export default function FeeSettings() {
 
                                 <div style={styles.previewText}>
 
-                                    🟢 Regular Months :
-
-                                    <b>
-                                        {
-                                            settings.regularMonths?.join(", ")
-                                        }
-                                    </b>
-
-                                </div>
-
-                                <div style={styles.previewText}>
-
-                                    🔴 Special Months :
-
-                                    <b>
-                                        {
-                                            settings.specialMonths?.join(", ")
-                                        }
-                                    </b>
+                                    <p>
+                                        Fee collection timing is managed in Fee Collection module.
+                                    </p>
 
                                 </div>
 
@@ -1309,29 +1058,21 @@ export default function FeeSettings() {
                                     📑 Fee Breakdown
                                 </h3>
 
-                                {Object.entries(feeTypes).map(
-                                    ([k, v], i) => (
+                                {compulsoryFees.map((fee, i) => (
+                                    <div key={i} style={styles.breakRow}>
+                                        <span>🟢 {fee.name}</span>
+                                        <span>₹ {fee.amount}</span>
+                                        <span>Compulsory</span>
+                                    </div>
+                                ))}
 
-                                        <div
-                                            key={i}
-                                            style={styles.breakRow}
-                                        >
-
-                                            <span>
-                                                {k}
-                                            </span>
-
-                                            <span>
-                                                ₹ {v.amount}
-                                            </span>
-
-                                            <span>
-                                                {v.category}
-                                            </span>
-
-                                        </div>
-                                    )
-                                )}
+                                {optionalFees.map((fee, i) => (
+                                    <div key={i} style={styles.breakRow}>
+                                        <span>🔴 {fee.name}</span>
+                                        <span>₹ {fee.amount}</span>
+                                        <span>Optional</span>
+                                    </div>
+                                ))}
 
                             </div>
 

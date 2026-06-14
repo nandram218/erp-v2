@@ -11,20 +11,8 @@ const StudentTable = ({
 
     const navigate = useNavigate();
 
-    /* 🔥 CLASS ORDER FIX (LOW → HIGH) */
-    const classOrder = [
-        "PP3", "PP4", "PP5",
-        "Nursery", "LKG", "UKG",
-        "1st", "2nd", "3rd", "4th", "5th",
-        "6th", "7th", "8th", "9th", "10th",
-        "11th", "12th"
-    ];
-
-    const sortedStudents = [...students].sort((a, b) => {
-        const aIndex = classOrder.indexOf(a.class);
-        const bIndex = classOrder.indexOf(b.class);
-        return aIndex - bIndex;
-    });
+    // Phase 4.2.1: Use studentService.getStudentsSorted() - PURE FUNCTION
+    const sortedStudents = studentService.getStudentsSorted(students);
 
     /* 🔵 LEFT GRID (Transport tak) */
     const leftGrid = {

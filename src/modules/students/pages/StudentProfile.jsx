@@ -50,7 +50,6 @@ const StudentProfile = () => {
         schoolData?.schools?.english ||
         schoolData?.schools?.single ||
         schoolData || {};
-    console.log("schoolData 👉", schoolData);
     return (
         <div style={{
             padding: "30px",

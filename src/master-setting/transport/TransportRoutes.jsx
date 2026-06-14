@@ -66,7 +66,7 @@ export default function TransportRoutes() {
         const totalPoints =
             routes.reduce(
                 (acc, r) =>
-                    acc + (r.points?.length || 0),
+                    acc + (r.pickupPoints?.length || r.points?.length || 0),
                 0
             );
 
@@ -146,12 +146,12 @@ export default function TransportRoutes() {
         );
 
         const mappedPoints =
-            route.points?.length
-                ? route.points.map((p) => ({
+            route.pickupPoints?.length || route.points?.length
+                ? (route.pickupPoints || route.points).map((p) => ({
                     name:
-                        p.pointName || "",
+                        p.pickupPointName || p.pointName || p.name || "",
                     fare:
-                        p.fee || "",
+                        p.routeFee || p.fee || "",
                     pickup:
                         p.pickupTime || "",
                     drop:
@@ -281,7 +281,7 @@ export default function TransportRoutes() {
                     updatedAt:
                         new Date().toISOString(),
 
-                    points:
+                    pickupPoints:
                         points
                             .filter(
                                 (p) => p.name
@@ -289,13 +289,13 @@ export default function TransportRoutes() {
                             .map((p, index) => ({
 
                                 id:
-                                    r.points?.[index]?.id ||
+                                    r.pickupPoints?.[index]?.id || r.points?.[index]?.id ||
                                     Date.now() + index,
 
-                                pointName:
+                                pickupPointName:
                                     p.name,
 
-                                fee:
+                                routeFee:
                                     Number(
                                         p.fare || 0
                                     ),
@@ -875,7 +875,7 @@ export default function TransportRoutes() {
                         </div>
 
                         <div style={styles.routeMeta}>
-                            🚏 {r.points?.length || 0} Points
+                            🚏 {r.pickupPoints?.length || r.points?.length || 0} Points
                         </div>
 
                         {r.fareType === "fixed" && (
@@ -887,7 +887,7 @@ export default function TransportRoutes() {
 
                         <div style={styles.pointList}>
 
-                            {r.points?.map((p) => (
+                            {(r.pickupPoints || r.points)?.map((p) => (
 
                                 <div
                                     key={p.id}
@@ -895,12 +895,12 @@ export default function TransportRoutes() {
                                 >
                                     <div>
                                         <b>
-                                            {p.pointName}
+                                            {p.pickupPointName || p.pointName}
                                         </b>
                                     </div>
 
                                     <div>
-                                        ₹ {p.fee}
+                                        ₹ {p.routeFee || p.fee}
                                     </div>
 
                                     <div>

@@ -43,11 +43,6 @@ const input3D = {
     background: "#f5f7ff",
     fontSize: "13px"
 };
-
-const select3D = {
-    ...input3D,
-    cursor: "pointer"
-};
 const StudentList = () => {
 
     const navigate = useNavigate();
@@ -96,51 +91,16 @@ const StudentList = () => {
     };
 
     // ⭐ SMART SEARCH + FILTER (FINAL)
-    const query = search.toLowerCase();
-    const filteredStudents = students.filter((s) => {
-        return (
-
-            // SEARCH
-            (!search ||
-                s.name?.toLowerCase().includes(query) ||
-                s.mobile?.toLowerCase().includes(query) ||
-                s.mobileNo?.toLowerCase().includes(query) ||
-                s.admissionNo?.toLowerCase().includes(query)
-            )
-
-            // CLASS
-            && (!filters.class || String(s.class) === String(filters.class))
-
-            // GENDER
-            && (!filters.gender || s.gender === filters.gender)
-
-            // CATEGORY
-            && (!filters.category || s.category === filters.category)
-
-            // HOSTEL
-            && (
-                !filters.hostel ||
-                (filters.hostel === "Yes" && s.hostel === true) ||
-                (filters.hostel === "No" && s.hostel === false)
-            )
-
-            // RTE
-            && (!filters.rte || String(s.RTE) === filters.rte)
-
-            // ✅ TRANSPORT (FIXED)
-            && (
-                !filters.transport ||
-                (filters.transport === "Yes" && s.transport === true) ||
-                (filters.transport === "No" && s.transport === false)
-            )
-
-            // ✅ ROUTE (ONLY WHEN TRANSPORT = YES)
-            && (
-                !filters.route ||
-                (filters.transport === "Yes" && s.route === filters.route)
-            )
-
-        );
+    // Phase 4.2.1: Use studentService.getStudentsFiltered() - PURE FUNCTION
+    const filteredStudents = studentService.getStudentsFiltered(students, {
+        search,
+        class: filters.class,
+        gender: filters.gender,
+        category: filters.category,
+        hostel: filters.hostel,
+        transport: filters.transport,
+        route: filters.route,
+        rte: filters.rte
     });
 
     // ⭐ AUTO CLASS LIST

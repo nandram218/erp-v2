@@ -15,18 +15,16 @@ import {
     removeStorageCompat,
     STORAGE_KEYS,
 } from "./storageService";
-import { blockDirectServiceAccess } from "../core/serviceRegistry";
-
-// Phase 3.1 D Hardening: Block direct access in production mode
-blockDirectServiceAccess("feeSettingsService");
 
 const KEY = STORAGE_KEYS.ERP_FEE_SETTINGS;
 
 /**
  * @deprecated Use src/modules/fees/feesService.js instead
  */
-export const getFeeSettings = () =>
-    getStorageCompat(KEY, null);
+export const getFeeSettings = () => {
+    const data = getStorageCompat(KEY, null);
+    return data;
+};
 
 /**
  * @deprecated Use src/modules/fees/feesService.js instead

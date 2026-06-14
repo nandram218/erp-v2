@@ -14,6 +14,7 @@ import {
 } from "../../services/storageService";
 import { withTenantContext } from "../../services/tenantContextService";
 import { blockDirectServiceAccess } from "../../core/serviceRegistry";
+import { getFeeSettings } from "../../services/feeSettingsService";
 
 // Phase 3.1 D Safe Mode: Block direct access in production mode
 blockDirectServiceAccess("feesService");
@@ -145,7 +146,7 @@ export const createStudentFeesRecord = ({ student = {} }) => {
     return newRecord;
 };
 /* =========================
-   SYNC STUDENTS
+   SYNC STUDENTS - Canonical Structure
 ========================= */
 
 export const syncStudentsToFeesDB = ({
@@ -153,6 +154,7 @@ export const syncStudentsToFeesDB = ({
 }) => {
 
     const db = getFeesDB();
+    const feeData = getFeeSettings();
 
     const updated = [...db];
 
@@ -171,12 +173,12 @@ export const syncStudentsToFeesDB = ({
         );
 
         /* =========================
-           NORMALIZE STUDENT
+           NORMALIZE STUDENT - Canonical Structure
         ========================= */
 
         const totalFee =
             Number(
-                student.totalFee || 0
+                student.calculatedTotals?.totalFee || 0
             );
 
         const normalized = {
@@ -198,112 +200,76 @@ export const syncStudentsToFeesDB = ({
                 student.mobile || "",
 
             totalFee,
+
+            paidAmount: existing ? existing.paidAmount : 0,
+
+            dueAmount: totalFee - (existing ? existing.paidAmount : 0),
+
+            status: totalFee - (existing ? existing.paidAmount : 0) <= 0 ? "paid" : "unpaid",
+
+            payments: existing ? existing.payments : [],
+
+            createdAt: existing ? existing.createdAt : new Date().toISOString(),
+
+            updatedAt: new Date().toISOString(),
         };
 
-        /* =========================
-           CREATE NEW RECORD
-        ========================= */
-
-        if (!existing) {
-
-            updated.push({
-
-                ...normalized,
-
-                paidAmount: 0,
-
-                dueAmount: totalFee,
-
-                status:
-                    totalFee <= 0
-                        ? "paid"
-                        : "unpaid",
-
-                payments: [],
-
-                createdAt:
-                    new Date().toISOString(),
-
-                updatedAt:
-                    new Date().toISOString(),
-            });
-
-            return;
+        if (existing) {
+            Object.assign(existing, normalized);
+        } else {
+            updated.push(withTenantContext(normalized));
         }
-
-        /* =========================
-           UPDATE EXISTING
-        ========================= */
-
-        existing.studentName =
-            normalized.studentName;
-
-        existing.className =
-            normalized.className;
-
-        existing.fatherName =
-            normalized.fatherName;
-
-        existing.mobile =
-            normalized.mobile;
-
-        existing.totalFee =
-            totalFee;
-
-        /* =========================
-           SAFE PAYMENT VALUES
-        ========================= */
-
-        existing.paidAmount =
-            Number(
-                existing.paidAmount || 0
-            );
-
-        existing.dueAmount =
-            Math.max(
-                totalFee -
-                existing.paidAmount,
-                0
-            );
-
-        /* =========================
-           STATUS ENGINE
-        ========================= */
-
-        existing.status =
-            existing.dueAmount <= 0
-                ? "paid"
-                : existing.paidAmount > 0
-                    ? "partial"
-                    : "unpaid";
-
-        /* =========================
-           SAFETY DEFAULTS
-        ========================= */
-
-        if (
-            !Array.isArray(
-                existing.payments
-            )
-        ) {
-            existing.payments = [];
-        }
-
-        existing.updatedAt =
-            new Date().toISOString();
     });
 
-    /* =========================
-       SAVE DATABASE
-    ========================= */
-
     saveFeesDB(updated);
-
-    return updated;
 };
 
 /* =========================
-   PAYMENT ENGINE (MAIN)
+   GET STUDENT FEE BREAKDOWN - Canonical Structure
+========================= */
+
+export const getStudentFeeBreakdown = (student) => {
+    const feeData = getFeeSettings();
+
+    if (!feeData || !student.class) {
+        return null;
+    }
+
+    const classData = feeData.classes?.[student.class];
+    if (!classData) {
+        return null;
+    }
+
+    // Get compulsory fees
+    const compulsoryFees = classData.compulsoryFees || [];
+
+    // Get selected optional fees
+    const selectedOptionalFees = classData.optionalFees?.filter(fee =>
+        student.selectedOptionalFees?.includes(fee.id)
+    ) || [];
+
+    // Get transport details
+    const transportRoute = feeData.transportRoutes?.find(r => r.id === student.transport?.routeId);
+
+    return {
+        compulsoryFees,
+        selectedOptionalFees,
+        transport: student.transport?.enabled ? {
+            routeId: student.transport.routeId,
+            routeName: transportRoute?.routeName || transportRoute?.name,
+            pickupPoint: student.transport.pickupPoint,
+            routeFee: student.transport.routeFee || student.transport.fee || student.transport.monthlyFee || 0
+        } : null,
+        hostel: student.hostel?.enabled ? {
+            enabled: true,
+            fee: student.hostel.fee
+        } : null,
+        calculatedTotals: student.calculatedTotals
+    };
+};
+
+/* =========================
+   PAYMENT FUNCTIONS
 ========================= */
 
 export const collectFeesPayment = ({ studentId, paymentData = {} }) => {

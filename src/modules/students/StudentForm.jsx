@@ -2,21 +2,53 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { getService } from "../../core/serviceRegistry";
 import { useSchoolStore } from "../../store/schoolStore";
-import { 
-    getStorageCompat, 
-    setStorageCompat, 
-    removeStorageCompat 
+import {
+    getStorageCompat,
+    setStorageCompat,
+    removeStorageCompat
 } from "../../services/storageService";
 import { STORAGE_KEYS } from "../../core/constants/storageKeys";
-import {
-    CLASS_FEES,
-    HOSTEL_FEE_CONST,
-    TRANSPORT_ROUTES
-} from "../../core/constants/feeConstants";
+import { getFeeSettings } from "../../services/feeSettingsService";
+import { getTransportRoutes } from "../../modules/transport/services/transportService";
 
 const studentService = getService("student");
-// Note: feeSettingsService is deprecated - using unified fees service instead
-const feesService = getService("fees");
+
+/* =========================================================
+   HELPER: Calculate Student Totals from Canonical Structure
+========================================================= */
+
+const calculateStudentTotals = (student, feeData) => {
+    if (!feeData || !student.class) {
+        return { compulsoryTotal: 0, optionalTotal: 0, transportFee: 0, hostelFee: 0, totalFee: 0 };
+    }
+
+    const classData = feeData.classes?.[student.class];
+    if (!classData) {
+        return { compulsoryTotal: 0, optionalTotal: 0, transportFee: 0, hostelFee: 0, totalFee: 0 };
+    }
+
+    // Calculate compulsory total (all compulsory fees are auto-selected)
+    const compulsoryTotal = classData.compulsoryFees.reduce((sum, fee) => sum + fee.amount, 0);
+
+    // Calculate optional total (only selected optional fees)
+    const optionalTotal = classData.optionalFees
+        .filter(fee => student.selectedOptionalFees?.includes(fee.id))
+        .reduce((sum, fee) => sum + fee.amount, 0);
+
+    // Calculate transport fee
+    const transportFee = student.transport?.enabled ? student.transport.routeFee : 0;
+
+    // Calculate hostel fee
+    const hostelFee = student.hostel?.enabled ? student.hostel.fee : 0;
+
+    return {
+        compulsoryTotal,
+        optionalTotal,
+        transportFee,
+        hostelFee,
+        totalFee: compulsoryTotal + optionalTotal + transportFee + hostelFee
+    };
+};
 
 const StudentForm = () => {
     const navigate = useNavigate();
@@ -26,11 +58,6 @@ const StudentForm = () => {
 
     const previewStudentId =
         studentService.generateStudentId();
-    const wrapper = {
-        display: "flex",
-        gap: "10px",
-        marginBottom: "20px"
-    };
 
     const leftStrip = {
         width: "12px",
@@ -51,21 +78,13 @@ const StudentForm = () => {
     /* ================= DATA ================= */
 const classes =
                         getStorageCompat(STORAGE_KEYS.ERP_CLASSES, []);
-    const feeSettings = feesService.getFeeSettings ? feesService.getFeeSettings() : null;
-    const effectiveClassFees = feeSettings?.classFees ? feeSettings.classFees : CLASS_FEES;
-    const effectiveTransportRoutes = feeSettings?.routes ? feeSettings.routes : TRANSPORT_ROUTES;
-    const effectiveHostelFee = feeSettings?.hostelFee ? feeSettings.hostelFee : HOSTEL_FEE_CONST;
+    // Read fee data directly from storage in canonical structure
+    const feeData = getFeeSettings();
+    // Read transport routes from transport service (single source of truth)
+    const transportRoutes = getTransportRoutes();
 
-    const classFees = effectiveClassFees;
-
-    const streams = ["Science", "Commerce", "Arts"];
-    const sections = ["A", "B", "C", "D"];
     const bloodGroups = ["A+", "B+", "O+", "AB+", "A-", "B-", "O-", "AB-"];
     const categories = ["GEN", "OBC", "SC", "ST"];
-
-    const routes = effectiveTransportRoutes;
-
-    const hostelFeeConst = effectiveHostelFee;
 
     /* ================= STATE ================= */
 
@@ -115,15 +134,12 @@ const classes =
         photoPreview: "",
         documents: [],
 
-        transport: false,
-        route: "",
-        transportFee: 0,
-
-        hostel: false,
-        hostelFee: 0,
-
-        tuitionFee: 0,
-        totalFee: 0
+        // Canonical fee structure
+        selectedCompulsoryFees: [],
+        selectedOptionalFees: [],
+        transport: { enabled: false, routeId: "", pickupPoint: "", routeFee: 0 },
+        hostel: { enabled: false, fee: 0 },
+        calculatedTotals: { compulsoryTotal: 0, optionalTotal: 0, transportFee: 0, hostelFee: 0, totalFee: 0 }
     };
 
     const [form, setForm] = useState(initialState);
@@ -193,6 +209,9 @@ const classes =
 
             if (existingStudent) {
 
+                // Recalculate fees with current canonical fee structure
+                const calculatedTotals = calculateStudentTotals(existingStudent, feeData);
+
                 setForm({
 
                     ...existingStudent,
@@ -211,7 +230,10 @@ const classes =
 
                     studentId:
                         existingStudent.studentId ||
-                        previewStudentId
+                        previewStudentId,
+
+                    // Update fee totals with current FeeSettings
+                    calculatedTotals
                 });
             }
         }
@@ -295,37 +317,152 @@ const classes =
 
     const handleClass = (e) => {
         const cls = e.target.value;
-        const fee = classFees[cls] || 0;
+        const classData = feeData?.classes?.[cls];
 
-        setForm({
+        // Auto-select all compulsory fees for the class
+        const compulsoryFeeIds = classData?.compulsoryFees?.map(f => f.id) || [];
+
+        const updatedForm = {
             ...form,
             class: cls,
-            tuitionFee: fee,
-            totalFee: fee + form.transportFee + form.hostelFee
+            selectedCompulsoryFees: compulsoryFeeIds,
+            selectedOptionalFees: [],
+            transport: { enabled: false, routeId: "", pickupPoint: "", routeFee: 0 },
+            hostel: { enabled: false, fee: 0 }
+        };
+
+        const calculatedTotals = calculateStudentTotals(updatedForm, feeData);
+
+        setForm({
+            ...updatedForm,
+            calculatedTotals
         });
     };
 
     const handleRoute = (e) => {
-        const r = routes.find(x => x.name === e.target.value);
-        const fee = r ? r.fee : 0;
+        const routeId = e.target.value;
+        const route = transportRoutes?.find(r => String(r.id) === String(routeId));
+
+        // Calculate routeFee based on fareType (canonical structure)
+        let routeFee = 0;
+
+        if (route) {
+            if (route.fareType === "fixed") {
+                routeFee = route.fixedFare;
+            } else if (
+                route.fareType === "pointWise" ||
+                route.fareType === "point"
+            ) {
+                // For point-based routes, fee comes from pickup point
+                routeFee = 0;
+            }
+        }
+        const updatedForm = {
+            ...form,
+            transport: {
+                enabled: true,
+                routeId,
+                pickupPoint: "",
+                routeFee
+            }
+        };
+
+        const calculatedTotals = calculateStudentTotals(updatedForm, feeData);
 
         setForm({
+            ...updatedForm,
+            calculatedTotals
+        });
+    };
+
+    const handlePickupPoint = (e) => {
+        const pickupPointValue = e.target.value;
+        const route = transportRoutes?.find(r => String(r.id) === String(form.transport.routeId));
+
+        const pickupPoint =
+            route?.pickupPoints?.find(
+                p => p.pickupPointName === pickupPointValue
+            );
+
+        // Calculate routeFee based on fareType and selected pickup point
+        let routeFee = 0;
+
+        if (route) {
+            if (route.fareType === "fixed") {
+                routeFee = route.fixedFare;
+            } else if (
+                route.fareType === "pointWise" ||
+                route.fareType === "point"
+            ) {
+                const pickupPoint =
+                    route.pickupPoints?.find(
+                        p => p.pickupPointName === pickupPointValue
+                    );
+
+                routeFee = Number(pickupPoint?.routeFee || 0);
+            }
+        }
+
+        const updatedForm = {
             ...form,
-            route: e.target.value,
-            transportFee: fee,
-            totalFee: form.tuitionFee + fee + form.hostelFee
+            transport: {
+                ...form.transport,
+                pickupPoint: pickupPointValue,
+                routeFee
+            }
+        };
+
+        const calculatedTotals =
+            calculateStudentTotals(
+                updatedForm,
+                feeData
+            );
+
+        setForm({
+            ...updatedForm,
+            calculatedTotals
         });
     };
 
     const handleHostel = (e) => {
         const checked = e.target.checked;
-        const fee = checked ? hostelFeeConst : 0;
+
+        const updatedForm = {
+            ...form,
+            hostel: {
+                enabled: checked,
+                fee: checked ? feeData?.hostelFee?.amount || 0 : 0
+            }
+        };
+
+        const calculatedTotals = calculateStudentTotals(updatedForm, feeData);
 
         setForm({
+            ...updatedForm,
+            calculatedTotals
+        });
+    };
+
+    const handleOptionalFeeToggle = (feeId) => {
+        const currentOptionalFees = form.selectedOptionalFees || [];
+        let updatedOptionalFees;
+
+        if (currentOptionalFees.includes(feeId)) {
+            updatedOptionalFees = currentOptionalFees.filter(id => id !== feeId);
+        } else {
+            updatedOptionalFees = [...currentOptionalFees, feeId];
+        }
+
+        const updatedForm = {
             ...form,
-            hostel: checked,
-            hostelFee: fee,
-            totalFee: form.tuitionFee + form.transportFee + fee
+            selectedOptionalFees: updatedOptionalFees
+        };
+
+        const calculatedTotals = calculateStudentTotals(updatedForm, feeData);
+
+        setForm({
+            ...updatedForm,
+            calculatedTotals
         });
     };
 
@@ -651,7 +788,7 @@ const classes =
                 <div style={row4}>
                     <input style={input} name="admissionNo" value={form.admissionNo} placeholder="Admission No" onChange={handleChange} />
                     <input style={input} type="date" name="admissionDate" value={form.admissionDate} onChange={handleChange} />
-                   
+
 
                     <select style={input} value={form.class} onChange={handleClass}>
                         <option value="">Class</option>
@@ -662,7 +799,7 @@ const classes =
                             </option>
                         ))}
                     </select>
-                   
+
                 </div>
 
                 {/* PREVIOUS SCHOOL */}
@@ -735,32 +872,147 @@ const classes =
                     <h3>Services</h3>
 
                     <label>
-                        <input type="checkbox" name="transport" checked={form.transport} onChange={handleChange} /> Transport
+                        <input type="checkbox" checked={form.transport?.enabled} onChange={(e) => {
+                            if (e.target.checked) {
+                                setForm({ ...form, transport: { enabled: true, routeId: "", pickupPoint: "", routeFee: 0 } });
+                            } else {
+                                const updatedForm = { ...form, transport: { enabled: false, routeId: "", pickupPoint: "", routeFee: 0 } };
+                                const calculatedTotals = calculateStudentTotals(updatedForm, feeData);
+                                setForm({ ...updatedForm, calculatedTotals });
+                            }
+                        }} /> Transport
                     </label>
 
-                    {form.transport && (
-                        <select value={form.route} onChange={handleRoute}>
-                            <option value="">Select Route</option>
-                            {(routes || []).map(r => (
-                                <option key={r.name}>{r.name}</option>
-                            ))}
-                        </select>
+                    {form.transport?.enabled && (
+                        <>
+                            <select value={form.transport.routeId} onChange={handleRoute}>
+                                <option value="">Select Route</option>
+                                {(transportRoutes || []).map(r => (
+                                    <option key={r.id} value={r.id}>{r.routeName} (₹{r.fixedFare})</option>
+                                ))}
+                            </select>
+
+                            {form.transport.routeId && (
+                                <select value={form.transport.pickupPoint} onChange={handlePickupPoint}>
+                                    <option value="">Select Pickup Point</option>
+                                    {(transportRoutes.find(r => String(r.id) === String(form.transport.routeId))?.pickupPoints || []).map((point) => (
+                                        <option key={point.id} value={point.pickupPointName}>{point.pickupPointName}</option>
+                                    ))}
+                                </select>
+                            )}
+                        </>
                     )}
 
                     <br />
 
                     <label>
-                        <input type="checkbox" checked={form.hostel} onChange={handleHostel} /> Hostel
+                        <input type="checkbox" checked={form.hostel?.enabled} onChange={handleHostel} /> Hostel
                     </label>
                 </div>
 
-                {/* FEES */}
+                {/* FEES - Canonical Structure */}
                 <div style={box}>
-                    <h3>Fees</h3>
-                    <p>Tuition: ₹{form.tuitionFee}</p>
-                    <p>Transport: ₹{form.transportFee}</p>
-                    <p>Hostel: ₹{form.hostelFee}</p>
-                    <h4>Total: ₹{form.totalFee}</h4>
+                    <h3>💰 Fee Structure</h3>
+
+                    {/* Compulsory Fees */}
+                    <div style={{ marginBottom: "15px", padding: "10px", background: "#f0f8ff", borderRadius: "8px" }}>
+                        <h4 style={{ margin: "0 0 5px 0", color: "#1976d2" }}>📘 Compulsory Fees</h4>
+                        {feeData?.classes?.[form.class]?.compulsoryFees?.length > 0 ? (
+                            <ul style={{ margin: "5px 0 0 0", paddingLeft: "20px" }}>
+                                {feeData.classes[form.class].compulsoryFees.map((fee, idx) => (
+                                    <li key={idx} style={{ marginBottom: "3px" }}>
+                                        {fee.name}: ₹{fee.amount}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p style={{ margin: "5px 0 0 0", color: "#666", fontSize: "14px" }}>No compulsory fees configured for this class</p>
+                        )}
+                        <p style={{ margin: "10px 0 0 0", fontSize: "18px", fontWeight: "bold" }}>
+                            Compulsory Total: ₹{form.calculatedTotals?.compulsoryTotal || 0}
+                        </p>
+                    </div>
+
+                    {/* Optional Fees */}
+                    <div style={{ marginBottom: "15px", padding: "10px", background: "#fff3e0", borderRadius: "8px" }}>
+                        <h4 style={{ margin: "0 0 5px 0", color: "#e65100" }}>🧪 Optional Fees</h4>
+                        {feeData?.classes?.[form.class]?.optionalFees?.length > 0 ? (
+                            <div style={{ marginTop: "10px" }}>
+                                {feeData.classes[form.class].optionalFees.map((fee, idx) => (
+                                    <div key={idx} style={{ marginTop: "5px", fontSize: "14px" }}>
+                                        <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={form.selectedOptionalFees?.includes(fee.id)}
+                                                onChange={() => handleOptionalFeeToggle(fee.id)}
+                                                style={{ marginRight: "8px" }}
+                                            />
+                                            <span style={{ flex: 1 }}>{fee.name}</span>
+                                            <span style={{ fontWeight: "bold", color: "#e65100" }}>₹{fee.amount}</span>
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p style={{ margin: "5px 0 0 0", color: "#666", fontSize: "14px" }}>No optional fees configured for this class</p>
+                        )}
+                        <p style={{ margin: "10px 0 0 0", fontSize: "18px", fontWeight: "bold" }}>
+                            Optional Total: ₹{form.calculatedTotals?.optionalTotal || 0}
+                        </p>
+                    </div>
+
+                    {/* Facility Fees - Transport and Hostel */}
+                    <div style={{ marginBottom: "15px", padding: "10px", background: "#e8f5e9", borderRadius: "8px" }}>
+                        <h4 style={{ margin: "0 0 10px 0", color: "#388e3c" }}>🚌 Facility Fees</h4>
+
+                        {/* Transport */}
+                        {form.transport?.enabled && form.transport.routeId && (
+                            <div style={{ marginBottom: "10px" }}>
+                                <p style={{ margin: "0 0 5px 0" }}>
+                                    <strong>Transport:</strong> {transportRoutes?.find(r => String(r.id) === String(form.transport.routeId))?.routeName}
+                                </p>
+                                {form.transport.pickupPoint && (
+                                    <p style={{ margin: "0 0 5px 0", fontSize: "14px", color: "#666" }}>
+                                        Pickup Point: {form.transport.pickupPoint}
+                                    </p>
+                                )}
+                                <p style={{ margin: "0", fontWeight: "bold", color: "#388e3c" }}>
+                                    Transport Fee: ₹{form.calculatedTotals?.transportFee || 0}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Hostel */}
+                        {form.hostel?.enabled && (
+                            <div>
+                                <p style={{ margin: "0 0 5px 0" }}>
+                                    <strong>Hostel:</strong> Enabled
+                                </p>
+                                <p style={{ margin: "0", fontWeight: "bold", color: "#388e3c" }}>
+                                    Hostel Fee: ₹{form.calculatedTotals?.hostelFee || 0}
+                                </p>
+                            </div>
+                        )}
+
+                        {!form.transport?.enabled && !form.hostel?.enabled && (
+                            <small style={{ color: "#666" }}>No facility fees selected</small>
+                        )}
+                    </div>
+
+                    {/* Grand Total */}
+                    <div style={{
+                        marginTop: "20px",
+                        padding: "15px",
+                        background: "#4caf50",
+                        color: "white",
+                        borderRadius: "8px",
+                        textAlign: "center"
+                    }}>
+                        <h3 style={{ margin: "0 0 5px 0" }}>Grand Total</h3>
+                        <p style={{ margin: "0", fontSize: "24px", fontWeight: "bold" }}>
+                            ₹{form.calculatedTotals?.totalFee || 0}
+                        </p>
+                    </div>
                 </div>
                 <div style={row4}>
                     <input

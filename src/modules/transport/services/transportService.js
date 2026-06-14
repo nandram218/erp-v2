@@ -67,8 +67,44 @@ const saveTransportDB = (transport) => {
    ROUTES
 ===================================================== */
 
+/* =====================================================
+   NORMALIZATION LAYER
+   Ensures all routes have canonical structure
+===================================================== */
+const normalizeRoute = (route) => {
+    // Normalize pickup points - convert all fee variations to routeFee
+    const pickupPoints = (route.pickupPoints || route.points || []).map(point => ({
+        id: point.id,
+        pickupPointName: point.pickupPointName || point.pointName || point.name || "",
+        routeFee: point.routeFee || point.fee || point.fare || 0,
+        pickupTime: point.pickupTime || point.pickup || "",
+        dropTime: point.dropTime || point.drop || ""
+    }));
+
+    // Convert all route fee variations to transportFee (canonical)
+    const transportFee = route.fixedFare || route.routeFee || route.monthlyFee || route.fee || route.fare || 0;
+
+    return {
+        id: route.id,
+        routeName: route.routeName || route.name || "",
+        fareType: route.fareType || "fixed",
+        transportFee,
+        vehicleNumber: route.vehicleNumber || "",
+        vehicleType: route.vehicleType || "Bus",
+        driverName: route.driverName || "",
+        driverPhone: route.driverPhone || "",
+        gpsEnabled: route.gpsEnabled || false,
+        liveTrackingEnabled: route.liveTrackingEnabled || false,
+        active: route.active !== undefined ? route.active : true,
+        pickupPoints,
+        createdAt: route.createdAt,
+        updatedAt: route.updatedAt
+    };
+};
+
 export const getTransportRoutes = () => {
-    return getTransportDB().routes || [];
+    const routes = getTransportDB().routes || [];
+    return routes.map(normalizeRoute);
 };
 
 export const getRouteById = (

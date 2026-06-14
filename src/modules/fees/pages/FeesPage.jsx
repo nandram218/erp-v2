@@ -5,6 +5,7 @@ import { getService } from "../../../core/serviceRegistry";
 import FeesTable from "../components/FeesTable";
 import FeesCollectModal from "../components/FeesCollectModal";
 import ReceiptModal from "../components/ReceiptModal";
+import { getFeeSettings } from "../../../services/feeSettingsService";
 
 const feesService = getService("fees");
 
@@ -12,6 +13,7 @@ const FeesPage = () => {
 
     const navigate = useNavigate();
     const students = useSchoolStore((s) => s.students) || [];
+    const feeData = getFeeSettings();
 
     const [search, setSearch] = useState("");
     const [selectedIds, setSelectedIds] = useState([]);
@@ -53,7 +55,9 @@ const FeesPage = () => {
     };
 
     const handleCollect = (student) => {
-        setActiveStudent(student);
+        // Get full student data from Zustand store for canonical fee structure
+        const fullStudent = students.find(s => s.studentId === student.studentId);
+        setActiveStudent(fullStudent || student);
     };
 
     const handlePaymentSuccess = (data) => {
@@ -232,7 +236,9 @@ const FeesPage = () => {
                 onReceipt={(s) => setReceiptData({
                     student: s
                 })}
-                onHistory={(s) => navigate(`/fees/history/${s.studentId}`)}
+                onHistory={() => navigate("/fees/history")}
+                feeData={feeData}
+                students={students}
             />
             
             {/* MODAL */}
@@ -241,6 +247,7 @@ const FeesPage = () => {
                     student={activeStudent}
                     onClose={() => setActiveStudent(null)}
                     onSuccess={handlePaymentSuccess}
+                    feeData={feeData}
                 />
             )}
 

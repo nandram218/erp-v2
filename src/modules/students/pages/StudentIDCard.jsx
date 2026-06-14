@@ -2,11 +2,14 @@ import React from "react";
 import { useParams } from "react-router-dom";
 import Barcode from "react-barcode";
 import QRCode from "react-qr-code";
+import { getService } from "../../../core/serviceRegistry";
+
+const studentService = getService("student");
 
 const StudentIDCard = () => {
     const { id } = useParams();
 
-    const students = JSON.parse() || [];
+    const students = studentService.getStudents() || [];
     const s = students.find(st => Number(st.id) === Number(id));
 
     if (!s) return <h3>No Student Found</h3>;
