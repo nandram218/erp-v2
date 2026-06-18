@@ -3,7 +3,7 @@
 // Phase 3.1 D Safe Mode - STRICT SaaS Enforcement
 // ⚠️ PRODUCTION MODE: Direct access to this service is BLOCKED
 // Use ServiceRegistry.getService("student") instead
-
+import { getService } from "../core/serviceRegistry";
 import { useSchoolStore } from "../store/schoolStore";
 import { getTenantContext } from "./tenantContextService";
 import { blockDirectServiceAccess } from "../core/serviceRegistry";
@@ -142,6 +142,10 @@ export const addStudent = (
 
     setStudents(updatedStudents);
 
+    // Create fee record in fees service
+    const feesService = getService("fees");
+    feesService.createStudentFeesRecord({ student: finalStudent });
+
     return finalStudent;
 };
 
@@ -193,9 +197,16 @@ export const updateStudent = (
 
     setStudents(updatedStudents);
 
-    return updatedStudents.find((student) =>
+    // Sync updated student to fees service
+    const feesService = getService("fees");
+    const updatedStudent = updatedStudents.find((student) =>
         matchesStudent(student, identifier)
     );
+    if (updatedStudent) {
+        feesService.syncStudentsToFeesDB({ students: [updatedStudent] });
+    }
+
+    return updatedStudent;
 };
 
 /* =========================================================
@@ -409,215 +420,7 @@ export const safeGetStudentById = (identifier) => {
     }
 };
 
-/* =========================================================
-   FEE CONFIGURATION RESOLVER
-========================================================= */
 
-/**
- * Get fee configuration from FeeSettings and Transport
- * Phase 4.2.1 Stabilization: Single source of truth with FeeNormalizer
- *
- * Architecture:
- * - PRIMARY SOURCE: STORAGE_KEYS.ERP_FEE_SETTINGS
- * - SECONDARY SOURCE: transportService.getTransportRoutes()
- * - FALLBACK: CLASS_FEES, HOSTEL_FEE_CONST, TRANSPORT_ROUTES (constants)
- *
- * SaaS Multi-School Support:
- * - schoolId context for tenant isolation
- * - academicYear context for year-specific fees
- */
-export const getFeeConfig = (context = {}) => {
-    try {
-        const { getStorageCompat, STORAGE_KEYS } = require("./storageService");
-        const { normalizeFeeSettings, getFallbackFeeStructure, validateFeeStructure } = require("../core/fee-engine/feeNormalizer");
-
-        // Get SaaS context (schoolId, academicYear)
-        const { schoolId = "default", academicYear = "2024-25" } = context;
-
-        // Read FeeSettings from storage (PRIMARY SOURCE)
-        const feeSettings = getStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS, null);
-
-        // Read Transport routes from transportService
-        const transportService = require("../modules/transport/services/transportService");
-        const transportRoutes = transportService.getTransportRoutes();
-
-        // Normalize FeeSettings using FeeNormalizer
-        const normalizedConfig = normalizeFeeSettings(feeSettings, transportRoutes, { schoolId, academicYear });
-
-        if (normalizedConfig) {
-            // Validate normalized structure
-            const validation = validateFeeStructure(normalizedConfig);
-
-            if (!validation.valid) {
-                console.error('[studentService] Fee structure validation failed:', validation.errors);
-            }
-            if (validation.warnings.length > 0) {
-                console.warn('[studentService] Fee structure warnings:', validation.warnings);
-            }
-
-            const result = {
-                ...normalizedConfig,
-                routes: normalizedConfig.transportRoutes
-            };
-
-
-            return result;
-        }
-
-        // FeeSettings is empty - show error instead of using fallback
-        console.error('[studentService] FeeSettings is empty. Please configure fee settings in FeeSettings module.');
-        return {
-            schoolId,
-            academicYear,
-            classFees: {},
-            transportRoutes: [],
-            hostelFee: 0,
-            settings: {},
-            source: "error",
-            routes: []
-        };
-    } catch (error) {
-        console.error('[studentService] Fee config error:', error);
-        // Return empty config instead of fallback
-        return {
-            schoolId: context.schoolId || "default",
-            academicYear: context.academicYear || "2024-25",
-            classFees: {},
-            transportRoutes: [],
-            hostelFee: 0,
-            settings: {},
-            source: "error",
-            routes: []
-        };
-    }
-};
-
-/* =========================================================
-   FEE CALCULATION SERVICE
-========================================================= */
-
-/**
- * Calculate student fees based on class, transport, hostel, and optional activities
- * Phase 4.2.1 Stabilization: Category-based fee aggregation with mandatory + optional logic
- *
- * Architecture:
- * - PURE FUNCTION (no side effects)
- * - No localStorage access
- * - No UI dependencies
- * - Service layer only
- *
- * Returns:
- * - Category totals (academic, supportingAcademic, activities, facilities)
- * - Grand total
- * - Detailed breakdown for UI display
- */
-export const calculateStudentFees = (studentData = {}, feeConfig = {}) => {
-    const { class: studentClass, transport, hostel, route, selectedActivities = [], selectedSupportingOptional = [] } = studentData;
-    const { classFees = {}, routes = [], hostelFee = 0 } = feeConfig;
-
-    // Get class fee structure from normalized config
-    const classFeeStructure = classFees[studentClass] || {
-        academic: { total: 0, items: [] },
-        supportingAcademic: {
-            total: 0,
-            compulsory: { total: 0, items: [] },
-            optional: { total: 0, items: [] }
-        },
-        activities: { items: [] },
-        facilities: { items: [] }
-    };
-
-    // Academic fees (always auto-calculated, single total, no breakdown in UI)
-    const academicTotal = classFeeStructure.academic.total || 0;
-
-    // Supporting Academic fees (compulsory auto-included, optional checkbox-driven)
-    // Phase 4.2.1 Critical Alignment: Optional supporting academic fees only added if selected
-    const supportingAcademicCompulsoryTotal = classFeeStructure.supportingAcademic.compulsory?.total || 0;
-    const supportingAcademicOptionalTotal = selectedSupportingOptional.reduce((sum, feeName) => {
-        const fee = classFeeStructure.supportingAcademic.optional?.items.find(f => f.name === feeName);
-        return sum + (fee ? fee.amount : 0);
-    }, 0);
-    const supportingAcademicTotal = supportingAcademicCompulsoryTotal + supportingAcademicOptionalTotal;
-
-    // Optional Activity fees (checkbox-driven, fully optional)
-    const activitiesTotal = selectedActivities.reduce((sum, activityName) => {
-        const activity = classFeeStructure.activities.items.find(a => a.name === activityName);
-        return sum + (activity ? activity.amount : 0);
-    }, 0);
-
-    // Transport fee (conditional, route-based)
-    let transportFee = 0;
-    let selectedRoute = null;
-    if (transport && route) {
-        // First try to read routeFee from student record (canonical)
-        if (transport.routeFee !== undefined) {
-            transportFee = transport.routeFee;
-        } else {
-            // Backward compatibility: calculate from route object
-            const routeObj = routes.find(r => r.name === route || r.id === route);
-            if (routeObj) {
-                if (routeObj.fareType === "fixed") {
-                    transportFee = routeObj.fixedFare || 0;
-                } else if (
-                    (routeObj.fareType === "pointWise" ||
-                        routeObj.fareType === "point") &&
-                    transport.pickupPoint
-                ) {
-                    const pickupPoint = routeObj.pickupPoints?.find(p => p.pickupPointName === transport.pickupPoint);
-                    transportFee = pickupPoint?.routeFee || 0;
-                } else {
-                    // Backward compatibility
-                    transportFee = routeObj.routeFee || routeObj.fee || 0;
-                }
-                selectedRoute = routeObj;
-            }
-        }
-    }
-
-    // Hostel fee (conditional, toggle-based)
-    const hostelFeeAmount = hostel ? hostelFee : 0;
-
-    // Calculate grand total
-    const grandTotal = academicTotal + supportingAcademicTotal + activitiesTotal + transportFee + hostelFeeAmount;
-
-    return {
-        // Category totals (for UI display)
-        academicTotal,
-        supportingAcademicTotal,
-        activitiesTotal,
-        transportFee,
-        hostelFee: hostelFeeAmount,
-        totalFee: grandTotal,
-
-        // Detailed breakdown for UI (optional display)
-        breakdown: {
-            academic: {
-                total: academicTotal,
-                items: classFeeStructure.academic.items,
-                compulsory: true
-            },
-            supportingAcademic: {
-                total: supportingAcademicTotal,
-                compulsory: classFeeStructure.supportingAcademic.compulsory,
-                optional: classFeeStructure.supportingAcademic.optional
-            },
-            activities: {
-                total: activitiesTotal,
-                items: classFeeStructure.activities.items,
-                selected: selectedActivities
-            },
-            facilities: {
-                transport: selectedRoute,
-                hostel: hostel ? { fee: hostelFeeAmount } : null
-            }
-        },
-
-        // Metadata for debugging
-        source: feeConfig.source || "Unknown",
-        schoolId: feeConfig.schoolId || "default",
-        academicYear: feeConfig.academicYear || "2024-25"
-    };
-};
 
 /* =========================================================
    FILTERING SERVICE (PURE FUNCTION)

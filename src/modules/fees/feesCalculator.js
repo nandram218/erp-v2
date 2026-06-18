@@ -1,3 +1,16 @@
+// =====================================================
+// FEE ENGINE CALCULATOR (PHASE 3B - STEP 3)
+// =====================================================
+// 
+// ⚠️ RESERVED FOR PHASE 3.2C FEE ENGINE ACTIVATION
+// ⚠️ DO NOT USE IN PRODUCTION FLOW
+// ⚠️ DO NOT MODIFY WITHOUT APPROVAL
+// =====================================================
+// 
+// This file is reserved for future FeeEngineCore integration.
+// Current production fee calculation is handled by feesService.js
+// =====================================================
+
 /* =========================================================
    SAFE NUMBER
 ========================================================= */

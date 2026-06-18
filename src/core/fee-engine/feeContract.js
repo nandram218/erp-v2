@@ -47,28 +47,9 @@ export const STUDENT_FEE_CONTRACT = {
 };
 
 /**
- * Runtime Fee Calculation
- * Calculate totals at runtime - DO NOT STORE
+ * Fee Calculation Contract
+ * Fee calculation is now handled by feesService.js
+ * This contract defines the expected input/output structure
+ * 
+ * @deprecated Fee calculation moved to feesService.calculateStudentFees()
  */
-export const calculateStudentTotal = (studentFee, feeSettings) => {
-  const classData = feeSettings.classes[studentFee.class];
-  
-  const compulsoryTotal = classData.compulsoryFees
-    .filter(fee => studentFee.selectedCompulsoryFees.includes(fee.id))
-    .reduce((sum, fee) => sum + fee.amount, 0);
-  
-  const optionalTotal = classData.optionalFees
-    .filter(fee => studentFee.selectedOptionalFees.includes(fee.id))
-    .reduce((sum, fee) => sum + fee.amount, 0);
-  
-  const transportFee = studentFee.transport.enabled ? studentFee.transport.fee : 0;
-  const hostelFee = studentFee.hostel.enabled ? studentFee.hostel.fee : 0;
-  
-  return {
-    compulsoryTotal,
-    optionalTotal,
-    transportFee,
-    hostelFee,
-    totalFee: compulsoryTotal + optionalTotal + transportFee + hostelFee
-  };
-};

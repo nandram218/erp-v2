@@ -15,7 +15,7 @@ import {
 import { withTenantContext } from "../../services/tenantContextService";
 import { blockDirectServiceAccess } from "../../core/serviceRegistry";
 import { getFeeSettings } from "../../services/feeSettingsService";
-
+import { getService } from "../../core/serviceRegistry";
 // Phase 3.1 D Safe Mode: Block direct access in production mode
 blockDirectServiceAccess("feesService");
 
@@ -96,6 +96,7 @@ export const getStudentFeesRecord = (studentId) => {
 
 export const createStudentFeesRecord = ({ student = {} }) => {
     const db = getFeesDB();
+    const feeData = getFeeSettings();
 
     const exists = db.find(
         (s) => String(s.studentId) === String(student.studentId)
@@ -103,8 +104,27 @@ export const createStudentFeesRecord = ({ student = {} }) => {
 
     if (exists) return exists;
 
-    const totalFee =
-        Number(student.totalFee || 0);
+    // Calculate totalFee from canonical fee structure
+    let totalFee = 0;
+    if (student.class && feeData?.classes?.[student.class]) {
+        const classData = feeData.classes[student.class];
+        
+        // Compulsory fees (all auto-selected)
+        const compulsoryTotal = classData.compulsoryFees?.reduce((sum, fee) => sum + fee.amount, 0) || 0;
+        
+        // Optional fees (only selected)
+        const optionalTotal = classData.optionalFees
+            ?.filter(fee => student.selectedOptionalFees?.includes(fee.id))
+            .reduce((sum, fee) => sum + fee.amount, 0) || 0;
+        
+        // Transport fee
+        const transportFee = student.transport?.enabled ? (student.transport.routeFee || 0) : 0;
+        
+        // Hostel fee
+        const hostelFee = student.hostel?.enabled ? (student.hostel.fee || 0) : 0;
+        
+        totalFee = compulsoryTotal + optionalTotal + transportFee + hostelFee;
+    }
 
     const newRecord = withTenantContext({
         studentId: student.studentId,
@@ -176,10 +196,27 @@ export const syncStudentsToFeesDB = ({
            NORMALIZE STUDENT - Canonical Structure
         ========================= */
 
-        const totalFee =
-            Number(
-                student.calculatedTotals?.totalFee || 0
-            );
+        // Calculate totalFee from canonical fee structure
+        let totalFee = 0;
+        if (student.class && feeData?.classes?.[student.class]) {
+            const classData = feeData.classes[student.class];
+            
+            // Compulsory fees (all auto-selected)
+            const compulsoryTotal = classData.compulsoryFees?.reduce((sum, fee) => sum + fee.amount, 0) || 0;
+            
+            // Optional fees (only selected)
+            const optionalTotal = classData.optionalFees
+                ?.filter(fee => student.selectedOptionalFees?.includes(fee.id))
+                .reduce((sum, fee) => sum + fee.amount, 0) || 0;
+            
+            // Transport fee
+            const transportFee = student.transport?.enabled ? (student.transport.routeFee || 0) : 0;
+            
+            // Hostel fee
+            const hostelFee = student.hostel?.enabled ? (student.hostel.fee || 0) : 0;
+            
+            totalFee = compulsoryTotal + optionalTotal + transportFee + hostelFee;
+        }
 
         const normalized = {
 
@@ -321,11 +358,6 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
         paymentDate: new Date().toISOString(),
     });
 
-    updatedStudent.payments = [
-        ...(student.payments || []),
-        paymentEntry,
-    ];
-
     db[index] = updatedStudent;
     saveFeesDB(db);
 
@@ -338,6 +370,13 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
         fatherName: student.fatherName,
     });
     saveLedger(ledger);
+
+    // Reverse sync: update student payment status
+    const studentService = getService("student");
+    studentService.updateStudent(studentId, {
+        paymentStatus: updatedStudent.status,
+        lastPaymentDate: paymentEntry.paymentDate
+    });
 
     return {
         success: true,

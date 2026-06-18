@@ -12,43 +12,8 @@ import { getFeeSettings } from "../../services/feeSettingsService";
 import { getTransportRoutes } from "../../modules/transport/services/transportService";
 
 const studentService = getService("student");
+const feesService = getService("fees");
 
-/* =========================================================
-   HELPER: Calculate Student Totals from Canonical Structure
-========================================================= */
-
-const calculateStudentTotals = (student, feeData) => {
-    if (!feeData || !student.class) {
-        return { compulsoryTotal: 0, optionalTotal: 0, transportFee: 0, hostelFee: 0, totalFee: 0 };
-    }
-
-    const classData = feeData.classes?.[student.class];
-    if (!classData) {
-        return { compulsoryTotal: 0, optionalTotal: 0, transportFee: 0, hostelFee: 0, totalFee: 0 };
-    }
-
-    // Calculate compulsory total (all compulsory fees are auto-selected)
-    const compulsoryTotal = classData.compulsoryFees.reduce((sum, fee) => sum + fee.amount, 0);
-
-    // Calculate optional total (only selected optional fees)
-    const optionalTotal = classData.optionalFees
-        .filter(fee => student.selectedOptionalFees?.includes(fee.id))
-        .reduce((sum, fee) => sum + fee.amount, 0);
-
-    // Calculate transport fee
-    const transportFee = student.transport?.enabled ? student.transport.routeFee : 0;
-
-    // Calculate hostel fee
-    const hostelFee = student.hostel?.enabled ? student.hostel.fee : 0;
-
-    return {
-        compulsoryTotal,
-        optionalTotal,
-        transportFee,
-        hostelFee,
-        totalFee: compulsoryTotal + optionalTotal + transportFee + hostelFee
-    };
-};
 
 const StudentForm = () => {
     const navigate = useNavigate();
@@ -138,8 +103,7 @@ const classes =
         selectedCompulsoryFees: [],
         selectedOptionalFees: [],
         transport: { enabled: false, routeId: "", pickupPoint: "", routeFee: 0 },
-        hostel: { enabled: false, fee: 0 },
-        calculatedTotals: { compulsoryTotal: 0, optionalTotal: 0, transportFee: 0, hostelFee: 0, totalFee: 0 }
+        hostel: { enabled: false, fee: 0 }
     };
 
     const [form, setForm] = useState(initialState);
@@ -209,9 +173,6 @@ const classes =
 
             if (existingStudent) {
 
-                // Recalculate fees with current canonical fee structure
-                const calculatedTotals = calculateStudentTotals(existingStudent, feeData);
-
                 setForm({
 
                     ...existingStudent,
@@ -230,10 +191,7 @@ const classes =
 
                     studentId:
                         existingStudent.studentId ||
-                        previewStudentId,
-
-                    // Update fee totals with current FeeSettings
-                    calculatedTotals
+                        previewStudentId
                 });
             }
         }
@@ -317,25 +275,17 @@ const classes =
 
     const handleClass = (e) => {
         const cls = e.target.value;
-        const classData = feeData?.classes?.[cls];
 
         // Auto-select all compulsory fees for the class
-        const compulsoryFeeIds = classData?.compulsoryFees?.map(f => f.id) || [];
+        const compulsoryFeeIds = feeData?.classes?.[cls]?.compulsoryFees?.map(f => f.id) || [];
 
-        const updatedForm = {
+        setForm({
             ...form,
             class: cls,
             selectedCompulsoryFees: compulsoryFeeIds,
             selectedOptionalFees: [],
             transport: { enabled: false, routeId: "", pickupPoint: "", routeFee: 0 },
             hostel: { enabled: false, fee: 0 }
-        };
-
-        const calculatedTotals = calculateStudentTotals(updatedForm, feeData);
-
-        setForm({
-            ...updatedForm,
-            calculatedTotals
         });
     };
 
@@ -357,7 +307,7 @@ const classes =
                 routeFee = 0;
             }
         }
-        const updatedForm = {
+        setForm({
             ...form,
             transport: {
                 enabled: true,
@@ -365,13 +315,6 @@ const classes =
                 pickupPoint: "",
                 routeFee
             }
-        };
-
-        const calculatedTotals = calculateStudentTotals(updatedForm, feeData);
-
-        setForm({
-            ...updatedForm,
-            calculatedTotals
         });
     };
 
@@ -403,43 +346,25 @@ const classes =
             }
         }
 
-        const updatedForm = {
+        setForm({
             ...form,
             transport: {
                 ...form.transport,
                 pickupPoint: pickupPointValue,
                 routeFee
             }
-        };
-
-        const calculatedTotals =
-            calculateStudentTotals(
-                updatedForm,
-                feeData
-            );
-
-        setForm({
-            ...updatedForm,
-            calculatedTotals
         });
     };
 
     const handleHostel = (e) => {
         const checked = e.target.checked;
 
-        const updatedForm = {
+        setForm({
             ...form,
             hostel: {
                 enabled: checked,
                 fee: checked ? feeData?.hostelFee?.amount || 0 : 0
             }
-        };
-
-        const calculatedTotals = calculateStudentTotals(updatedForm, feeData);
-
-        setForm({
-            ...updatedForm,
-            calculatedTotals
         });
     };
 
@@ -453,16 +378,9 @@ const classes =
             updatedOptionalFees = [...currentOptionalFees, feeId];
         }
 
-        const updatedForm = {
+        setForm({
             ...form,
             selectedOptionalFees: updatedOptionalFees
-        };
-
-        const calculatedTotals = calculateStudentTotals(updatedForm, feeData);
-
-        setForm({
-            ...updatedForm,
-            calculatedTotals
         });
     };
 
@@ -876,9 +794,7 @@ const classes =
                             if (e.target.checked) {
                                 setForm({ ...form, transport: { enabled: true, routeId: "", pickupPoint: "", routeFee: 0 } });
                             } else {
-                                const updatedForm = { ...form, transport: { enabled: false, routeId: "", pickupPoint: "", routeFee: 0 } };
-                                const calculatedTotals = calculateStudentTotals(updatedForm, feeData);
-                                setForm({ ...updatedForm, calculatedTotals });
+                                setForm({ ...form, transport: { enabled: false, routeId: "", pickupPoint: "", routeFee: 0 } });
                             }
                         }} /> Transport
                     </label>
@@ -929,7 +845,7 @@ const classes =
                             <p style={{ margin: "5px 0 0 0", color: "#666", fontSize: "14px" }}>No compulsory fees configured for this class</p>
                         )}
                         <p style={{ margin: "10px 0 0 0", fontSize: "18px", fontWeight: "bold" }}>
-                            Compulsory Total: ₹{form.calculatedTotals?.compulsoryTotal || 0}
+                            Compulsory Total: ₹{feeData?.classes?.[form.class]?.compulsoryFees?.reduce((sum, f) => sum + f.amount, 0) || 0}
                         </p>
                     </div>
 
@@ -957,7 +873,7 @@ const classes =
                             <p style={{ margin: "5px 0 0 0", color: "#666", fontSize: "14px" }}>No optional fees configured for this class</p>
                         )}
                         <p style={{ margin: "10px 0 0 0", fontSize: "18px", fontWeight: "bold" }}>
-                            Optional Total: ₹{form.calculatedTotals?.optionalTotal || 0}
+                            Optional Total: ₹{feeData?.classes?.[form.class]?.optionalFees?.filter(f => form.selectedOptionalFees?.includes(f.id))?.reduce((sum, f) => sum + f.amount, 0) || 0}
                         </p>
                     </div>
 
@@ -977,7 +893,7 @@ const classes =
                                     </p>
                                 )}
                                 <p style={{ margin: "0", fontWeight: "bold", color: "#388e3c" }}>
-                                    Transport Fee: ₹{form.calculatedTotals?.transportFee || 0}
+                                    Transport Fee: ₹{form.transport?.routeFee || 0}
                                 </p>
                             </div>
                         )}
@@ -989,7 +905,7 @@ const classes =
                                     <strong>Hostel:</strong> Enabled
                                 </p>
                                 <p style={{ margin: "0", fontWeight: "bold", color: "#388e3c" }}>
-                                    Hostel Fee: ₹{form.calculatedTotals?.hostelFee || 0}
+                                    Hostel Fee: ₹{form.hostel?.fee || 0}
                                 </p>
                             </div>
                         )}
@@ -1010,7 +926,10 @@ const classes =
                     }}>
                         <h3 style={{ margin: "0 0 5px 0" }}>Grand Total</h3>
                         <p style={{ margin: "0", fontSize: "24px", fontWeight: "bold" }}>
-                            ₹{form.calculatedTotals?.totalFee || 0}
+                            ₹{(feeData?.classes?.[form.class]?.compulsoryFees?.reduce((sum, f) => sum + f.amount, 0) || 0) +
+                              (feeData?.classes?.[form.class]?.optionalFees?.filter(f => form.selectedOptionalFees?.includes(f.id))?.reduce((sum, f) => sum + f.amount, 0) || 0) +
+                              (form.transport?.routeFee || 0) +
+                              (form.hostel?.fee || 0)}
                         </p>
                     </div>
                 </div>
