@@ -17,15 +17,12 @@ import { blockDirectServiceAccess } from "../../core/serviceRegistry";
 import { getService } from "../../core/serviceRegistry";
 import { DISCOUNT_SOURCE, PAYMENT_MODE } from "./receiptConstants";
 
-const getFeeSettings = () => {
-    return getStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS, null);
-};
 // Phase 3.1 D Safe Mode: Block direct access in production mode
 blockDirectServiceAccess("feesService");
 
 /* =========================
    STORAGE KEYS
-   (operational: ERP_RECEIPT_COUNTER — not feesConstants ERP_FEES_RECEIPT_COUNTER)
+   (operational: ERP_RECEIPT_COUNTER — receiptService authority)
 ========================= */
 
 const FEES_DB_KEY = STORAGE_KEYS.ERP_FEES_DB;
@@ -152,7 +149,8 @@ export const getStudentFeesRecord = (studentId) => {
 
 export const createStudentFeesRecord = ({ student = {} }) => {
     const db = getFeesDB();
-    const feeData = getFeeSettings();
+    const feeSettingsService = getService("feeSettings");
+    const feeData = feeSettingsService.getFeeSettings();
 
     const exists = db.find(
         (s) => String(s.studentId) === String(student.studentId)
@@ -243,7 +241,8 @@ export const syncStudentsToFeesDB = ({
 }) => {
 
     const db = getFeesDB();
-    const feeData = getFeeSettings();
+    const feeSettingsService = getService("feeSettings");
+    const feeData = feeSettingsService.getFeeSettings();
 
     const updated = [...db];
 
@@ -315,7 +314,8 @@ export const syncStudentsToFeesDB = ({
 ========================= */
 
 export const getStudentFeeBreakdown = (student) => {
-    const feeData = getFeeSettings();
+    const feeSettingsService = getService("feeSettings");
+    const feeData = feeSettingsService.getFeeSettings();
 
     if (!feeData || !student.class) {
         return null;

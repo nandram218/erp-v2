@@ -13,10 +13,7 @@ import { getHostelFee } from "../../master-setting/hostel/hostelService";
 
 const studentService = getService("student");
 const feesService = getService("fees");
-
-const getFeeSettings = () => {
-    return getStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS, null);
-};
+const feeSettingsService = getService("feeSettings");
 
 
 const StudentForm = () => {
@@ -47,8 +44,8 @@ const StudentForm = () => {
     /* ================= DATA ================= */
 const classes =
                         getStorageCompat(STORAGE_KEYS.ERP_CLASSES, []);
-    // Read fee data directly from storage in canonical structure
-    const feeData = getFeeSettings();
+    // Read fee data from feeSettingsService (single source of truth)
+    const feeData = feeSettingsService.getFeeSettings();
     // Read transport routes from transport service (single source of truth)
     const transportRoutes = getTransportRoutes();
 

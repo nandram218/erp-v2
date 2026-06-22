@@ -26,14 +26,8 @@ export const STORAGE_KEYS = Object.freeze({
     /** Fees payment ledger — modules/fees/feesService */
     ERP_FEES_LEDGER: "ERP_FEES_LEDGER",
 
-    /** Receipt counter — modules/fees/feesService */
+    /** Receipt counter — modules/fees/receiptService (Primary Authority) */
     ERP_RECEIPT_COUNTER: "ERP_RECEIPT_COUNTER",
-
-    /**
-     * Alternate receipt key in feesConstants.js (not yet unified).
-     * Keep until fees module migration dedupes keys.
-     */
-    ERP_FEES_RECEIPT_COUNTER: "ERP_FEES_RECEIPT_COUNTER",
 
     /** Receipt Register — Primary financial authority (Phase-3D) */
     ERP_RECEIPT_REGISTER: "ERP_RECEIPT_REGISTER",

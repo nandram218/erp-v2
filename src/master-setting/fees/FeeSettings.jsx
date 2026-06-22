@@ -1,21 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getService } from "../../core/serviceRegistry";
-import { STORAGE_KEYS } from "../../core/constants/storageKeys";
-import { getStorageCompat, setStorageCompat } from "../../services/storageService";
 
 const classSubjectService = getService("classSubject");
-
-const getFeeSettings = () => {
-    return getStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS) || {};
-};
-
-const saveFeeSettings = (data) => {
-    setStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS, data);
-};
-
-const clearFeeSettings = () => {
-    setStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS, {});
-};
+const feeSettingsService = getService("feeSettings");
 
 /* =========================================================
    MIGRATION FUNCTION
@@ -169,14 +156,14 @@ export default function FeeSettings() {
     ===================================================== */
 
     useEffect(() => {
-        const saved = getFeeSettings();
+        const saved = feeSettingsService.getFeeSettings();
         if (saved) {
             // If saved data is in old format, migrate to canonical
             if (saved.settings && saved.classes) {
                 // Old format detected - migrate to canonical
                 const migrated = migrateToCanonical(saved);
                 setDb(migrated);
-                saveFeeSettings(migrated);
+                feeSettingsService.saveFeeSettings(migrated);
             } else {
                 // Already in canonical format
                 setDb(saved);
@@ -356,7 +343,7 @@ export default function FeeSettings() {
         };
 
         setDb(updated);
-        saveFeeSettings(updated);
+        feeSettingsService.saveFeeSettings(updated);
         alert("✅ Fees Saved Successfully");
         setMode("view");
     };
@@ -382,7 +369,7 @@ export default function FeeSettings() {
         delete updated.classes[selectedClass];
 
         setDb(updated);
-        saveFeeSettings(updated);
+        feeSettingsService.saveFeeSettings(updated);
 
         setTempClassData({
             compulsoryFees: [],
@@ -401,7 +388,7 @@ export default function FeeSettings() {
             )
         ) return;
 
-        clearFeeSettings();
+        feeSettingsService.clearFeeSettings();
 
         setDb({
             schoolId: "",

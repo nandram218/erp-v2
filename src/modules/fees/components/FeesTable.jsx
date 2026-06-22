@@ -143,28 +143,26 @@ const FeesTable = ({
                                         </span>
                                     </td>
 
-                                    {/* ACTIONS (STEP 2.1C - Authority Correction) */}
+                                    {/* ACTIONS (FEES-UX-01 - Action Column Standardization) */}
                                     <td style={td}>
 
-                                        {/* Collect button - only for Unpaid or Partial */}
-                                        {(student.status === "unpaid" || student.status === "partial") && (
-                                            <button
-                                                style={{
-                                                    background: "#16a34a",
-                                                    color: "#fff",
-                                                    border: "none",
-                                                    padding: "6px 10px",
-                                                    margin: "2px",
-                                                    borderRadius: "8px",
-                                                    cursor: "pointer",
-                                                }}
-                                                onClick={() => onCollect(student)}
-                                            >
-                                                💰 Collect
-                                            </button>
-                                        )}
+                                        {/* Collect button - always shown */}
+                                        <button
+                                            style={{
+                                                background: "#16a34a",
+                                                color: "#fff",
+                                                border: "none",
+                                                padding: "6px 10px",
+                                                margin: "2px",
+                                                borderRadius: "8px",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={() => onCollect(student)}
+                                        >
+                                            💰 Collect
+                                        </button>
 
-                                        {/* View Account button - for all rows */}
+                                        {/* View Account button - always shown */}
                                         <button
                                             style={{
                                                 background: "#2563eb",
@@ -177,7 +175,7 @@ const FeesTable = ({
                                             }}
                                             onClick={() => onViewAccount(student)}
                                         >
-                                            �️ View Account
+                                            📋 View Account
                                         </button>
 
                                     </td>

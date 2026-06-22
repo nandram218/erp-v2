@@ -162,6 +162,7 @@ export const registerDefaultServices = () => {
     const classSubjectService = require("../master-setting/classes-subjects/classSubjectService");
     const masterTransportService = require("../master-setting/transport/transportService");
     const ledgerService = require("../modules/fees/ledgerService");
+    const feeSettingsService = require("../services/feeSettingsService");
     
     // Phase-3D Receipt Authority Layer Services
     const receiptService = require("../modules/fees/receiptService");
@@ -201,6 +202,11 @@ export const registerDefaultServices = () => {
         description: "Read-only ledger summary service",
         deprecated: false 
     });
+    registerService("feeSettings", feeSettingsService.default || feeSettingsService, { 
+        description: "Fee settings service - ERP_FEE_SETTINGS authority",
+        deprecated: false 
+    });
+    
     
     // Phase-3D Receipt Authority Layer Registration
     registerService("receipt", receiptService.default || receiptService, { 

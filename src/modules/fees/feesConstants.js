@@ -5,7 +5,6 @@
 ========================= */
 
 export const FEES_DB_KEY = "ERP_FEES_DB";
-export const FEES_RECEIPT_KEY = "ERP_FEES_RECEIPT_COUNTER";
 
 /* =========================
    PAYMENT STATUS
