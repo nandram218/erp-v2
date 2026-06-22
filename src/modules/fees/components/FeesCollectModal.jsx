@@ -9,6 +9,11 @@ const FeesCollectModal = ({ student, onClose, onSuccess }) => {
     const [discount, setDiscount] = useState(0);
     const [lateFee, setLateFee] = useState(0);
     const [paymentMode, setPaymentMode] = useState("Cash");
+    const [referenceNumber, setReferenceNumber] = useState("");
+    const [discountType, setDiscountType] = useState("");
+    const [discountReason, setDiscountReason] = useState("");
+    const [lateFeeReason, setLateFeeReason] = useState("");
+    const [remarks, setRemarks] = useState("");
 
     const dueAmount = Number(student?.dueAmount || 0);
 
@@ -31,6 +36,11 @@ const FeesCollectModal = ({ student, onClose, onSuccess }) => {
             finalAmount: finalPayable,
             remainingDue: remaining,
             paymentMode,
+            referenceNumber,
+            discountType,
+            discountReason,
+            lateFeeReason,
+            remarks,
             date: new Date().toISOString(),
         };
 
@@ -67,13 +77,57 @@ const FeesCollectModal = ({ student, onClose, onSuccess }) => {
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
+                    style={{ marginBottom: 10, padding: 8, width: '100%' }}
                 />
+
+                <select
+                    value={paymentMode}
+                    onChange={(e) => setPaymentMode(e.target.value)}
+                    style={{ marginBottom: 10, padding: 8, width: '100%' }}
+                >
+                    <option value="Cash">Cash</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Card">Card</option>
+                </select>
+
+                {paymentMode !== "Cash" && (
+                    <input
+                        placeholder="Reference Number"
+                        type="text"
+                        value={referenceNumber}
+                        onChange={(e) => setReferenceNumber(e.target.value)}
+                        style={{ marginBottom: 10, padding: 8, width: '100%' }}
+                    />
+                )}
 
                 <input
                     placeholder="Discount"
                     type="number"
                     value={discount}
                     onChange={(e) => setDiscount(e.target.value)}
+                    style={{ marginBottom: 10, padding: 8, width: '100%' }}
+                />
+
+                <select
+                    value={discountType}
+                    onChange={(e) => setDiscountType(e.target.value)}
+                    style={{ marginBottom: 10, padding: 8, width: '100%' }}
+                >
+                    <option value="">Select Discount Type</option>
+                    <option value="Scholarship">Scholarship</option>
+                    <option value="Concession">Concession</option>
+                    <option value="Sibling Discount">Sibling Discount</option>
+                    <option value="Other">Other</option>
+                </select>
+
+                <input
+                    placeholder="Discount Reason"
+                    type="text"
+                    value={discountReason}
+                    onChange={(e) => setDiscountReason(e.target.value)}
+                    style={{ marginBottom: 10, padding: 8, width: '100%' }}
                 />
 
                 <input
@@ -81,13 +135,30 @@ const FeesCollectModal = ({ student, onClose, onSuccess }) => {
                     type="number"
                     value={lateFee}
                     onChange={(e) => setLateFee(e.target.value)}
+                    style={{ marginBottom: 10, padding: 8, width: '100%' }}
+                />
+
+                <input
+                    placeholder="Late Fee Reason"
+                    type="text"
+                    value={lateFeeReason}
+                    onChange={(e) => setLateFeeReason(e.target.value)}
+                    style={{ marginBottom: 10, padding: 8, width: '100%' }}
+                />
+
+                <input
+                    placeholder="Remarks"
+                    type="text"
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                    style={{ marginBottom: 10, padding: 8, width: '100%' }}
                 />
 
                 <p>Final: ₹{finalPayable}</p>
                 <p>Remaining: ₹{remaining}</p>
 
-                <button onClick={handleSubmit}>Collect</button>
-                <button onClick={onClose}>Close</button>
+                <button onClick={handleSubmit} style={{ padding: 10, marginRight: 10 }}>Collect</button>
+                <button onClick={onClose} style={{ padding: 10 }}>Close</button>
 
             </div>
 

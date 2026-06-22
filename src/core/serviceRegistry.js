@@ -161,6 +161,7 @@ export const registerDefaultServices = () => {
     const studentService = require("../services/studentService");
     const classSubjectService = require("../master-setting/classes-subjects/classSubjectService");
     const masterTransportService = require("../master-setting/transport/transportService");
+    const ledgerService = require("../modules/fees/ledgerService");
     
     registerService("fees", feeService, { 
         description: "Unified fee service",
@@ -184,6 +185,11 @@ export const registerDefaultServices = () => {
     
     registerService("masterTransport", masterTransportService.transportService, { 
         description: "Master transport service",
+        deprecated: false 
+    });
+    
+    registerService("ledger", ledgerService, { 
+        description: "Read-only ledger summary service",
         deprecated: false 
     });
     

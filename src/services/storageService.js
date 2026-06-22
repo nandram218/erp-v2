@@ -57,10 +57,9 @@ export const getStorageCompat = (key, fallback = null) => {
     return legacy !== null ? legacy : fallback;
 };
 
-/** Writes prefixed + legacy during transition so unmigrated modules keep working. */
+/** Writes prefixed storage only - dual-write removed to fix QuotaExceededError */
 export const setStorageCompat = (key, value) => {
     setStorage(key, value);
-    writeRawLegacy(key, value);
 };
 
 export const removeStorageCompat = (key) => {
@@ -114,5 +113,18 @@ export const clearAllStorage = () => {
         });
     } catch (error) {
         console.error("Storage Clear Error:", error);
+    }
+};
+
+// Clear legacy storage (non-prefixed keys) to free quota after dual-write removal
+export const clearLegacyStorage = () => {
+    try {
+        Object.keys(localStorage).forEach((key) => {
+            if (!key.startsWith(STORAGE_PREFIX)) {
+                localStorage.removeItem(key);
+            }
+        });
+    } catch (error) {
+        console.error("Legacy Storage Clear Error:", error);
     }
 };

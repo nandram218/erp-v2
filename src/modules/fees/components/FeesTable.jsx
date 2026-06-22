@@ -47,8 +47,7 @@ const FeesTable = ({
     onSelectStudent = () => { },
     onSelectAll = () => { },
     onCollect = () => { },
-    onReceipt = () => { },
-    onHistory = () => { },
+    onViewAccount = () => { },
 }) => {
 
     const isSelected = (id) => selectedIds.includes(id);
@@ -144,24 +143,28 @@ const FeesTable = ({
                                         </span>
                                     </td>
 
-                                    {/* ACTIONS (RESTORED ERP FEEL) */}
+                                    {/* ACTIONS (STEP 2.1C - Authority Correction) */}
                                     <td style={td}>
 
-                                        <button
-                                            style={{
-                                                background: "#16a34a",
-                                                color: "#fff",
-                                                border: "none",
-                                                padding: "6px 10px",
-                                                margin: "2px",
-                                                borderRadius: "8px",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={() => onCollect(student)}
-                                        >
-                                            💰 Collect
-                                        </button>
+                                        {/* Collect button - only for Unpaid or Partial */}
+                                        {(student.status === "unpaid" || student.status === "partial") && (
+                                            <button
+                                                style={{
+                                                    background: "#16a34a",
+                                                    color: "#fff",
+                                                    border: "none",
+                                                    padding: "6px 10px",
+                                                    margin: "2px",
+                                                    borderRadius: "8px",
+                                                    cursor: "pointer",
+                                                }}
+                                                onClick={() => onCollect(student)}
+                                            >
+                                                💰 Collect
+                                            </button>
+                                        )}
 
+                                        {/* View Account button - for all rows */}
                                         <button
                                             style={{
                                                 background: "#2563eb",
@@ -172,24 +175,9 @@ const FeesTable = ({
                                                 borderRadius: "8px",
                                                 cursor: "pointer",
                                             }}
-                                            onClick={() => onReceipt(student)}
+                                            onClick={() => onViewAccount(student)}
                                         >
-                                            🧾 Receipt
-                                        </button>
-
-                                        <button
-                                            style={{
-                                                background: "#7c3aed",
-                                                color: "#fff",
-                                                border: "none",
-                                                padding: "6px 10px",
-                                                margin: "2px",
-                                                borderRadius: "8px",
-                                                cursor: "pointer",
-                                            }}
-                                            onClick={() => onHistory(student)}
-                                        >
-                                            📜 History
+                                            �️ View Account
                                         </button>
 
                                     </td>

@@ -245,7 +245,7 @@ export const toggleRouteStatus = (
    FEES
 ===================================================== */
 
-export const calculateTransportFee = (
+export const calculateRouteFee = (
     routeId
 ) => {
     const route =

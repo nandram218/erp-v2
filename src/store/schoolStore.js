@@ -96,6 +96,10 @@ export const useSchoolStore = create((set, get) => ({
 
         const state = get();
 
+        // FIX: Merge existing transport data from localStorage to prevent overwriting
+        // master-setting transport service data with stale state
+        const existingDB = getStorageCompat(ERP_DB_KEY, {});
+
         const db = {
 
             school: state.schoolData,
@@ -106,9 +110,15 @@ export const useSchoolStore = create((set, get) => ({
 
             fees: state.fees || {},
 
-            transport: state.transport || {},
+            transport: {
+                ...(existingDB.transport || {}),
+                ...(state.transport || {})
+            },
 
-            hostel: state.hostel || {}
+            hostel: {
+                ...(existingDB.hostel || {}),
+                ...(state.hostel || {})
+            }
         };
 
         setStorageCompat(ERP_DB_KEY, db);

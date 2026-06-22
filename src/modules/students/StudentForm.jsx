@@ -8,11 +8,15 @@ import {
     removeStorageCompat
 } from "../../services/storageService";
 import { STORAGE_KEYS } from "../../core/constants/storageKeys";
-import { getFeeSettings } from "../../services/feeSettingsService";
 import { getTransportRoutes } from "../../modules/transport/services/transportService";
+import { getHostelFee } from "../../master-setting/hostel/hostelService";
 
 const studentService = getService("student");
 const feesService = getService("fees");
+
+const getFeeSettings = () => {
+    return getStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS, null);
+};
 
 
 const StudentForm = () => {
@@ -358,12 +362,13 @@ const classes =
 
     const handleHostel = (e) => {
         const checked = e.target.checked;
-
+        const hostelFeeConfig = getHostelFee();
+        
         setForm({
             ...form,
             hostel: {
                 enabled: checked,
-                fee: checked ? feeData?.hostelFee?.amount || 0 : 0
+                fee: checked ? (hostelFeeConfig?.amount || 0) : 0
             }
         });
     };

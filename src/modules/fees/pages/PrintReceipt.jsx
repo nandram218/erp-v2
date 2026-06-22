@@ -91,13 +91,20 @@ const PrintReceipt = () => {
                     </p>
                     <p>
                         <b>Class:</b>{" "}
-                        {receipt.className} -{" "}
-                        {receipt.section}
+                        {receipt.className}
                     </p>
-                    <p>
-                        <b>Roll No:</b>{" "}
-                        {receipt.rollNumber}
-                    </p>
+                    {receipt.section && (
+                        <p>
+                            <b>Section:</b>{" "}
+                            {receipt.section}
+                        </p>
+                    )}
+                    {receipt.rollNumber && (
+                        <p>
+                            <b>Roll No:</b>{" "}
+                            {receipt.rollNumber}
+                        </p>
+                    )}
                     <p>
                         <b>Payment Date:</b>{" "}
                         {new Date(
@@ -110,6 +117,36 @@ const PrintReceipt = () => {
                             receipt.paymentMode
                         }
                     </p>
+                    {receipt.referenceNumber && (
+                        <p>
+                            <b>Reference Number:</b>{" "}
+                            {receipt.referenceNumber}
+                        </p>
+                    )}
+                    {receipt.discountType && (
+                        <p>
+                            <b>Discount Type:</b>{" "}
+                            {receipt.discountType}
+                        </p>
+                    )}
+                    {receipt.discountReason && (
+                        <p>
+                            <b>Discount Reason:</b>{" "}
+                            {receipt.discountReason}
+                        </p>
+                    )}
+                    {receipt.lateFeeReason && (
+                        <p>
+                            <b>Late Fee Reason:</b>{" "}
+                            {receipt.lateFeeReason}
+                        </p>
+                    )}
+                    {receipt.remarks && (
+                        <p>
+                            <b>Remarks:</b>{" "}
+                            {receipt.remarks}
+                        </p>
+                    )}
                 </div>
 
                 {/* AMOUNT BOX */}

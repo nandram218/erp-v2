@@ -1,7 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getService } from "../../core/serviceRegistry";
-import { getFeeSettings, saveFeeSettings, clearFeeSettings } from "../../services/feeSettingsService";
+import { STORAGE_KEYS } from "../../core/constants/storageKeys";
+import { getStorageCompat, setStorageCompat } from "../../services/storageService";
+
 const classSubjectService = getService("classSubject");
+
+const getFeeSettings = () => {
+    return getStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS) || {};
+};
+
+const saveFeeSettings = (data) => {
+    setStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS, data);
+};
+
+const clearFeeSettings = () => {
+    setStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS, {});
+};
 
 /* =========================================================
    MIGRATION FUNCTION

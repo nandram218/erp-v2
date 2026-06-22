@@ -197,14 +197,15 @@ export const updateStudent = (
 
     setStudents(updatedStudents);
 
-    // Sync updated student to fees service
-    const feesService = getService("fees");
     const updatedStudent = updatedStudents.find((student) =>
         matchesStudent(student, identifier)
     );
-    if (updatedStudent) {
-        feesService.syncStudentsToFeesDB({ students: [updatedStudent] });
-    }
+
+    const feesService = getService("fees");
+
+    feesService.syncStudentsToFeesDB({
+        students: [updatedStudent]
+    });
 
     return updatedStudent;
 };

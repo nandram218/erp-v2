@@ -2,12 +2,17 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSchoolStore } from "../../../store/schoolStore";
 import { getService } from "../../../core/serviceRegistry";
+import { getStorageCompat } from "../../../services/storageService";
+import { STORAGE_KEYS } from "../../../core/constants/storageKeys";
 import FeesTable from "../components/FeesTable";
 import FeesCollectModal from "../components/FeesCollectModal";
 import ReceiptModal from "../components/ReceiptModal";
-import { getFeeSettings } from "../../../services/feeSettingsService";
 
 const feesService = getService("fees");
+
+const getFeeSettings = () => {
+    return getStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS, null);
+};
 
 const FeesPage = () => {
 
@@ -20,13 +25,21 @@ const FeesPage = () => {
     const [activeStudent, setActiveStudent] = useState(null);
     const [receiptData, setReceiptData] = useState(null);
 
+    const studentsRef = useMemo(() => students, [students]);
+
     useEffect(() => {
-        feesService.syncStudentsToFeesDB({ students });
-    }, [students]);
+        if (!studentsRef?.length) return;
+        
+        if (feeData && Object.keys(feeData).length > 0) {
+            feesService.syncStudentsToFeesDB({
+                students: studentsRef
+            });
+        }
+    }, [feeData, studentsRef]);
 
     const feesData = useMemo(() => {
         return feesService.getAllFeesRecords() || [];
-    }, [students]);
+    }, [students, feeData]);
 
     /* FILTER */
     const filtered = useMemo(() => {
@@ -58,6 +71,10 @@ const FeesPage = () => {
         // Get full student data from Zustand store for canonical fee structure
         const fullStudent = students.find(s => s.studentId === student.studentId);
         setActiveStudent(fullStudent || student);
+    };
+
+    const handleViewAccount = (student) => {
+        navigate(`/fees/account/${student.studentId}`);
     };
 
     const handlePaymentSuccess = (data) => {
@@ -103,7 +120,7 @@ const FeesPage = () => {
             }}>
                 Total Due (Filtered): ₹{totalDue}
             </div>
-            {/* SELECTED PANEL */}
+            {/* SELECTED PANEL (STEP 2.1C - Bulk actions removed) */}
             {selectedIds.length > 0 && (
 
                 <div
@@ -148,7 +165,7 @@ const FeesPage = () => {
                                     opacity: 0.85,
                                 }}
                             >
-                                Bulk ERP actions ready
+                                Selection ready
                             </p>
 
                         </div>
@@ -160,48 +177,6 @@ const FeesPage = () => {
                                 flexWrap: "wrap",
                             }}
                         >
-
-                            <button
-                                style={{
-                                    background: "#16a34a",
-                                    color: "#fff",
-                                    border: "none",
-                                    padding: "10px 14px",
-                                    borderRadius: "10px",
-                                    fontWeight: "700",
-                                    cursor: "pointer",
-                                }}
-                            >
-                                💰 Bulk Collect
-                            </button>
-
-                            <button
-                                style={{
-                                    background: "#2563eb",
-                                    color: "#fff",
-                                    border: "none",
-                                    padding: "10px 14px",
-                                    borderRadius: "10px",
-                                    fontWeight: "700",
-                                    cursor: "pointer",
-                                }}
-                            >
-                                🧾 Bulk Receipt
-                            </button>
-
-                            <button
-                                style={{
-                                    background: "#7c3aed",
-                                    color: "#fff",
-                                    border: "none",
-                                    padding: "10px 14px",
-                                    borderRadius: "10px",
-                                    fontWeight: "700",
-                                    cursor: "pointer",
-                                }}
-                            >
-                                📜 Bulk History
-                            </button>
 
                             <button
                                 onClick={() =>
@@ -233,10 +208,7 @@ const FeesPage = () => {
                 onSelectStudent={handleSelectStudent}
                 onSelectAll={handleSelectAll}
                 onCollect={handleCollect}
-                onReceipt={(s) => setReceiptData({
-                    student: s
-                })}
-                onHistory={() => navigate("/fees/history")}
+                onViewAccount={handleViewAccount}
                 feeData={feeData}
                 students={students}
             />

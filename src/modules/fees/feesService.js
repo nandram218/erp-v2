@@ -14,8 +14,11 @@ import {
 } from "../../services/storageService";
 import { withTenantContext } from "../../services/tenantContextService";
 import { blockDirectServiceAccess } from "../../core/serviceRegistry";
-import { getFeeSettings } from "../../services/feeSettingsService";
 import { getService } from "../../core/serviceRegistry";
+
+const getFeeSettings = () => {
+    return getStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS, null);
+};
 // Phase 3.1 D Safe Mode: Block direct access in production mode
 blockDirectServiceAccess("feesService");
 
@@ -54,6 +57,58 @@ const getLedger = () => {
 
 const saveLedger = (data) => {
     setStorageCompat(LEDGER_KEY, data);
+};
+
+/* =========================
+   MIGRATION HELPERS
+========================= */
+
+const migratePaymentEntry = (payment) => {
+    return {
+        ...payment,
+        section: payment.section || "",
+        rollNumber: payment.rollNumber || "",
+        academicSession: payment.academicSession || "",
+        discountType: payment.discountType || "",
+        discountReason: payment.discountReason || "",
+        lateFeeReason: payment.lateFeeReason || "",
+        referenceNumber: payment.referenceNumber || "",
+    };
+};
+
+const migrateFeesDB = () => {
+    const db = getFeesDB();
+    let migrated = false;
+    
+    const migratedDB = db.map(student => {
+        const migratedPayments = student.payments?.map(payment => {
+            if (!payment.section || !payment.rollNumber || !payment.academicSession || 
+                !payment.discountType || !payment.discountReason || !payment.lateFeeReason || !payment.referenceNumber) {
+                migrated = true;
+                return migratePaymentEntry(payment);
+            }
+            return payment;
+        }) || [];
+        
+        if (migrated) {
+            return {
+                ...student,
+                payments: migratedPayments,
+            };
+        }
+        
+        return student;
+    });
+    
+    if (migrated) {
+        saveFeesDB(migratedDB);
+    }
+    
+    return migrated;
+};
+
+export const runMigrations = () => {
+    migrateFeesDB();
 };
 
 /* =========================
@@ -104,27 +159,7 @@ export const createStudentFeesRecord = ({ student = {} }) => {
 
     if (exists) return exists;
 
-    // Calculate totalFee from canonical fee structure
-    let totalFee = 0;
-    if (student.class && feeData?.classes?.[student.class]) {
-        const classData = feeData.classes[student.class];
-        
-        // Compulsory fees (all auto-selected)
-        const compulsoryTotal = classData.compulsoryFees?.reduce((sum, fee) => sum + fee.amount, 0) || 0;
-        
-        // Optional fees (only selected)
-        const optionalTotal = classData.optionalFees
-            ?.filter(fee => student.selectedOptionalFees?.includes(fee.id))
-            .reduce((sum, fee) => sum + fee.amount, 0) || 0;
-        
-        // Transport fee
-        const transportFee = student.transport?.enabled ? (student.transport.routeFee || 0) : 0;
-        
-        // Hostel fee
-        const hostelFee = student.hostel?.enabled ? (student.hostel.fee || 0) : 0;
-        
-        totalFee = compulsoryTotal + optionalTotal + transportFee + hostelFee;
-    }
+    const totalFee = calculateTotalFee(student, feeData);
 
     const newRecord = withTenantContext({
         studentId: student.studentId,
@@ -166,6 +201,39 @@ export const createStudentFeesRecord = ({ student = {} }) => {
     return newRecord;
 };
 /* =========================
+   CENTRAL FEE CALCULATION ENGINE
+========================= */
+
+export const calculateTransportFee = (student = {}) => {
+    return student.transport?.enabled ? (student.transport.routeFee || 0) : 0;
+};
+
+export const calculateHostelFee = (student = {}) => {
+    return student.hostel?.enabled ? (student.hostel.fee || 0) : 0;
+};
+
+export const calculateTotalFee = (student = {}, feeSettings = {}) => {
+    let totalFee = 0;
+    
+    if (student.class && feeSettings?.classes?.[student.class]) {
+        const classData = feeSettings.classes[student.class];
+        
+        const compulsoryTotal = classData.compulsoryFees?.reduce((sum, fee) => sum + fee.amount, 0) || 0;
+        
+        const optionalTotal = classData.optionalFees
+            ?.filter(fee => student.selectedOptionalFees?.includes(fee.id))
+            .reduce((sum, fee) => sum + fee.amount, 0) || 0;
+        
+        const transportFee = calculateTransportFee(student);
+        const hostelFee = calculateHostelFee(student);
+        
+        totalFee = compulsoryTotal + optionalTotal + transportFee + hostelFee;
+    }
+    
+    return totalFee;
+};
+
+/* =========================
    SYNC STUDENTS - Canonical Structure
 ========================= */
 
@@ -196,27 +264,7 @@ export const syncStudentsToFeesDB = ({
            NORMALIZE STUDENT - Canonical Structure
         ========================= */
 
-        // Calculate totalFee from canonical fee structure
-        let totalFee = 0;
-        if (student.class && feeData?.classes?.[student.class]) {
-            const classData = feeData.classes[student.class];
-            
-            // Compulsory fees (all auto-selected)
-            const compulsoryTotal = classData.compulsoryFees?.reduce((sum, fee) => sum + fee.amount, 0) || 0;
-            
-            // Optional fees (only selected)
-            const optionalTotal = classData.optionalFees
-                ?.filter(fee => student.selectedOptionalFees?.includes(fee.id))
-                .reduce((sum, fee) => sum + fee.amount, 0) || 0;
-            
-            // Transport fee
-            const transportFee = student.transport?.enabled ? (student.transport.routeFee || 0) : 0;
-            
-            // Hostel fee
-            const hostelFee = student.hostel?.enabled ? (student.hostel.fee || 0) : 0;
-            
-            totalFee = compulsoryTotal + optionalTotal + transportFee + hostelFee;
-        }
+        const totalFee = calculateTotalFee(student, feeData);
 
         const normalized = {
 
@@ -349,6 +397,8 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
         id: Date.now(),
         receiptNumber,
         studentId,
+        studentName: student.studentName,
+        className: student.className,
         amount,
         discount,
         lateFee,
@@ -356,12 +406,19 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
         paymentMode: paymentData.paymentMode || "Cash",
         remarks: paymentData.remarks || "",
         paymentDate: new Date().toISOString(),
+        section: student.section || "",
+        rollNumber: student.rollNumber || "",
+        academicSession: paymentData.academicSession || "",
+        discountType: paymentData.discountType || "",
+        discountReason: paymentData.discountReason || "",
+        lateFeeReason: paymentData.lateFeeReason || "",
+        referenceNumber: paymentData.referenceNumber || "",
     });
 
     db[index] = updatedStudent;
     saveFeesDB(db);
 
-    /* ledger */
+    /* ledger - Payment History (includes transaction fields) */
     const ledger = getLedger();
     ledger.push({
         ...paymentEntry,
@@ -404,6 +461,16 @@ export const getPaymentByReceipt = (receipt) => {
     return getAllPaymentsHistory().find(
         (p) => p.receiptNumber === receipt
     );
+};
+
+export const getStudentPaymentHistory = (studentId) => {
+    return getAllPaymentsHistory().filter(
+        (p) => String(p.studentId) === String(studentId)
+    );
+};
+
+export const getPaymentByStudentId = (studentId) => {
+    return getStudentPaymentHistory(studentId);
 };
 
 /* =========================

@@ -4,12 +4,17 @@ import {
     STORAGE_KEYS,
 } from "./storageService";
 
-const KEY = STORAGE_KEYS.SCHOOL_PROFILE;
+// FIXED: Use ERP_DB_KEY instead of SCHOOL_PROFILE to match schoolStore.loadAll()
+const KEY = STORAGE_KEYS.ERP_DB;
 
-export const getSchoolProfile = () =>
-    getStorageCompat(KEY, null);
+export const getSchoolProfile = () => {
+    const db = getStorageCompat(KEY, null);
+    return db?.school || null;
+};
 
 export const saveSchoolProfile = (payload) => {
-    setStorageCompat(KEY, payload);
+    const db = getStorageCompat(KEY, {});
+    db.school = payload;
+    setStorageCompat(KEY, db);
     return payload;
 };

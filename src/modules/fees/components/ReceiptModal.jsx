@@ -7,6 +7,10 @@ const ReceiptModal = ({
 
     if (!receipt) return null;
 
+    // STEP 2.1E: Receipt accepts payment object, not student object
+    // Payment object comes from Payment Entry / Payment History
+    const payment = receipt.payment || receipt;
+
     return (
 
         <div
@@ -45,7 +49,7 @@ const ReceiptModal = ({
                     <b>Receipt No:</b>
                     {" "}
                     {
-                        receipt.receiptNumber
+                        payment.receiptNumber
                     }
                 </p>
 
@@ -53,15 +57,7 @@ const ReceiptModal = ({
                     <b>Student:</b>
                     {" "}
                     {
-                        receipt.studentName
-                    }
-                </p>
-
-                <p>
-                    <b>Father:</b>
-                    {" "}
-                    {
-                        receipt.fatherName
+                        payment.studentName
                     }
                 </p>
 
@@ -69,14 +65,34 @@ const ReceiptModal = ({
                     <b>Class:</b>
                     {" "}
                     {
-                        receipt.className
+                        payment.className
                     }
                 </p>
+
+                {payment.section && (
+                    <p>
+                        <b>Section:</b>
+                        {" "}
+                        {
+                            payment.section
+                        }
+                    </p>
+                )}
+
+                {payment.rollNumber && (
+                    <p>
+                        <b>Roll Number:</b>
+                        {" "}
+                        {
+                            payment.rollNumber
+                        }
+                    </p>
+                )}
 
                 <p>
                     <b>Paid Amount:</b>
                     {" "}
-                    ₹{receipt.amount}
+                    ₹{payment.amount}
                 </p>
 
                 <p>
@@ -84,7 +100,7 @@ const ReceiptModal = ({
                     {" "}
                     ₹
                     {
-                        receipt.discount
+                        payment.discount
                     }
                 </p>
 
@@ -93,7 +109,7 @@ const ReceiptModal = ({
                     {" "}
                     ₹
                     {
-                        receipt.lateFee
+                        payment.lateFee
                     }
                 </p>
 
@@ -102,16 +118,7 @@ const ReceiptModal = ({
                     {" "}
                     ₹
                     {
-                        receipt.finalAmount
-                    }
-                </p>
-
-                <p>
-                    <b>Remaining Due:</b>
-                    {" "}
-                    ₹
-                    {
-                        receipt.remainingDue
+                        payment.finalAmount
                     }
                 </p>
 
@@ -119,23 +126,25 @@ const ReceiptModal = ({
                     <b>Payment Mode:</b>
                     {" "}
                     {
-                        receipt.paymentMode
+                        payment.paymentMode
                     }
                 </p>
 
-                <p>
-                    <b>Discount Type:</b>
-                    {" "}
-                    {
-                        receipt.discountType
-                    }
-                </p>
+                {payment.referenceNumber && (
+                    <p>
+                        <b>Reference Number:</b>
+                        {" "}
+                        {
+                            payment.referenceNumber
+                        }
+                    </p>
+                )}
 
                 <p>
                     <b>Remarks:</b>
                     {" "}
                     {
-                        receipt.remarks
+                        payment.remarks
                     }
                 </p>
 

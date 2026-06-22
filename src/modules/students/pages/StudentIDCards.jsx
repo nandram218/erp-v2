@@ -38,7 +38,8 @@ const StudentIDCards = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        loadAll();
+        // Removed loadAll() call to fix header state mutation (PRIORITY 2 fix)
+        // loadAll() is already called by DashboardLayout and App.js
 
         try {
             const data = studentService.getStudents();
@@ -57,7 +58,7 @@ const StudentIDCards = () => {
             setStudents([]);
         }
 
-    }, [loadAll]);
+    }, []);
     // Phase 4.2.1: Use studentService.normalizeStudentSchema() for schema drift handling
     const getClass = (s) => {
         const normalized = studentService.normalizeStudentSchema(s);
