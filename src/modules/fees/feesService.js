@@ -15,6 +15,7 @@ import {
 import { withTenantContext } from "../../services/tenantContextService";
 import { blockDirectServiceAccess } from "../../core/serviceRegistry";
 import { getService } from "../../core/serviceRegistry";
+import { DISCOUNT_SOURCE, PAYMENT_MODE } from "./receiptConstants";
 
 const getFeeSettings = () => {
     return getStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS, null);
@@ -391,11 +392,58 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
             : updatedStudent.paidAmount > 0
                 ? "partial"
                 : "unpaid";
-    const receiptNumber = createReceiptNumber();
 
-    const paymentEntry = withTenantContext({
-        id: Date.now(),
-        receiptNumber,
+    // =========================
+    // PHASE-3D INTEGRATION
+    // Create receipt in ERP_RECEIPT_REGISTER (Primary Authority)
+    // =========================
+    const receiptService = getService("receipt");
+    
+    const receipt = receiptService.createReceipt({
+        receiptData: {
+            studentId: student.studentId,
+            admissionNo: student.admissionNo || "",
+            studentName: student.studentName,
+            className: student.className,
+            section: student.section || "",
+            rollNumber: student.rollNumber || "",
+            fatherName: student.fatherName || "",
+            amount,
+            discount,
+            lateFee,
+            finalAmount,
+            paymentMode: paymentData.paymentMode || PAYMENT_MODE.CASH,
+            referenceNumber: paymentData.referenceNumber || "",
+            discountType: paymentData.discountType || null,
+            discountSource: DISCOUNT_SOURCE.NORMAL,
+            discountReason: paymentData.discountReason || "",
+            paymentDate: new Date().toISOString(),
+            academicYearId: paymentData.academicSession || "",
+            feeSnapshot: {
+                totalFee: student.totalFee || 0,
+                compulsoryFees: 0,
+                optionalFees: 0,
+                transportFee: 0,
+                hostelFee: 0,
+                academicYear: paymentData.academicSession || "",
+                feeStructureVersion: "1.0",
+            },
+        },
+    });
+
+    // =========================
+    // DERIVED LAYER: Sync ERP_FEES_DB
+    // =========================
+    db[index] = updatedStudent;
+    saveFeesDB(db);
+
+    // =========================
+    // DERIVED LAYER: Sync ERP_FEES_LEDGER
+    // =========================
+    const ledger = getLedger();
+    ledger.push({
+        id: receipt.paymentId,
+        receiptNumber: receipt.receiptNumber,
         studentId,
         studentName: student.studentName,
         className: student.className,
@@ -403,7 +451,7 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
         discount,
         lateFee,
         finalAmount,
-        paymentMode: paymentData.paymentMode || "Cash",
+        paymentMode: paymentData.paymentMode || PAYMENT_MODE.CASH,
         remarks: paymentData.remarks || "",
         paymentDate: new Date().toISOString(),
         section: student.section || "",
@@ -413,15 +461,6 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
         discountReason: paymentData.discountReason || "",
         lateFeeReason: paymentData.lateFeeReason || "",
         referenceNumber: paymentData.referenceNumber || "",
-    });
-
-    db[index] = updatedStudent;
-    saveFeesDB(db);
-
-    /* ledger - Payment History (includes transaction fields) */
-    const ledger = getLedger();
-    ledger.push({
-        ...paymentEntry,
         studentName: student.studentName,
         className: student.className,
         fatherName: student.fatherName,
@@ -432,41 +471,40 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
     const studentService = getService("student");
     studentService.updateStudent(studentId, {
         paymentStatus: updatedStudent.status,
-        lastPaymentDate: paymentEntry.paymentDate
+        lastPaymentDate: receipt.paymentDate
     });
 
     return {
         success: true,
         student: updatedStudent,
-        payment: paymentEntry,
+        payment: receipt,
+        receipt,
     };
 };
 
 /* =========================
    HISTORY
+   PHASE-3D INTEGRATION: Read from ERP_RECEIPT_REGISTER (Primary Authority)
 ========================= */
 
 export const getAllPaymentsHistory = () => {
-    return getLedger().sort(
-        (a, b) =>
-            new Date(b.paymentDate) - new Date(a.paymentDate)
-    );
+    const receiptService = getService("receipt");
+    return receiptService.getAllReceipts();
 };
 
 export const getPaymentById = (id) => {
-    return getAllPaymentsHistory().find((p) => p.id === id);
+    const receiptService = getService("receipt");
+    return receiptService.getReceiptById(id);
 };
 
 export const getPaymentByReceipt = (receipt) => {
-    return getAllPaymentsHistory().find(
-        (p) => p.receiptNumber === receipt
-    );
+    const receiptService = getService("receipt");
+    return receiptService.getReceiptByNumber(receipt);
 };
 
 export const getStudentPaymentHistory = (studentId) => {
-    return getAllPaymentsHistory().filter(
-        (p) => String(p.studentId) === String(studentId)
-    );
+    const receiptService = getService("receipt");
+    return receiptService.getReceiptsByStudent(studentId);
 };
 
 export const getPaymentByStudentId = (studentId) => {

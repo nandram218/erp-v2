@@ -1,6 +1,7 @@
 /* =========================================================
    ERP LEDGER SERVICE - READ-ONLY SUMMARY LAYER
    Phase 3.2C Step-2.1B - Professional SaaS Ledger
+   Phase 3D Integration - Read from ERP_RECEIPT_REGISTER (Primary Authority)
    ⚠️ READ-ONLY SERVICE - No direct mutations allowed
    Use feesService for all write operations
 ========================================================= */
@@ -37,24 +38,28 @@ export const LEDGER_CONTRACT = {
 /* =========================
    GET STUDENT LEDGER
    Read-only summary for single student
+   PHASE-3D INTEGRATION: Read payment history from ERP_RECEIPT_REGISTER
 ========================= */
 
 export const getStudentLedger = (studentId) => {
   const feesService = getService("fees");
+  const receiptService = getService("receipt");
+  
   const feeRecord = feesService.getStudentFeesRecord(studentId);
   
   if (!feeRecord) {
     return null;
   }
   
-  const payments = feesService.getStudentPaymentHistory(studentId) || [];
+  // PHASE-3D: Read payment history from ERP_RECEIPT_REGISTER (Primary Authority)
+  const payments = receiptService.getReceiptsByStudent(studentId) || [];
   
   return {
     studentId: feeRecord.studentId,
     studentName: feeRecord.studentName,
     className: feeRecord.className,
     
-    // Core Ledger Fields (from feesService)
+    // Core Ledger Fields (from feesService - ERP_FEES_DB)
     assignedAmount: Number(feeRecord.totalFee || 0),
     collectedAmount: Number(feeRecord.paidAmount || 0),
     dueAmount: Number(feeRecord.dueAmount || 0),
@@ -62,7 +67,7 @@ export const getStudentLedger = (studentId) => {
     // Status (derived)
     paymentStatus: feeRecord.status || "unpaid",
     
-    // Metadata (derived)
+    // Metadata (derived from ERP_RECEIPT_REGISTER)
     paymentCount: payments.length,
     lastPaymentDate: payments.length > 0 
       ? payments[0].paymentDate 
@@ -76,21 +81,25 @@ export const getStudentLedger = (studentId) => {
 /* =========================
    GET ALL STUDENT LEDGERS
    Read-only summary for all students
+   PHASE-3D INTEGRATION: Read payment history from ERP_RECEIPT_REGISTER
 ========================= */
 
 export const getAllStudentLedgers = () => {
   const feesService = getService("fees");
+  const receiptService = getService("receipt");
+  
   const feeRecords = feesService.getAllFeesRecords() || [];
   
   return feeRecords.map(feeRecord => {
-    const payments = feesService.getStudentPaymentHistory(feeRecord.studentId) || [];
+    // PHASE-3D: Read payment history from ERP_RECEIPT_REGISTER (Primary Authority)
+    const payments = receiptService.getReceiptsByStudent(feeRecord.studentId) || [];
     
     return {
       studentId: feeRecord.studentId,
       studentName: feeRecord.studentName,
       className: feeRecord.className,
       
-      // Core Ledger Fields (from feesService)
+      // Core Ledger Fields (from feesService - ERP_FEES_DB)
       assignedAmount: Number(feeRecord.totalFee || 0),
       collectedAmount: Number(feeRecord.paidAmount || 0),
       dueAmount: Number(feeRecord.dueAmount || 0),
@@ -98,7 +107,7 @@ export const getAllStudentLedgers = () => {
       // Status (derived)
       paymentStatus: feeRecord.status || "unpaid",
       
-      // Metadata (derived)
+      // Metadata (derived from ERP_RECEIPT_REGISTER)
       paymentCount: payments.length,
       lastPaymentDate: payments.length > 0 
         ? payments[0].paymentDate 

@@ -35,6 +35,15 @@ export const STORAGE_KEYS = Object.freeze({
      */
     ERP_FEES_RECEIPT_COUNTER: "ERP_FEES_RECEIPT_COUNTER",
 
+    /** Receipt Register — Primary financial authority (Phase-3D) */
+    ERP_RECEIPT_REGISTER: "ERP_RECEIPT_REGISTER",
+
+    /** Receipt Templates — Receipt template storage (Phase-3D) */
+    ERP_RECEIPT_TEMPLATES: "ERP_RECEIPT_TEMPLATES",
+
+    /** Receipt PDFs — Generated PDF cache storage (Phase-3D) */
+    ERP_RECEIPT_PDFS: "ERP_RECEIPT_PDFS",
+
     /** School profile (dual medium) — SchoolProfile */
     SCHOOL_PROFILE: "schoolProfile",
 

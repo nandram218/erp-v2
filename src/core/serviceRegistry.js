@@ -163,6 +163,15 @@ export const registerDefaultServices = () => {
     const masterTransportService = require("../master-setting/transport/transportService");
     const ledgerService = require("../modules/fees/ledgerService");
     
+    // Phase-3D Receipt Authority Layer Services
+    const receiptService = require("../modules/fees/receiptService");
+    const receiptAuditService = require("../modules/fees/receiptAuditService");
+    const receiptSearchService = require("../modules/fees/receiptSearchService");
+    const receiptCancelService = require("../modules/fees/receiptCancelService");
+    const receiptVoidService = require("../modules/fees/receiptVoidService");
+    const receiptPrintService = require("../modules/fees/receiptPrintService");
+    const receiptMigrationService = require("../modules/fees/receiptMigrationService");
+    
     registerService("fees", feeService, { 
         description: "Unified fee service",
         deprecated: false 
@@ -190,6 +199,42 @@ export const registerDefaultServices = () => {
     
     registerService("ledger", ledgerService, { 
         description: "Read-only ledger summary service",
+        deprecated: false 
+    });
+    
+    // Phase-3D Receipt Authority Layer Registration
+    registerService("receipt", receiptService.default || receiptService, { 
+        description: "Primary financial authority - Receipt Register",
+        deprecated: false 
+    });
+    
+    registerService("receiptAudit", receiptAuditService.default || receiptAuditService, { 
+        description: "Receipt audit trail service",
+        deprecated: false 
+    });
+    
+    registerService("receiptSearch", receiptSearchService.default || receiptSearchService, { 
+        description: "Receipt search service",
+        deprecated: false 
+    });
+    
+    registerService("receiptCancel", receiptCancelService.default || receiptCancelService, { 
+        description: "Receipt cancellation service",
+        deprecated: false 
+    });
+    
+    registerService("receiptVoid", receiptVoidService.default || receiptVoidService, { 
+        description: "Receipt void service",
+        deprecated: false 
+    });
+    
+    registerService("receiptPrint", receiptPrintService.default || receiptPrintService, { 
+        description: "Receipt print tracking service",
+        deprecated: false 
+    });
+    
+    registerService("receiptMigration", receiptMigrationService.default || receiptMigrationService, { 
+        description: "Receipt migration utility",
         deprecated: false 
     });
     
