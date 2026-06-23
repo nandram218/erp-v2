@@ -1,6 +1,5 @@
 import {
     getStorageCompat,
-    setStorageCompat,
     STORAGE_KEYS,
 } from "./storageService";
 
@@ -10,11 +9,4 @@ const KEY = STORAGE_KEYS.ERP_DB;
 export const getSchoolProfile = () => {
     const db = getStorageCompat(KEY, null);
     return db?.school || null;
-};
-
-export const saveSchoolProfile = (payload) => {
-    const db = getStorageCompat(KEY, {});
-    db.school = payload;
-    setStorageCompat(KEY, db);
-    return payload;
 };

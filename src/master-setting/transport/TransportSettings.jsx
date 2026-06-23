@@ -2,17 +2,17 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getService } from "../../core/serviceRegistry";
 
-const transportService = getService("masterTransport");
+const transportService = getService("transport");
 
 export default function TransportSettings() {
 
     const navigate = useNavigate();
 
     const [store, setStore] =
-        useState(transportService.get());
+        useState(transportService.getTransportDB());
 
     const refreshStore = () => {
-        setStore(transportService.get());
+        setStore(transportService.getTransportDB());
     };
 
     /* =========================================
@@ -197,7 +197,7 @@ export default function TransportSettings() {
             };
         }
 
-        transportService.save(updated);
+        transportService.saveTransportDB(updated);
 
         setStore(updated);
 
@@ -239,7 +239,7 @@ export default function TransportSettings() {
                 ),
         };
 
-        transportService.save(updated);
+        transportService.saveTransportDB(updated);
 
         setStore(updated);
     };
@@ -313,7 +313,7 @@ export default function TransportSettings() {
             };
         }
 
-        transportService.save(updated);
+        transportService.saveTransportDB(updated);
 
         setStore(updated);
 
@@ -355,7 +355,7 @@ export default function TransportSettings() {
                 ),
         };
 
-        transportService.save(updated);
+        transportService.saveTransportDB(updated);
 
         setStore(updated);
     };
@@ -421,7 +421,7 @@ export default function TransportSettings() {
                 ],
             };
 
-        transportService.save(updated);
+        transportService.saveTransportDB(updated);
 
         setStore(updated);
 
@@ -445,7 +445,7 @@ export default function TransportSettings() {
                 ),
         };
 
-        transportService.save(updated);
+        transportService.saveTransportDB(updated);
 
         setStore(updated);
     };

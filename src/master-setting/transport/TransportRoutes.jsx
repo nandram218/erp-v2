@@ -2,14 +2,14 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getService } from "../../core/serviceRegistry";
 
-const transportService = getService("masterTransport");
+const transportService = getService("transport");
 
 export default function TransportRoutes() {
 
     const navigate = useNavigate();
 
     const [store, setStore] =
-        useState(transportService.get());
+        useState(transportService.getTransportDB());
 
     const emptyPoint = () => ({
         name: "",
@@ -72,7 +72,7 @@ export default function TransportRoutes() {
 
         const activeRoutes =
             routes.filter(
-                (r) => r.status !== "inactive"
+                (r) => r.active !== false
             ).length;
 
         return {
@@ -138,11 +138,11 @@ export default function TransportRoutes() {
         );
 
         setRouteStatus(
-            route.status || "active"
+            route.active !== false ? "active" : "inactive"
         );
 
-        setRouteNote(
-            route.note || ""
+        setFixedFare(
+            route.monthlyFee || route.fixedFare || ""
         );
 
         const mappedPoints =
@@ -194,31 +194,33 @@ export default function TransportRoutes() {
 
         try {
 
-            transportService.createRoute({
-
-                routeNo: finalRoute,
-
+            transportService.createTransportRoute({
+                id: finalRoute,
                 routeName,
-
-                fareType,
-
-                fixedFare:
+                vehicleNumber: "",
+                vehicleType: "Bus",
+                driverName: "",
+                driverPhone: "",
+                monthlyFee:
                     fareType === "fixed"
                         ? Number(fixedFare)
                         : 0,
-
-                status: routeStatus,
-
-                note: routeNote,
-
-                points:
+                pickupPoints:
                     points.filter(
                         (p) => p.name
-                    ),
+                    ).map((p) => ({
+                        pickupPointName: p.name,
+                        routeFee: Number(p.fare || 0),
+                        pickupTime: p.pickup || "",
+                        dropTime: p.drop || "",
+                    })),
+                gpsEnabled: false,
+                liveTrackingEnabled: false,
+                active: routeStatus === "active",
             });
 
             const fresh =
-                transportService.get();
+                transportService.getTransportDB();
 
             setStore(fresh);
 
@@ -316,7 +318,7 @@ export default function TransportRoutes() {
             routes: updatedRoutes,
         };
 
-        transportService.save(updatedDB);
+        transportService.saveTransportDB(updatedDB);
 
         setStore(updatedDB);
 
@@ -364,7 +366,7 @@ export default function TransportRoutes() {
                 ),
         };
 
-        transportService.save(updatedDB);
+        transportService.saveTransportDB(updatedDB);
 
         setStore(updatedDB);
 

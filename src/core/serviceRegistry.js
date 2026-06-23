@@ -160,7 +160,6 @@ export const registerDefaultServices = () => {
     const transportService = require("../modules/transport/services/transportService");
     const studentService = require("../services/studentService");
     const classSubjectService = require("../master-setting/classes-subjects/classSubjectService");
-    const masterTransportService = require("../master-setting/transport/transportService");
     const ledgerService = require("../modules/fees/ledgerService");
     const feeSettingsService = require("../services/feeSettingsService");
     
@@ -188,16 +187,11 @@ export const registerDefaultServices = () => {
         deprecated: false 
     });
     
-    registerService("classSubject", classSubjectService.classSubjectService, { 
+    registerService("classSubject", classSubjectService.classSubjectService, {
         description: "Class subject service",
-        deprecated: false 
+        deprecated: false
     });
-    
-    registerService("masterTransport", masterTransportService.transportService, { 
-        description: "Master transport service",
-        deprecated: false 
-    });
-    
+
     registerService("ledger", ledgerService, { 
         description: "Read-only ledger summary service",
         deprecated: false 

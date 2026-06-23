@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useSchoolStore } from "../../store/schoolStore";
 import {
     getSchoolProfile,
-    saveSchoolProfile,
 } from "../../services/schoolProfileService";
 import { appStyles as styles } from "../../styles/appStyles";
 const SchoolProfile = () => {
@@ -45,8 +44,6 @@ const SchoolProfile = () => {
     const handleSave = () => {
 
         const payload = { mediumType, schools };
-
-        saveSchoolProfile(payload);
 
         setSchoolData(payload);
 
