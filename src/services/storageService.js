@@ -128,3 +128,170 @@ export const clearLegacyStorage = () => {
         console.error("Legacy Storage Clear Error:", error);
     }
 };
+
+// ================= TENANT-AWARE STORAGE (Phase 4.4A) =================
+
+/**
+ * Validate tenant context object
+ * @param {Object} context - Tenant context to validate
+ * @returns {boolean} true if valid
+ */
+const isValidTenantContext = (context) => {
+    return context && 
+           typeof context === 'object' &&
+           'schoolId' in context &&
+           'branchId' in context &&
+           'sessionId' in context;
+};
+
+/**
+ * Sanitize values for safe storage key generation
+ * Prevents key injection attacks
+ * @param {string} value - Value to sanitize
+ * @returns {string} Sanitized value
+ */
+const sanitizeStorageValue = (value) => {
+    return value.toString()
+        .toUpperCase()
+        .replace(/[^A-Z0-9-]/g, '')
+        .substring(0, 20);
+};
+
+/**
+ * Generate tenant-aware storage key
+ * @param {string} baseKey - Base storage key (e.g., "ERP_DB")
+ * @param {Object} tenantContext - Tenant context with schoolId, branchId, sessionId
+ * @returns {string} Tenant-aware storage key
+ */
+export const getTenantStorageKey = (baseKey, tenantContext) => {
+    if (!isValidTenantContext(tenantContext)) {
+        throw new Error("[STORAGE] Invalid tenant context for key generation");
+    }
+
+    const { schoolId, branchId, sessionId } = tenantContext;
+    
+    if (!schoolId || !branchId || !sessionId) {
+        throw new Error("[STORAGE] Incomplete tenant context");
+    }
+
+    const sanitizedSchoolId = sanitizeStorageValue(schoolId);
+    const sanitizedBranchId = sanitizeStorageValue(branchId);
+    const sanitizedSessionId = sanitizeStorageValue(sessionId);
+
+    return `${STORAGE_PREFIX}_${sanitizedSchoolId}_${sanitizedBranchId}_${sanitizedSessionId}_${baseKey}`;
+};
+
+/**
+ * Read from tenant-isolated storage with fallback to shared storage
+ * @param {string} key - Storage key
+ * @param {Object} tenantContext - Tenant context (optional)
+ * @param {*} fallback - Fallback value if not found
+ * @returns {*} Stored value or fallback
+ */
+export const getTenantStorage = (key, tenantContext, fallback = null) => {
+    // If no valid tenant context, fall back to shared storage (backward compatible)
+    if (!isValidTenantContext(tenantContext) || 
+        !tenantContext.schoolId || 
+        !tenantContext.branchId || 
+        !tenantContext.sessionId) {
+        return getStorageCompat(key, fallback);
+    }
+
+    try {
+        const tenantKey = getTenantStorageKey(key, tenantContext);
+        const data = localStorage.getItem(tenantKey);
+        
+        if (data !== null) {
+            return JSON.parse(data);
+        }
+        
+        // Fallback to shared storage if tenant key not found (migration period)
+        return getStorageCompat(key, fallback);
+    } catch (error) {
+        console.error("[STORAGE] Tenant read failed:", error);
+        return getStorageCompat(key, fallback);
+    }
+};
+
+/**
+ * Write to tenant-isolated storage with dual-write to shared storage
+ * @param {string} key - Storage key
+ * @param {*} value - Value to store
+ * @param {Object} tenantContext - Tenant context (optional)
+ * @returns {boolean} true if shared write succeeded
+ */
+export const setTenantStorage = (key, value, tenantContext) => {
+    // Always write to shared storage (backward compatibility)
+    const sharedWriteSuccess = setStorageCompat(key, value);
+    
+    // If valid tenant context, also write to tenant-scoped key
+    if (isValidTenantContext(tenantContext) &&
+        tenantContext.schoolId && 
+        tenantContext.branchId && 
+        tenantContext.sessionId) {
+        try {
+            const tenantKey = getTenantStorageKey(key, tenantContext);
+            localStorage.setItem(tenantKey, JSON.stringify(value));
+            console.log(`[STORAGE] Dual-write: ${tenantKey}`);
+        } catch (error) {
+            console.error("[STORAGE] Tenant write failed:", error);
+            // Don't throw - shared write succeeded
+        }
+    }
+    
+    return sharedWriteSuccess;
+};
+
+/**
+ * Delete from tenant-isolated storage
+ * @param {string} key - Storage key
+ * @param {Object} tenantContext - Tenant context (optional)
+ */
+export const removeTenantStorage = (key, tenantContext) => {
+    // Remove from shared storage
+    removeStorageCompat(key);
+    
+    // If valid tenant context, also remove from tenant-scoped key
+    if (isValidTenantContext(tenantContext) &&
+        tenantContext.schoolId && 
+        tenantContext.branchId && 
+        tenantContext.sessionId) {
+        try {
+            const tenantKey = getTenantStorageKey(key, tenantContext);
+            localStorage.removeItem(tenantKey);
+            console.log(`[STORAGE] Tenant delete: ${tenantKey}`);
+        } catch (error) {
+            console.error("[STORAGE] Tenant delete failed:", error);
+        }
+    }
+};
+
+/**
+ * Migrate legacy shared data to tenant-scoped storage
+ * @param {string} key - Storage key to migrate
+ * @param {Object} tenantContext - Tenant context
+ * @returns {boolean} true if migration succeeded
+ */
+export const migrateToTenantStorage = (key, tenantContext) => {
+    if (!isValidTenantContext(tenantContext)) {
+        return false;
+    }
+
+    try {
+        // Read from shared storage
+        const legacyData = getStorageCompat(key, null);
+        if (!legacyData) {
+            return true; // Nothing to migrate
+        }
+
+        // Write to tenant-scoped key
+        const tenantKey = getTenantStorageKey(key, tenantContext);
+        localStorage.setItem(tenantKey, JSON.stringify(legacyData));
+        
+        console.log(`[MIGRATION] Migrated ${key} to ${tenantKey}`);
+        return true;
+    } catch (error) {
+        console.error("[MIGRATION] Failed:", error);
+        return false;
+    }
+};

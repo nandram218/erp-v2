@@ -5,8 +5,10 @@ import {
     setStorageCompat,
     removeStorageCompat,
     migrateLegacyStorage,
+    getTenantStorage,
+    setTenantStorage,
 } from "../services/storageService";
-import { getTenantContext } from "../services/tenantContextService";
+import { getTenantContext, getTenantContextForStorage } from "../services/tenantContextService";
 
 export const useSchoolStore = create((set, get) => ({
 
@@ -33,15 +35,19 @@ export const useSchoolStore = create((set, get) => ({
 
         migrateLegacyStorage();
 
-        const db = getStorageCompat(ERP_DB_KEY, null);
+        // Get tenant context for storage operations (bootstrap-safe)
+        const tenantContext = getTenantContextForStorage();
 
-        // Get tenant context from auth or storage fallback
-        const tenantContext = getTenantContext();
+        // Try tenant-scoped storage first, fallback to shared
+        const db = getTenantStorage(ERP_DB_KEY, tenantContext, null);
+
+        // Get full tenant context for data merging
+        const fullTenantContext = getTenantContext();
 
         if (!db) {
 
             set({
-                schoolData: tenantContext,
+                schoolData: fullTenantContext,
                 hydrated: true
             });
 
@@ -54,7 +60,7 @@ export const useSchoolStore = create((set, get) => ({
 
                 schoolData: {
                     // Use tenant context as base, merge with stored school data
-                    ...tenantContext,
+                    ...fullTenantContext,
                     ...(db.school ?? {})
                 },
 
@@ -84,7 +90,7 @@ export const useSchoolStore = create((set, get) => ({
             removeStorageCompat(ERP_DB_KEY);
 
             set({
-                schoolData: tenantContext,
+                schoolData: fullTenantContext,
                 hydrated: true
             });
         }
@@ -96,9 +102,12 @@ export const useSchoolStore = create((set, get) => ({
 
         const state = get();
 
+        // Get tenant context for storage operations (bootstrap-safe)
+        const tenantContext = getTenantContextForStorage();
+
         // FIX: Merge existing transport data from localStorage to prevent overwriting
         // master-setting transport service data with stale state
-        const existingDB = getStorageCompat(ERP_DB_KEY, {});
+        const existingDB = getTenantStorage(ERP_DB_KEY, tenantContext, {});
 
         const db = {
 
@@ -121,7 +130,8 @@ export const useSchoolStore = create((set, get) => ({
             }
         };
 
-        setStorageCompat(ERP_DB_KEY, db);
+        // Use tenant-aware write (dual-write)
+        setTenantStorage(ERP_DB_KEY, db, tenantContext);
     },
 
     // ================= SCHOOL =================

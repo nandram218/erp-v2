@@ -243,6 +243,30 @@ export const withTenantContext = (data = {}) => {
     };
 };
 
+// ================= BOOTSTRAP-SAFE CONTEXT (Phase 4.4A) =================
+
+/**
+ * Get tenant context for storage operations (bootstrap-safe)
+ * This function NEVER calls getStorageCompat - breaks circular dependency
+ * 
+ * Priority:
+ * 1. Auth context (raw localStorage read)
+ * 2. Empty context (triggers fallback to shared storage)
+ * 
+ * @returns {Object} Tenant context or empty object
+ */
+export const getTenantContextForStorage = () => {
+    // Priority 1: Auth context only (NO storage fallback)
+    const authContext = getAuthContext();
+    if (authContext.schoolId && authContext.branchId && authContext.sessionId) {
+        return authContext;
+    }
+
+    // Return empty context - storage will fall back to shared storage
+    // This breaks circular dependency: no getStorageCompat call here
+    return {};
+};
+
 // ================= EXPORTS =================
 export { SAFETY_MODE };
 
@@ -251,6 +275,7 @@ export default {
     getAuthContext,
     clearAuthContext,
     getTenantContext,
+    getTenantContextForStorage,
     getSchoolId,
     getBranchId,
     getSessionId,
