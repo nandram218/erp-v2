@@ -1,15 +1,14 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getService } from "../../core/serviceRegistry";
-
-const transportService = getService("transport");
+// FIXED: Import master-setting transport service directly
+import { transportService } from "./transportService";
 
 export default function TransportRoutes() {
 
     const navigate = useNavigate();
 
     const [store, setStore] =
-        useState(transportService.getTransportDB());
+        useState(transportService.get());
 
     const emptyPoint = () => ({
         name: "",
@@ -194,25 +193,25 @@ export default function TransportRoutes() {
 
         try {
 
-            transportService.createTransportRoute({
-                id: finalRoute,
+            transportService.createRoute({
+                routeNo: finalRoute,
                 routeName,
                 vehicleNumber: "",
                 vehicleType: "Bus",
                 driverName: "",
                 driverPhone: "",
-                monthlyFee:
+                fixedFare:
                     fareType === "fixed"
                         ? Number(fixedFare)
                         : 0,
-                pickupPoints:
+                points:
                     points.filter(
                         (p) => p.name
                     ).map((p) => ({
-                        pickupPointName: p.name,
-                        routeFee: Number(p.fare || 0),
-                        pickupTime: p.pickup || "",
-                        dropTime: p.drop || "",
+                        name: p.name,
+                        fare: Number(p.fare || 0),
+                        pickup: p.pickup || "",
+                        drop: p.drop || "",
                     })),
                 gpsEnabled: false,
                 liveTrackingEnabled: false,
@@ -220,7 +219,7 @@ export default function TransportRoutes() {
             });
 
             const fresh =
-                transportService.getTransportDB();
+                transportService.get();
 
             setStore(fresh);
 
@@ -318,7 +317,7 @@ export default function TransportRoutes() {
             routes: updatedRoutes,
         };
 
-        transportService.saveTransportDB(updatedDB);
+        transportService.save(updatedDB);
 
         setStore(updatedDB);
 
@@ -366,7 +365,7 @@ export default function TransportRoutes() {
                 ),
         };
 
-        transportService.saveTransportDB(updatedDB);
+        transportService.save(updatedDB);
 
         setStore(updatedDB);
 

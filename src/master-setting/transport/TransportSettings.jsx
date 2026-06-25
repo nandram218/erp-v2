@@ -1,18 +1,18 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getService } from "../../core/serviceRegistry";
 
-const transportService = getService("transport");
+// FIXED: Import master-setting transport service directly
+import { transportService } from "./transportService";
 
 export default function TransportSettings() {
 
     const navigate = useNavigate();
 
     const [store, setStore] =
-        useState(transportService.getTransportDB());
+        useState(transportService.get());
 
     const refreshStore = () => {
-        setStore(transportService.getTransportDB());
+        setStore(transportService.get());
     };
 
     /* =========================================
@@ -197,7 +197,7 @@ export default function TransportSettings() {
             };
         }
 
-        transportService.saveTransportDB(updated);
+        transportService.save(updated);
 
         setStore(updated);
 
@@ -239,7 +239,7 @@ export default function TransportSettings() {
                 ),
         };
 
-        transportService.saveTransportDB(updated);
+        transportService.save(updated);
 
         setStore(updated);
     };
@@ -313,7 +313,7 @@ export default function TransportSettings() {
             };
         }
 
-        transportService.saveTransportDB(updated);
+        transportService.save(updated);
 
         setStore(updated);
 
@@ -355,7 +355,7 @@ export default function TransportSettings() {
                 ),
         };
 
-        transportService.saveTransportDB(updated);
+        transportService.save(updated);
 
         setStore(updated);
     };
@@ -421,7 +421,7 @@ export default function TransportSettings() {
                 ],
             };
 
-        transportService.saveTransportDB(updated);
+        transportService.save(updated);
 
         setStore(updated);
 
@@ -445,7 +445,7 @@ export default function TransportSettings() {
                 ),
         };
 
-        transportService.saveTransportDB(updated);
+        transportService.save(updated);
 
         setStore(updated);
     };
