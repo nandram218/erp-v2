@@ -12,12 +12,12 @@
  */
 
 import {
-    getStorageCompat,
-    setStorageCompat,
-    removeStorageCompat,
+    getTenantStorage,
+    setTenantStorage,
+    removeTenantStorage,
     STORAGE_KEYS,
 } from "../../services/storageService";
-import { withTenantContext } from "../../services/tenantContextService";
+import { withTenantContext, getTenantContextForStorage } from "../../services/tenantContextService";
 import { RECEIPT_STATUS, DISCOUNT_SOURCE, PAYMENT_MODE } from "./receiptConstants";
 
 /* =========================
@@ -38,11 +38,12 @@ export const createBackups = () => {
     const ledgerBackupKey = `ERP_FEES_LEDGER_BACKUP_${timestamp}`;
     const feesBackupKey = `ERP_FEES_DB_BACKUP_${timestamp}`;
 
-    const ledgerData = getStorageCompat(LEDGER_KEY, []);
-    const feesData = getStorageCompat(FEES_DB_KEY, []);
+    const tenantContext = getTenantContextForStorage();
+    const ledgerData = getTenantStorage(LEDGER_KEY, tenantContext, []);
+    const feesData = getTenantStorage(FEES_DB_KEY, tenantContext, []);
 
-    setStorageCompat(ledgerBackupKey, ledgerData);
-    setStorageCompat(feesBackupKey, feesData);
+    setTenantStorage(ledgerBackupKey, ledgerData, tenantContext);
+    setTenantStorage(feesBackupKey, feesData, tenantContext);
 
     return {
         success: true,
@@ -58,15 +59,16 @@ export const createBackups = () => {
 ========================= */
 
 export const restoreBackups = ({ ledgerBackupKey, feesBackupKey }) => {
-    const ledgerData = getStorageCompat(ledgerBackupKey, []);
-    const feesData = getStorageCompat(feesBackupKey, []);
+    const tenantContext = getTenantContextForStorage();
+    const ledgerData = getTenantStorage(ledgerBackupKey, tenantContext, []);
+    const feesData = getTenantStorage(feesBackupKey, tenantContext, []);
 
-    setStorageCompat(LEDGER_KEY, ledgerData);
-    setStorageCompat(FEES_DB_KEY, feesData);
+    setTenantStorage(LEDGER_KEY, ledgerData, tenantContext);
+    setTenantStorage(FEES_DB_KEY, feesData, tenantContext);
 
     // Clean up backup keys
-    removeStorageCompat(ledgerBackupKey);
-    removeStorageCompat(feesBackupKey);
+    removeTenantStorage(ledgerBackupKey, tenantContext);
+    removeTenantStorage(feesBackupKey, tenantContext);
 
     return {
         success: true,
@@ -80,8 +82,9 @@ export const restoreBackups = ({ ledgerBackupKey, feesBackupKey }) => {
 ========================= */
 
 export const getMigrationStatistics = () => {
-    const ledger = getStorageCompat(LEDGER_KEY, []);
-    const feesDB = getStorageCompat(FEES_DB_KEY, []);
+    const tenantContext = getTenantContextForStorage();
+    const ledger = getTenantStorage(LEDGER_KEY, tenantContext, []);
+    const feesDB = getTenantStorage(FEES_DB_KEY, tenantContext, []);
 
     const ledgerPaymentCount = ledger.length;
     const ledgerTotalAmount = ledger.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -240,13 +243,14 @@ export const executeMigration = () => {
     }
 
     // Get source data
-    const ledger = getStorageCompat(LEDGER_KEY, []);
+    const tenantContext = getTenantContextForStorage();
+    const ledger = getTenantStorage(LEDGER_KEY, tenantContext, []);
 
     // Transform ledger entries to receipts
     const receipts = ledger.map(transformLedgerToReceipt);
 
     // Save to receipt register
-    setStorageCompat(RECEIPT_REGISTER_KEY, receipts);
+    setTenantStorage(RECEIPT_REGISTER_KEY, receipts, tenantContext);
 
     return {
         success: true,
@@ -262,8 +266,9 @@ export const executeMigration = () => {
 ========================= */
 
 export const verifyMigration = () => {
-    const ledger = getStorageCompat(LEDGER_KEY, []);
-    const receiptRegister = getStorageCompat(RECEIPT_REGISTER_KEY, []);
+    const tenantContext = getTenantContextForStorage();
+    const ledger = getTenantStorage(LEDGER_KEY, tenantContext, []);
+    const receiptRegister = getTenantStorage(RECEIPT_REGISTER_KEY, tenantContext, []);
 
     const ledgerPaymentCount = ledger.length;
     const receiptCount = receiptRegister.length;
@@ -294,7 +299,8 @@ export const rollbackMigration = ({ ledgerBackupKey, feesBackupKey }) => {
     const restoreResult = restoreBackups({ ledgerBackupKey, feesBackupKey });
 
     // Clean up receipt register
-    removeStorageCompat(RECEIPT_REGISTER_KEY);
+    const tenantContext = getTenantContextForStorage();
+    removeTenantStorage(RECEIPT_REGISTER_KEY, tenantContext);
 
     return {
         success: true,

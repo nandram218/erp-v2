@@ -1,14 +1,43 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// FIXED: Import master-setting transport service directly
-import { transportService } from "./transportService";
+
+// FIXED: Use tenant-aware storage directly (Phase 4.5 Final Gate Audit)
+import { 
+    getTenantStorage,
+    setTenantStorage,
+    STORAGE_KEYS
+} from "../../services/storageService";
+import { getTenantContext } from "../../services/tenantContextService";
+
+const DB_KEY = STORAGE_KEYS.ERP_DB;
 
 export default function TransportRoutes() {
 
     const navigate = useNavigate();
 
-    const [store, setStore] =
-        useState(transportService.get());
+    const [store, setStore] = useState({});
+
+    const loadStore = () => {
+        const tenantContext = getTenantContext();
+        const db = getTenantStorage(DB_KEY, tenantContext, {});
+        setStore(db.transport || {
+            routes: [],
+            vehicles: [],
+            drivers: [],
+            mappings: [],
+            settings: {
+                transportEnabled: true,
+                attendanceTracking: false,
+                gpsTracking: false,
+                smsAlerts: false,
+            },
+        });
+    };
+
+    // Load on mount
+    useEffect(() => {
+        loadStore();
+    }, []);
 
     const emptyPoint = () => ({
         name: "",
@@ -193,35 +222,68 @@ export default function TransportRoutes() {
 
         try {
 
-            transportService.createRoute({
+            // AUTO SYNC: When fare type is FIXED, sync fixed fare to all pickup points
+            const syncedPoints =
+                points.filter((p) => p.name).map((p) => {
+                    const fare =
+                        fareType === "fixed"
+                            ? Number(fixedFare || 0)
+                            : Number(p.fare || 0);
+
+                    return {
+                        id: Date.now() + Math.random(),
+                        pickupPointName: p.name,
+                        routeFee: fare,
+                        pickupTime: p.pickup || "",
+                        dropTime: p.drop || "",
+                    };
+                });
+
+            const newRoute = {
+                id: Date.now() + Math.random(),
                 routeNo: finalRoute,
                 routeName,
+                fareType,
+                fixedFare: fareType === "fixed" ? Number(fixedFare) : 0,
+                monthlyFee: fareType === "fixed" ? Number(fixedFare) : 0,
                 vehicleNumber: "",
                 vehicleType: "Bus",
                 driverName: "",
                 driverPhone: "",
-                fixedFare:
-                    fareType === "fixed"
-                        ? Number(fixedFare)
-                        : 0,
-                points:
-                    points.filter(
-                        (p) => p.name
-                    ).map((p) => ({
-                        name: p.name,
-                        fare: Number(p.fare || 0),
-                        pickup: p.pickup || "",
-                        drop: p.drop || "",
-                    })),
                 gpsEnabled: false,
                 liveTrackingEnabled: false,
                 active: routeStatus === "active",
-            });
+                pickupPoints: syncedPoints,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
 
-            const fresh =
-                transportService.get();
+            // Save to tenant-aware storage
+            const tenantContext = getTenantContext();
+            const db = getTenantStorage(DB_KEY, tenantContext, {});
+            if (!db.transport) {
+                db.transport = {
+                    routes: [],
+                    vehicles: [],
+                    drivers: [],
+                    mappings: [],
+                    settings: {
+                        transportEnabled: true,
+                        attendanceTracking: false,
+                        gpsTracking: false,
+                        smsAlerts: false,
+                    },
+                };
+            }
+            db.transport.routes = [...(db.transport.routes || []), newRoute];
+            setTenantStorage(DB_KEY, db, tenantContext);
 
-            setStore(fresh);
+            // Update local state
+            const updatedStore = {
+                ...store,
+                routes: db.transport.routes,
+            };
+            setStore(updatedStore);
 
             alert("✅ Route Saved");
 
@@ -262,6 +324,31 @@ export default function TransportRoutes() {
                     return r;
                 }
 
+                // AUTO SYNC: When fare type is FIXED, sync fixed fare to all pickup points
+                const syncedPickupPoints =
+                    points
+                        .filter(
+                            (p) => p.name
+                        )
+                        .map((p, index) => ({
+                            id:
+                                r.pickupPoints?.[index]?.id || Date.now() + index,
+
+                            pickupPointName:
+                                p.name,
+
+                            routeFee:
+                                fareType === "fixed"
+                                    ? Number(fixedFare || 0)
+                                    : Number(p.fare || 0),
+
+                            pickupTime:
+                                p.pickup || "",
+
+                            dropTime:
+                                p.drop || "",
+                        }));
+
                 return {
 
                     ...r,
@@ -275,6 +362,11 @@ export default function TransportRoutes() {
                             ? Number(fixedFare)
                             : 0,
 
+                    monthlyFee:
+                        fareType === "fixed"
+                            ? Number(fixedFare)
+                            : 0,
+
                     status: routeStatus,
 
                     note: routeNote,
@@ -282,44 +374,22 @@ export default function TransportRoutes() {
                     updatedAt:
                         new Date().toISOString(),
 
-                    pickupPoints:
-                        points
-                            .filter(
-                                (p) => p.name
-                            )
-                            .map((p, index) => ({
-
-                                id:
-                                    r.pickupPoints?.[index]?.id || r.points?.[index]?.id ||
-                                    Date.now() + index,
-
-                                pickupPointName:
-                                    p.name,
-
-                                routeFee:
-                                    Number(
-                                        p.fare || 0
-                                    ),
-
-                                pickupTime:
-                                    p.pickup || "",
-
-                                dropTime:
-                                    p.drop || "",
-                            })),
+                    pickupPoints: syncedPickupPoints,
                 };
             });
 
-        const updatedDB = {
+        // Save to tenant-aware storage
+        const tenantContext = getTenantContext();
+        const db = getTenantStorage(DB_KEY, tenantContext, {});
+        db.transport.routes = updatedRoutes;
+        setTenantStorage(DB_KEY, db, tenantContext);
 
+        // Update local state
+        const updatedStore = {
             ...store,
-
             routes: updatedRoutes,
         };
-
-        transportService.save(updatedDB);
-
-        setStore(updatedDB);
+        setStore(updatedStore);
 
         alert("✏ Route Updated");
 
@@ -346,28 +416,25 @@ export default function TransportRoutes() {
             return;
         }
 
-        const updatedDB = {
+        const updatedRoutes =
+            store.routes.filter(
+                (r) =>
+                    r.routeNo !==
+                    selectedRoute
+            );
 
+        // Save to tenant-aware storage
+        const tenantContext = getTenantContext();
+        const db = getTenantStorage(DB_KEY, tenantContext, {});
+        db.transport.routes = updatedRoutes;
+        setTenantStorage(DB_KEY, db, tenantContext);
+
+        // Update local state
+        const updatedStore = {
             ...store,
-
-            routes:
-                store.routes.filter(
-                    (r) =>
-                        r.routeNo !==
-                        selectedRoute
-                ),
-
-            mappings:
-                store.mappings.filter(
-                    (m) =>
-                        m.route !==
-                        selectedRoute
-                ),
+            routes: updatedRoutes,
         };
-
-        transportService.save(updatedDB);
-
-        setStore(updatedDB);
+        setStore(updatedStore);
 
         alert("🗑 Route Deleted");
 
@@ -802,7 +869,7 @@ export default function TransportRoutes() {
                         Select Route
                     </option>
 
-                    {store.routes.map((r) => (
+                    {store.routes?.map((r) => (
 
                         <option
                             key={r.routeNo}
@@ -833,7 +900,7 @@ export default function TransportRoutes() {
 
             <div style={styles.previewGrid}>
 
-                {store.routes.map((r) => (
+                {store.routes?.map((r) => (
 
                     <div
                         key={r.routeNo}
@@ -933,9 +1000,9 @@ const styles = {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 24,
         flexWrap: "wrap",
         gap: 16,
+        marginBottom: 24,
     },
 
     title: {
@@ -965,7 +1032,7 @@ const styles = {
 
     statCard: {
         background: "#1e293b",
-        borderRadius: 16,
+        borderRadius: 18,
         padding: 20,
         border: "1px solid #334155",
     },
@@ -1001,12 +1068,6 @@ const styles = {
         gap: 16,
     },
 
-    label: {
-        display: "block",
-        marginBottom: 8,
-        color: "#cbd5e1",
-    },
-
     input: {
         width: "100%",
         padding: 12,
@@ -1020,6 +1081,7 @@ const styles = {
     textarea: {
         width: "100%",
         minHeight: 100,
+        marginTop: 16,
         padding: 12,
         borderRadius: 10,
         border: "1px solid #334155",
@@ -1028,13 +1090,76 @@ const styles = {
         boxSizing: "border-box",
     },
 
+    actionBar: {
+        display: "flex",
+        gap: 12,
+        marginTop: 20,
+        flexWrap: "wrap",
+    },
+
+    previewGrid: {
+        display: "grid",
+        gridTemplateColumns:
+            "repeat(auto-fit,minmax(320px,1fr))",
+        gap: 18,
+        marginTop: 24,
+    },
+
+    routeCard: {
+        background: "#1e293b",
+        borderRadius: 18,
+        padding: 18,
+    },
+
+    routeTop: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 12,
+    },
+
+    routeNo: {
+        fontSize: 20,
+        fontWeight: 700,
+        color: "#3b82f6",
+    },
+
+    routeName: {
+        fontSize: 16,
+        color: "#cbd5e1",
+        marginTop: 4,
+    },
+
+    statusBadge: {
+        padding: "6px 12px",
+        borderRadius: 999,
+        fontSize: 12,
+        textTransform: "uppercase",
+    },
+
+    routeMeta: {
+        marginTop: 10,
+        color: "#cbd5e1",
+    },
+
+    pointList: {
+        marginTop: 16,
+        paddingTop: 16,
+        borderTop: "1px solid #334155",
+    },
+
+    pointItem: {
+        display: "flex",
+        justifyContent: "space-between",
+        padding: "8px 0",
+        borderBottom: "1px solid #334155",
+    },
+
     tableHeader: {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 16,
-        flexWrap: "wrap",
-        gap: 12,
     },
 
     tableWrapper: {
@@ -1048,131 +1173,37 @@ const styles = {
 
     tableInput: {
         width: "100%",
-        padding: 10,
-        borderRadius: 8,
+        padding: 8,
+        borderRadius: 6,
         border: "1px solid #334155",
         background: "#0f172a",
         color: "#fff",
         boxSizing: "border-box",
     },
 
-    actionBar: {
-        display: "flex",
-        gap: 12,
-        flexWrap: "wrap",
-        marginBottom: 24,
-    },
-
-    routeSelect: {
-        minWidth: 250,
-        padding: 12,
-        borderRadius: 10,
-        border: "1px solid #334155",
-        background: "#1e293b",
-        color: "#fff",
-    },
-
-    previewGrid: {
-        display: "grid",
-        gridTemplateColumns:
-            "repeat(auto-fit,minmax(320px,1fr))",
-        gap: 18,
-    },
-
-    routeCard: {
-        background: "#1e293b",
-        borderRadius: 18,
-        padding: 18,
-    },
-
-    routeTop: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-
-    routeNo: {
-        fontSize: 24,
-        fontWeight: 700,
-    },
-
-    routeName: {
-        color: "#cbd5e1",
-        marginTop: 4,
-    },
-
-    routeMeta: {
-        marginTop: 10,
-        color: "#94a3b8",
-    },
-
-    pointList: {
-        marginTop: 16,
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-    },
-
-    pointItem: {
-        background: "#0f172a",
-        padding: 12,
-        borderRadius: 12,
-        border: "1px solid #334155",
-    },
-
-    statusBadge: {
-        padding: "6px 12px",
-        borderRadius: 999,
-        fontSize: 12,
-        textTransform: "uppercase",
-    },
-
-    primaryBtn: {
-        background: "#2563eb",
-        color: "#fff",
-        border: "none",
-        padding: "12px 18px",
-        borderRadius: 10,
-        cursor: "pointer",
-        fontWeight: 600,
-    },
-
-    successBtn: {
-        background: "#16a34a",
-        color: "#fff",
-        border: "none",
-        padding: "12px 18px",
-        borderRadius: 10,
-        cursor: "pointer",
-        fontWeight: 600,
-    },
-
-    dangerBtn: {
-        background: "#dc2626",
-        color: "#fff",
-        border: "none",
-        padding: "12px 18px",
-        borderRadius: 10,
-        cursor: "pointer",
-        fontWeight: 600,
-    },
-
-    secondaryBtn: {
-        background: "#475569",
-        color: "#fff",
-        border: "none",
-        padding: "12px 18px",
-        borderRadius: 10,
-        cursor: "pointer",
-        fontWeight: 600,
-    },
-
     deleteBtn: {
         background: "#dc2626",
         color: "#fff",
         border: "none",
-        borderRadius: 8,
-        padding: "10px 12px",
+        padding: "6px 12px",
+        borderRadius: 6,
         cursor: "pointer",
+        fontWeight: 600,
+    },
+
+    routeSelect: {
+        padding: 12,
+        borderRadius: 10,
+        border: "1px solid #334155",
+        background: "#0f172a",
+        color: "#fff",
+        minWidth: 200,
+    },
+
+    label: {
+        display: "block",
+        marginBottom: 6,
+        color: "#cbd5e1",
+        fontWeight: 500,
     },
 };

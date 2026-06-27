@@ -182,19 +182,23 @@ export const getTenantStorageKey = (baseKey, tenantContext) => {
 };
 
 /**
- * Read from tenant-isolated storage with fallback to shared storage
+ * Read from tenant-isolated storage ONLY - NO shared storage fallback
  * @param {string} key - Storage key
  * @param {Object} tenantContext - Tenant context (optional)
  * @param {*} fallback - Fallback value if not found
  * @returns {*} Stored value or fallback
+ * 
+ * ZERO TRUST: Never reads shared storage. Only reads tenant-scoped keys.
+ * If tenant context is invalid, returns fallback without reading shared storage.
  */
 export const getTenantStorage = (key, tenantContext, fallback = null) => {
-    // If no valid tenant context, fall back to shared storage (backward compatible)
+    // If no valid tenant context, return fallback WITHOUT reading shared storage
     if (!isValidTenantContext(tenantContext) || 
         !tenantContext.schoolId || 
         !tenantContext.branchId || 
         !tenantContext.sessionId) {
-        return getStorageCompat(key, fallback);
+        // ZERO TRUST: No fallback to shared storage
+        return fallback;
     }
 
     try {
@@ -205,26 +209,23 @@ export const getTenantStorage = (key, tenantContext, fallback = null) => {
             return JSON.parse(data);
         }
         
-        // Fallback to shared storage if tenant key not found (migration period)
-        return getStorageCompat(key, fallback);
+        // Tenant-scoped storage is empty - return fallback
+        return fallback;
     } catch (error) {
         console.error("[STORAGE] Tenant read failed:", error);
-        return getStorageCompat(key, fallback);
+        return fallback;
     }
 };
 
 /**
- * Write to tenant-isolated storage with dual-write to shared storage
+ * Write to tenant-isolated storage
  * @param {string} key - Storage key
  * @param {*} value - Value to store
  * @param {Object} tenantContext - Tenant context (optional)
- * @returns {boolean} true if shared write succeeded
+ * @returns {boolean} true if write succeeded
  */
 export const setTenantStorage = (key, value, tenantContext) => {
-    // Always write to shared storage (backward compatibility)
-    const sharedWriteSuccess = setStorageCompat(key, value);
-    
-    // If valid tenant context, also write to tenant-scoped key
+    // If valid tenant context, write to tenant-scoped key only
     if (isValidTenantContext(tenantContext) &&
         tenantContext.schoolId && 
         tenantContext.branchId && 
@@ -232,14 +233,16 @@ export const setTenantStorage = (key, value, tenantContext) => {
         try {
             const tenantKey = getTenantStorageKey(key, tenantContext);
             localStorage.setItem(tenantKey, JSON.stringify(value));
-            console.log(`[STORAGE] Dual-write: ${tenantKey}`);
+            console.log(`[STORAGE] Tenant write: ${tenantKey}`);
+            return true;
         } catch (error) {
             console.error("[STORAGE] Tenant write failed:", error);
-            // Don't throw - shared write succeeded
+            return false;
         }
     }
     
-    return sharedWriteSuccess;
+    // No valid tenant context - write to shared storage (legacy fallback)
+    return setStorageCompat(key, value);
 };
 
 /**
@@ -248,10 +251,7 @@ export const setTenantStorage = (key, value, tenantContext) => {
  * @param {Object} tenantContext - Tenant context (optional)
  */
 export const removeTenantStorage = (key, tenantContext) => {
-    // Remove from shared storage
-    removeStorageCompat(key);
-    
-    // If valid tenant context, also remove from tenant-scoped key
+    // If valid tenant context, remove from tenant-scoped key only
     if (isValidTenantContext(tenantContext) &&
         tenantContext.schoolId && 
         tenantContext.branchId && 
@@ -260,10 +260,15 @@ export const removeTenantStorage = (key, tenantContext) => {
             const tenantKey = getTenantStorageKey(key, tenantContext);
             localStorage.removeItem(tenantKey);
             console.log(`[STORAGE] Tenant delete: ${tenantKey}`);
+            return true;
         } catch (error) {
             console.error("[STORAGE] Tenant delete failed:", error);
+            return false;
         }
     }
+    
+    // No valid tenant context - remove from shared storage (legacy fallback)
+    return removeStorageCompat(key);
 };
 
 /**

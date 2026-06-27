@@ -4,23 +4,26 @@
 ========================================================= */
 
 import {
-    getStorageCompat,
-    setStorageCompat,
+    getTenantStorage,
+    setTenantStorage,
     STORAGE_KEYS,
 } from "../../services/storageService";
+import { getTenantContextForStorage } from "../../services/tenantContextService";
 
 const DB_KEY = STORAGE_KEYS.ERP_DB;
 
 const getDB = () => {
     try {
-        return getStorageCompat(DB_KEY, {});
+        const tenantContext = getTenantContextForStorage();
+        return getTenantStorage(DB_KEY, tenantContext, {});
     } catch {
         return {};
     }
 };
 
 const saveDB = (db) => {
-    setStorageCompat(DB_KEY, db);
+    const tenantContext = getTenantContextForStorage();
+    setTenantStorage(DB_KEY, db, tenantContext);
 };
 
 const defaultHostel = {

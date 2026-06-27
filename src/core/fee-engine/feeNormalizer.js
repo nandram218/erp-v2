@@ -154,7 +154,7 @@ export const normalizeFeeSettings = (feeSettings, transportRoutes = [], context 
     const normalizedRoutes = transportRoutes.map(r => ({
         id: r.id,
         name: r.routeName,
-        fee: r.monthlyFee,
+        fee: r.transportFee || r.fixedFare || r.monthlyFee || 0,
         pickupPoints: r.pickupPoints || [],
         active: r.active !== false
     }));

@@ -109,23 +109,8 @@ export const getTenantContext = () => {
         return authContext;
     }
 
-    // Priority 2: Storage fallback (for backward compatibility)
-    try {
-        const db = getStorageCompat(STORAGE_KEYS.ERP_DB_KEY, null);
-        if (db && db.school) {
-            const schoolContext = {
-                schoolId: db.school.schoolId || "",
-                branchId: db.school.branchId || "",
-                sessionId: db.school.sessionId || "",
-            };
-            if (schoolContext.schoolId && schoolContext.branchId && schoolContext.sessionId) {
-                console.log("[TenantContextService] Using storage fallback context");
-                return schoolContext;
-            }
-        }
-    } catch (error) {
-        console.error("[TenantContextService] Failed to get storage fallback:", error);
-    }
+    // Priority 2: REMOVED - Storage fallback causes circular dependency and authority leak
+    // getTenantContextForStorage() handles bootstrap without reading shared storage
 
     // Priority 3: Default context (development mode only)
     // Phase 3.1 C - Safety Mode: Allow default fallback only in development
@@ -284,3 +269,64 @@ export default {
     getTenantKeySuffix,
     withTenantContext,
 };
+
+// ================= DEVELOPMENT ONLY: TENANT SWITCH HELPER =================
+/**
+ * Development-only tenant switch helper for multi-tenant testing
+ * Exposed on window.__DEV__ for browser console access
+ * ONLY active in development mode - stripped in production builds
+ */
+if (process.env.NODE_ENV === "development") {
+    const DEV_TENANTS = {
+        SCH_0001: {
+            schoolId: "SCH_0001",
+            branchId: "MAIN",
+            sessionId: "2025-26",
+        },
+        SCH_0002: {
+            schoolId: "SCH_0002",
+            branchId: "MAIN",
+            sessionId: "2025-26",
+        },
+        SCH_0003: {
+            schoolId: "SCH_0003",
+            branchId: "MAIN",
+            sessionId: "2025-26",
+        },
+    };
+
+    window.__DEV__ = {
+        setTenant: setAuthContext,
+        getTenant: getTenantContext,
+        clearTenant: clearAuthContext,
+        tenants: DEV_TENANTS,
+        
+        // Helper to switch and reload
+        switchTenant: (tenantKey) => {
+            const tenant = DEV_TENANTS[tenantKey];
+            if (!tenant) {
+                console.error(`[DEV] Unknown tenant: ${tenantKey}. Available: ${Object.keys(DEV_TENANTS).join(", ")}`);
+                return false;
+            }
+            setAuthContext(tenant);
+            console.log(`[DEV] Switched to ${tenantKey}:`, tenant);
+            console.log(`[DEV] Reload page to apply changes`);
+            return true;
+        },
+        
+        // Helper to show current tenant info
+        showTenant: () => {
+            const context = getTenantContext();
+            const storageKey = context.schoolId && context.branchId && context.sessionId
+                ? `ERP_V2_SAAS_${context.schoolId}_${context.branchId}_${context.sessionId}_ERP_DB`
+                : "N/A (using fallback)";
+            console.log("[DEV] Current Tenant Context:", context);
+            console.log("[DEV] Storage Key:", storageKey);
+            return { context, storageKey };
+        },
+    };
+
+    console.log("[DEV] Tenant switch helper available at window.__DEV__");
+    console.log("[DEV] Available tenants:", Object.keys(DEV_TENANTS).join(", "));
+    console.log("[DEV] Usage: window.__DEV__.switchTenant('SCH_0002')");
+}

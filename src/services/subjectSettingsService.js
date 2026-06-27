@@ -1,10 +1,11 @@
 import {
-    getStorageCompat,
-    setStorageCompat,
-    removeStorageCompat,
+    getTenantStorage,
+    setTenantStorage,
+    removeTenantStorage,
 } from "./storageService";
 
 import { STORAGE_KEYS } from "../core/constants/storageKeys";
+import { getTenantContextForStorage } from "./tenantContextService";
 
 // =============================
 // KEY GENERATOR (MULTI-CLASS SAFE)
@@ -19,7 +20,8 @@ const getKey = (classId) => {
 export const getSubjectSettings = (classId) => {
     if (!classId) return {};
 
-    return getStorageCompat(getKey(classId), {});
+    const tenantContext = getTenantContextForStorage();
+    return getTenantStorage(getKey(classId), tenantContext, {});
 };
 
 // =============================
@@ -28,7 +30,8 @@ export const getSubjectSettings = (classId) => {
 export const saveSubjectSettings = (classId, payload) => {
     if (!classId) return false;
 
-    return setStorageCompat(getKey(classId), payload);
+    const tenantContext = getTenantContextForStorage();
+    return setTenantStorage(getKey(classId), payload, tenantContext);
 };
 
 // =============================
@@ -37,7 +40,8 @@ export const saveSubjectSettings = (classId, payload) => {
 export const clearSubjectSettings = (classId) => {
     if (!classId) return false;
 
-    return removeStorageCompat(getKey(classId));
+    const tenantContext = getTenantContextForStorage();
+    return removeTenantStorage(getKey(classId), tenantContext);
 };
 
 // =============================
@@ -45,14 +49,41 @@ export const clearSubjectSettings = (classId) => {
 // Phase 3.1 D - Storage Consistency Fix
 // =============================
 export const clearAllSubjectSettings = () => {
-    // Phase 3.1 D: Use storageService instead of direct localStorage access
-    // This ensures tenant context integration and consistency
-    const allKeys = Object.keys(localStorage);
-    allKeys.forEach((key) => {
-        if (key.includes(STORAGE_KEYS.ERP_SUBJECTS)) {
-            removeStorageCompat(key);
-        }
-    });
+    // Phase 3.1 D: Use tenant-aware storage methods
+    const tenantContext = getTenantContextForStorage();
+    
+    if (tenantContext.schoolId && tenantContext.branchId && tenantContext.sessionId) {
+        // Clear tenant-scoped subject settings using tenant-aware method
+        const prefix = `ERP_V2_SAAS_${tenantContext.schoolId}_${tenantContext.branchId}_${tenantContext.sessionId}_${STORAGE_KEYS.ERP_SUBJECTS}`;
+        
+        // Use tenant-aware storage to get all keys with the prefix
+        const allKeys = Object.keys(localStorage);
+        allKeys.forEach((key) => {
+            if (key.startsWith(prefix)) {
+                // Extract the classId from the key and use tenant-aware removal
+                const keyParts = key.split('_');
+                if (keyParts.length >= 6) {
+                    const classId = keyParts.slice(5).join('_');
+                    clearSubjectSettings(classId);
+                }
+            }
+        });
+    } else {
+        // No tenant context - clear using tenant-aware method for current context
+        const tenantContext = getTenantContextForStorage();
+        const prefix = `ERP_V2_SAAS_${tenantContext.schoolId || 'shared'}_${tenantContext.branchId || 'shared'}_${tenantContext.sessionId || 'shared'}_${STORAGE_KEYS.ERP_SUBJECTS}`;
+        
+        const allKeys = Object.keys(localStorage);
+        allKeys.forEach((key) => {
+            if (key.startsWith(prefix)) {
+                const keyParts = key.split('_');
+                if (keyParts.length >= 6) {
+                    const classId = keyParts.slice(5).join('_');
+                    clearSubjectSettings(classId);
+                }
+            }
+        });
+    }
 
     return true;
 };

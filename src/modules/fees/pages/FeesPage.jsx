@@ -38,7 +38,30 @@ const FeesPage = () => {
     }, [feeData, studentsRef]);
 
     const feesData = useMemo(() => {
-        return feesService.getAllFeesRecords() || [];
+        const feeRecords = feesService.getAllFeesRecords() || [];
+        
+        // SSOT: Enrich fee records with student master data from Student Module
+        return feeRecords.map(feeRecord => {
+            const student = students.find(s => s.studentId === feeRecord.studentId);
+            
+            if (student) {
+                return {
+                    ...feeRecord,
+                    // Enrich with student master data from SSOT
+                    studentName: student.name || student.studentName || "",
+                    className: student.class || student.className || "",
+                    fatherName: student.fatherName || "",
+                    mobile: student.mobile || "",
+                    admissionNo: student.admissionNo || "",
+                    section: student.section || "",
+                    rollNumber: student.rollNumber || "",
+                };
+            }
+            
+            // If student not found in SSOT, return fee record as-is
+            // (This shouldn't happen in normal operation)
+            return feeRecord;
+        });
     }, [students, feeData]);
 
     /* FILTER */

@@ -710,15 +710,15 @@ const classes =
                     <input style={input} type="date" name="admissionDate" value={form.admissionDate} onChange={handleChange} />
 
 
-                    <select style={input} value={form.class} onChange={handleClass}>
-                        <option value="">Class</option>
+                        <select style={input} value={form.class} onChange={handleClass}>
+                            <option value="">Class</option>
 
-                        {classes.map((c, i) => (
-                            <option key={i} value={c.className + (c.stream ? "-" + c.stream : "")}>
-                                {c.className} {c.stream ? `(${c.stream})` : ""}
-                            </option>
-                        ))}
-                    </select>
+                            {classes.map((c, i) => (
+                                <option key={`${c.className}-${c.stream || 'no-stream'}-${i}`} value={c.className + (c.stream ? "-" + c.stream : "")}>
+                                    {c.className} {c.stream ? `(${c.stream})` : ""}
+                                </option>
+                            ))}
+                        </select>
 
                 </div>
 
@@ -782,7 +782,7 @@ const classes =
                     <input type="file" multiple onChange={handleDocs} />
                     <ul>
                         {(form.documents || []).map((d, i) => (
-                            <li key={i}>{d.name}</li>
+                            <li key={`doc-${d.name}-${i}`}>{d.name}</li>
                         ))}
                     </ul>
                 </div>

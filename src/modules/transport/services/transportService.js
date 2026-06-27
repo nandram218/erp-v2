@@ -1,9 +1,9 @@
 import {
-    getStorageCompat,
-    setStorageCompat,
+    getTenantStorage,
+    setTenantStorage,
     STORAGE_KEYS,
 } from "../../../services/storageService";
-import { withTenantContext } from "../../../services/tenantContextService";
+import { withTenantContext, getTenantContextForStorage } from "../../../services/tenantContextService";
 import { blockDirectServiceAccess } from "../../../core/serviceRegistry";
 
 // Phase 3.1 D Safe Mode: Block direct access in production mode
@@ -22,14 +22,16 @@ const uid = () =>
 
 const getDB = () => {
     try {
-        return getStorageCompat(DB_KEY, {}) || {};
+        const tenantContext = getTenantContextForStorage();
+        return getTenantStorage(DB_KEY, tenantContext, {}) || {};
     } catch {
         return {};
     }
 };
 
 const saveDB = (db) => {
-    setStorageCompat(DB_KEY, db);
+    const tenantContext = getTenantContextForStorage();
+    setTenantStorage(DB_KEY, db, tenantContext);
 };
 
 const getTransportDB = () => {
@@ -89,6 +91,8 @@ const normalizeRoute = (route) => {
         routeName: route.routeName || route.name || "",
         fareType: route.fareType || "fixed",
         transportFee,
+        fixedFare: route.fixedFare || route.monthlyFee || 0,
+        monthlyFee: route.monthlyFee || route.fixedFare || 0,
         vehicleNumber: route.vehicleNumber || "",
         vehicleType: route.vehicleType || "Bus",
         driverName: route.driverName || "",
@@ -221,24 +225,24 @@ export const toggleRouteStatus = (
     const transport =
         getTransportDB();
 
-    transport.routes =
-        transport.routes.map((r) => {
-            if (
-                String(r.id) ===
-                String(id)
-            ) {
-                return {
-                    ...r,
-                    active: !r.active,
-                    updatedAt:
-                        new Date().toISOString(),
-                };
-            }
+        transport.routes =
+            transport.routes.map((r) => {
+                if (
+                    String(r.id) ===
+                    String(id)
+                ) {
+                    return {
+                        ...r,
+                        active: !r.active,
+                        updatedAt:
+                            new Date().toISOString(),
+                    };
+                }
 
-            return r;
-        });
+                return r;
+            });
 
-    saveTransportDB(transport);
+        saveTransportDB(transport);
 };
 
 /* =====================================================
@@ -252,7 +256,7 @@ export const calculateRouteFee = (
         getRouteById(routeId);
 
     return Number(
-        route?.monthlyFee || 0
+        route?.fixedFare || 0
     );
 };
 
@@ -288,7 +292,7 @@ export const assignStudentTransport = (
             route.vehicleNumber,
 
         monthlyFee:
-            route.monthlyFee,
+            route.fixedFare,
 
         assignedAt:
             new Date().toISOString(),
@@ -315,6 +319,32 @@ export const saveStudentTransport = (
                         ...student,
                         transport:
                             tenantAwareTransportData,
+                    };
+                }
+
+                return student;
+            }
+        );
+
+    saveDB(db);
+};
+
+export const removeStudentTransport = (
+    studentId
+) => {
+    const db = getDB();
+
+    db.students =
+        (db.students || []).map(
+            (student) => {
+                if (
+                    String(student.id) ===
+                    String(studentId)
+                ) {
+                    return {
+                        ...student,
+                        transport: null,
+                        transportRouteId: null,
                     };
                 }
 
@@ -412,7 +442,7 @@ export const generateTransportSnapshot =
                 data.pickupPoints || [],
 
             monthlyFee: Number(
-                data.monthlyFee || 0
+                data.fixedFare || data.monthlyFee || 0
             ),
 
             generatedAt:

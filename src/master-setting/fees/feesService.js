@@ -12,8 +12,11 @@
 import {
     getStorageCompat,
     setStorageCompat,
+    getTenantStorage,
+    setTenantStorage,
     STORAGE_KEYS,
 } from "../../services/storageService";
+import { getTenantContextForStorage } from "../../services/tenantContextService";
 import { blockDirectServiceAccess } from "../../core/serviceRegistry";
 
 // Phase 3.1 D Hardening: Block direct access in production mode
@@ -30,14 +33,16 @@ export const feesService = {
      * @deprecated Use src/modules/fees/feesService.js instead
      */
     getDB: () => {
-        return getStorageCompat(DB_KEY, {});
+        const tenantContext = getTenantContextForStorage();
+        return getTenantStorage(DB_KEY, tenantContext, {}) || {};
     },
 
     /**
      * @deprecated Use src/modules/fees/feesService.js instead
      */
     saveDB: (db) => {
-        setStorageCompat(DB_KEY, db);
+        const tenantContext = getTenantContextForStorage();
+        setTenantStorage(DB_KEY, db, tenantContext);
     },
 
     /**

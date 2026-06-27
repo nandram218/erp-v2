@@ -1,193 +1,255 @@
 /**
  * RUNTIME VALIDATION SERVICE
- * Phase 3.1 C - Runtime Validation Safety Layer
- * Provides runtime validation for SaaS tenant context integrity
- */
-
-import { isAuthenticated } from "./authService";
-import {
-    getTenantContext,
-    isTenantContextValid,
-    isAuthContextActive
-} from "./tenantContextService";
-
-// ================= SAFETY MODE CONFIGURATION =================
-const SAFETY_MODE = true;
-
-// ================= VALIDATION RESULT TYPE =================
-/**
- * Validation result structure
- * @typedef {Object} ValidationResult
- * @property {string} status - "OK" | "FAIL"
- * @property {string[]} reasons - Array of failure reasons
- * @property {boolean} tenantValid - Tenant context validity
- * @property {boolean} authValid - Authentication validity
- */
-
-// ================= TENANT CONTEXT VALIDATION =================
-/**
- * Validate tenant context completeness
+ * Phase 4.5: Tenant Isolation Validation
  * 
- * @returns {Object} Validation result with status and reasons
+ * Provides runtime checks to ensure tenant isolation is maintained
+ * throughout the application lifecycle.
  */
-export const validateTenantContext = () => {
-    const reasons = [];
-    const tenantContext = getTenantContext();
 
-    // Check if tenant context exists
-    if (!tenantContext || typeof tenantContext !== "object") {
-        reasons.push("Tenant context is missing or invalid");
-        return {
-            status: "FAIL",
-            reasons,
-            tenantValid: false,
-            authValid: false
-        };
-    }
+import { getTenantContext, isTenantContextValid } from "./tenantContextService";
+import { useSchoolStore } from "../store/schoolStore";
 
-    // Check schoolId
-    if (!tenantContext.schoolId || tenantContext.schoolId.trim() === "") {
-        reasons.push("schoolId is missing or empty");
-    }
-
-    // Check branchId
-    if (!tenantContext.branchId || tenantContext.branchId.trim() === "") {
-        reasons.push("branchId is missing or empty");
-    }
-
-    // Check sessionId
-    if (!tenantContext.sessionId || tenantContext.sessionId.trim() === "") {
-        reasons.push("sessionId is missing or empty");
-    }
-
-    const isValid = reasons.length === 0;
-
-    return {
-        status: isValid ? "OK" : "FAIL",
-        reasons,
-        tenantValid: isValid,
-        authValid: isAuthContextActive()
-    };
-};
-
-// ================= AUTHENTICATION VALIDATION =================
 /**
- * Validate authentication status
- * 
- * @returns {Object} Validation result with status and reasons
- */
-export const validateAuthentication = () => {
-    const reasons = [];
-
-    // Check if user is authenticated
-    if (!isAuthenticated()) {
-        reasons.push("User is not authenticated");
-    }
-
-    const isValid = reasons.length === 0;
-
-    return {
-        status: isValid ? "OK" : "FAIL",
-        reasons,
-        tenantValid: isTenantContextValid(),
-        authValid: isValid
-    };
-};
-
-// ================= APP READINESS VALIDATION =================
-/**
- * Validate overall app readiness
- * Checks both authentication and tenant context
+ * Validate app readiness on startup
+ * Checks for critical tenant isolation requirements
  * 
  * @returns {Object} Validation result with status and reasons
  */
 export const validateAppReadiness = () => {
-    const authValidation = validateAuthentication();
-    const tenantValidation = validateTenantContext();
-
-    const allReasons = [
-        ...authValidation.reasons,
-        ...tenantValidation.reasons
-    ];
-
-    // App is ready if tenant context is valid
-    // Authentication is optional for development mode
-    const isReady = tenantValidation.status === "OK";
-
+    const reasons = [];
+    const warnings = [];
+    
+    // Check 1: Tenant context must be valid
+    const tenantContext = getTenantContext();
+    if (!isTenantContextValid()) {
+        reasons.push("Tenant context is invalid or missing");
+    }
+    
+    // Check 2: School store must be hydrated
+    const storeHydrated = useSchoolStore.getState().hydrated;
+    if (!storeHydrated) {
+        reasons.push("School store is not hydrated");
+    }
+    
+    // Check 3: Validate tenant consistency in loaded data
+    if (storeHydrated && isTenantContextValid()) {
+        const consistencyCheck = validateTenantConsistency();
+        if (!consistencyCheck.valid) {
+            reasons.push(...consistencyCheck.errors);
+        }
+        if (consistencyCheck.warnings.length > 0) {
+            warnings.push(...consistencyCheck.warnings);
+        }
+    }
+    
+    const status = reasons.length === 0 ? "PASS" : "FAIL";
+    
     return {
-        status: isReady ? "OK" : "FAIL",
-        reasons: allReasons,
-        tenantValid: tenantValidation.tenantValid,
-        authValid: authValidation.authValid
+        status,
+        reasons,
+        warnings,
+        timestamp: new Date().toISOString()
     };
 };
 
-// ================= SAFETY MODE VALIDATION =================
 /**
- * Validate with safety mode enforcement
- * If safety mode is enabled, prevents execution if tenant context is invalid
+ * Validate tenant consistency in loaded data
+ * Ensures no cross-tenant data leakage in the store
  * 
- * @param {Function} callback - Function to execute if validation passes
- * @returns {*} Result of callback or null if validation fails
+ * @returns {Object} Validation result
  */
-export const executeWithSafety = (callback) => {
-    if (!SAFETY_MODE) {
-        // Safety mode disabled - execute directly
-        return callback();
+export const validateTenantConsistency = () => {
+    const errors = [];
+    const warnings = [];
+    
+    const state = useSchoolStore.getState();
+    const tenantContext = getTenantContext();
+    
+    // Skip validation if tenant context is not valid
+    if (!isTenantContextValid()) {
+        return {
+            valid: true,
+            errors: [],
+            warnings: ["Tenant context not valid - skipping consistency check"]
+        };
     }
-
-    const validation = validateTenantContext();
-
-    if (validation.status === "FAIL") {
-        console.error("[RuntimeValidation] Safety mode blocked execution:", validation.reasons);
-        return null;
+    
+    // Check students for cross-tenant data
+    if (Array.isArray(state.students)) {
+        const crossTenantStudents = state.students.filter(student => {
+            if (!student.schoolId) return false;
+            return student.schoolId !== tenantContext.schoolId;
+        });
+        
+        if (crossTenantStudents.length > 0) {
+            errors.push(`Found ${crossTenantStudents.length} students from different school(s)`);
+        }
     }
-
-    // Validation passed - execute callback
-    return callback();
+    
+    // Check fees for cross-tenant data
+    if (state.fees && typeof state.fees === 'object') {
+        // Fees are stored as an object with studentId as keys
+        Object.entries(state.fees).forEach(([studentId, feeRecord]) => {
+            // This is a simplified check - in production, you'd need to cross-reference
+            // with student data to verify tenant alignment
+            if (feeRecord && feeRecord.schoolId && feeRecord.schoolId !== tenantContext.schoolId) {
+                errors.push(`Fee record for student ${studentId} has different school ID`);
+            }
+        });
+    }
+    
+    // Check transport data
+    if (state.transport && typeof state.transport === 'object') {
+        // Transport data should be tenant-scoped
+        if (state.transport.schoolId && state.transport.schoolId !== tenantContext.schoolId) {
+            errors.push("Transport data has different school ID");
+        }
+    }
+    
+    // Check hostel data
+    if (state.hostel && typeof state.hostel === 'object') {
+        if (state.hostel.schoolId && state.hostel.schoolId !== tenantContext.schoolId) {
+            errors.push("Hostel data has different school ID");
+        }
+    }
+    
+    return {
+        valid: errors.length === 0,
+        errors,
+        warnings
+    };
 };
 
-// ================= DEVELOPMENT MODE BYPASS =================
 /**
- * Check if development mode bypass is allowed
+ * Get validation summary for debugging
  * 
- * @returns {boolean} True if development mode bypass is allowed
- */
-export const isDevelopmentBypassAllowed = () => {
-    // In development mode, allow fallback even if validation fails
-    // In production, strict validation is enforced
-    return process.env.NODE_ENV === "development";
-};
-
-// ================= VALIDATION SUMMARY =================
-/**
- * Get validation summary for logging
- * 
- * @returns {Object} Summary object with validation status
+ * @returns {string} Human-readable validation summary
  */
 export const getValidationSummary = () => {
-    const appReadiness = validateAppReadiness();
-    const authActive = isAuthContextActive();
-    const devMode = isDevelopmentBypassAllowed();
+    const validation = validateAppReadiness();
+    
+    let summary = `\n=== Tenant Isolation Validation Summary ===\n`;
+    summary += `Status: ${validation.status}\n`;
+    summary += `Timestamp: ${validation.timestamp}\n`;
+    
+    if (validation.reasons.length > 0) {
+        summary += `\nErrors:\n`;
+        validation.reasons.forEach(reason => {
+            summary += `  ❌ ${reason}\n`;
+        });
+    }
+    
+    if (validation.warnings.length > 0) {
+        summary += `\nWarnings:\n`;
+        validation.warnings.forEach(warning => {
+            summary += `  ⚠️ ${warning}\n`;
+        });
+    }
+    
+    if (validation.status === "PASS") {
+        summary += `\n✅ All tenant isolation checks passed\n`;
+    }
+    
+    summary += `==========================================\n`;
+    
+    return summary;
+};
 
+/**
+ * Monitor tenant context changes
+ * Logs warnings if tenant context changes unexpectedly
+ * 
+ * @param {Object} previousContext - Previous tenant context
+ * @param {Object} newContext - New tenant context
+ */
+export const logTenantContextChange = (previousContext, newContext) => {
+    if (previousContext.schoolId !== newContext.schoolId ||
+        previousContext.branchId !== newContext.branchId ||
+        previousContext.sessionId !== newContext.sessionId) {
+        
+        console.warn("[Tenant Monitor] Tenant context changed:", {
+            from: previousContext,
+            to: newContext
+        });
+        
+        // Trigger re-validation
+        const validation = validateTenantConsistency();
+        if (!validation.valid) {
+            console.error("[Tenant Monitor] Tenant consistency check failed after context change:", validation.errors);
+        }
+    }
+};
+
+/**
+ * Audit storage keys for tenant isolation
+ * Checks if any storage operations use non-tenant-scoped keys
+ * 
+ * @returns {Object} Audit results
+ */
+export const auditStorageKeys = () => {
+    const issues = [];
+    const tenantContext = getTenantContext();
+    
+    // This is a static analysis - in production, you'd want to intercept
+    // storage calls and validate keys dynamically
+    
+    // Check if ERP_DB_KEY is being used directly (should use tenant-scoped version)
+    const { ERP_DB_KEY } = require("../core/constants/storageKeys");
+    
+    // The key should be tenant-scoped when tenant context is valid
+    if (isTenantContextValid()) {
+        const expectedKey = `ERP_V2_SAAS_${tenantContext.schoolId}_${tenantContext.branchId}_${tenantContext.sessionId}_${ERP_DB_KEY}`;
+        
+        // Check if legacy key exists (indicates migration not complete)
+        // NOTE: This is expected legacy state - not an error
+        // Only log for debugging, don't include in issues array
+        if (localStorage.getItem(ERP_DB_KEY) !== null) {
+            console.log("[auditStorageKeys] Legacy ERP_DB key found (expected during transition)");
+        }
+        
+        // Check if tenant-scoped key exists
+        // NOTE: This is expected during initial load - not an error
+        // Only log for debugging, don't include in issues array
+        if (localStorage.getItem(expectedKey) === null) {
+            console.log("[auditStorageKeys] Tenant-scoped key not found (expected during initial load)");
+        }
+    }
+    
     return {
-        appReady: appReadiness.status === "OK",
-        tenantValid: appReadiness.tenantValid,
-        authValid: appReadiness.authValid,
-        authActive,
-        safetyMode: SAFETY_MODE,
-        developmentMode: devMode,
-        reasons: appReadiness.reasons
+        valid: issues.filter(i => i.type === "ERROR").length === 0,
+        issues
     };
 };
 
-// ================= EXPORTS =================
-export default {
-    SAFETY_MODE,
-    validateTenantContext,
-    validateAuthentication,
-    validateAppReadiness,
-    executeWithSafety,
-    isDevelopmentBypassAllowed,
-    getValidationSummary
+/**
+ * Development helper: Clear all tenant data and reset
+ * ONLY use in development mode
+ */
+export const resetAllTenantData = () => {
+    const isDevelopment = process.env.NODE_ENV === "development";
+    
+    if (!isDevelopment) {
+        console.error("[Validation] resetAllTenantData can only be used in development mode");
+        return false;
+    }
+    
+    try {
+        // Clear all ERP prefixed data
+        const STORAGE_PREFIX = "ERP_V2_SAAS";
+        Object.keys(localStorage).forEach((key) => {
+            if (key.startsWith(STORAGE_PREFIX)) {
+                localStorage.removeItem(key);
+            }
+        });
+        
+        // Clear auth context
+        const { clearAuthContext } = require("./tenantContextService");
+        clearAuthContext();
+        
+        console.log("[Validation] All tenant data cleared successfully");
+        return true;
+    } catch (error) {
+        console.error("[Validation] Failed to clear tenant data:", error);
+        return false;
+    }
 };

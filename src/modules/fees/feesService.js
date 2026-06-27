@@ -7,12 +7,12 @@
 ========================================================= */
 
 import {
-    getStorageCompat,
-    setStorageCompat,
-    removeStorageCompat,
+    getTenantStorage,
+    setTenantStorage,
+    removeTenantStorage,
     STORAGE_KEYS,
 } from "../../services/storageService";
-import { withTenantContext } from "../../services/tenantContextService";
+import { withTenantContext, getTenantContextForStorage } from "../../services/tenantContextService";
 import { blockDirectServiceAccess } from "../../core/serviceRegistry";
 import { getService } from "../../core/serviceRegistry";
 import { DISCOUNT_SOURCE, PAYMENT_MODE } from "./receiptConstants";
@@ -35,14 +35,16 @@ const LEDGER_KEY = STORAGE_KEYS.ERP_FEES_LEDGER;
 
 export const getFeesDB = () => {
     try {
-        return getStorageCompat(FEES_DB_KEY, []);
+        const tenantContext = getTenantContextForStorage();
+        return getTenantStorage(FEES_DB_KEY, tenantContext, []) || [];
     } catch {
         return [];
     }
 };
 
 export const saveFeesDB = (data) => {
-    setStorageCompat(FEES_DB_KEY, data);
+    const tenantContext = getTenantContextForStorage();
+    setTenantStorage(FEES_DB_KEY, data, tenantContext);
 };
 
 /* =========================
@@ -50,11 +52,13 @@ export const saveFeesDB = (data) => {
 ========================= */
 
 const getLedger = () => {
-    return getStorageCompat(LEDGER_KEY, []);
+    const tenantContext = getTenantContextForStorage();
+    return getTenantStorage(LEDGER_KEY, tenantContext, []) || [];
 };
 
 const saveLedger = (data) => {
-    setStorageCompat(LEDGER_KEY, data);
+    const tenantContext = getTenantContextForStorage();
+    setTenantStorage(LEDGER_KEY, data, tenantContext);
 };
 
 /* =========================
@@ -113,12 +117,15 @@ export const runMigrations = () => {
    RECEIPT SYSTEM
 ========================= */
 
-export const getReceiptCounter = () =>
-    Number(getStorageCompat(RECEIPT_KEY, 1) ?? 1);
+export const getReceiptCounter = () => {
+    const tenantContext = getTenantContextForStorage();
+    return Number(getTenantStorage(RECEIPT_KEY, tenantContext, 1) ?? 1);
+};
 
 export const createReceiptNumber = () => {
     const next = getReceiptCounter();
-    setStorageCompat(RECEIPT_KEY, next + 1);
+    const tenantContext = getTenantContextForStorage();
+    setTenantStorage(RECEIPT_KEY, next + 1, tenantContext);
     return `RCPT-${String(next).padStart(5, "0")}`;
 };
 
@@ -144,6 +151,24 @@ export const getStudentFeesRecord = (studentId) => {
 };
 
 /* =========================
+    DELETE STUDENT FEES RECORD
+   ========================= */
+
+export const deleteStudentFeesRecord = (studentId) => {
+    const db = getFeesDB();
+    const filtered = db.filter(
+        (s) => String(s.studentId) !== String(studentId)
+    );
+    
+    if (filtered.length !== db.length) {
+        saveFeesDB(filtered);
+        return true;
+    }
+    
+    return false;
+};
+
+/* =========================
    CREATE RECORD
 ========================= */
 
@@ -160,22 +185,10 @@ export const createStudentFeesRecord = ({ student = {} }) => {
 
     const totalFee = calculateTotalFee(student, feeData);
 
+    // SSOT: Only store fee-related data, reference student by studentId
+    // Student master data (name, className, fatherName, mobile) is in ERP_DB.students
     const newRecord = withTenantContext({
         studentId: student.studentId,
-
-        studentName:
-            student.name || "",
-
-        className:
-            student.className ||
-            student.class ||
-            "",
-
-        fatherName:
-            student.fatherName || "",
-
-        mobile:
-            student.mobile || "",
 
         totalFee,
 
@@ -261,7 +274,8 @@ export const syncStudentsToFeesDB = ({
         );
 
         /* =========================
-           NORMALIZE STUDENT - Canonical Structure
+           NORMALIZE FEE RECORD - SSOT Compliant
+           Only sync fee-related data, NOT student master data
         ========================= */
 
         const totalFee = calculateTotalFee(student, feeData);
@@ -270,19 +284,9 @@ export const syncStudentsToFeesDB = ({
 
             studentId: id,
 
-            studentName:
-                student.name || "",
-
-            className:
-                student.className ||
-                student.class ||
-                "",
-
-            fatherName:
-                student.fatherName || "",
-
-            mobile:
-                student.mobile || "",
+            // SSOT: Student master data (name, className, fatherName, mobile)
+            // is stored in ERP_DB.students, NOT here
+            // Fee module only needs studentId as reference
 
             totalFee,
 
@@ -461,8 +465,6 @@ export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
         discountReason: paymentData.discountReason || "",
         lateFeeReason: paymentData.lateFeeReason || "",
         referenceNumber: paymentData.referenceNumber || "",
-        studentName: student.studentName,
-        className: student.className,
         fatherName: student.fatherName,
     });
     saveLedger(ledger);
@@ -557,7 +559,8 @@ export const exportFeesData = () => {
 ========================= */
 
 export const resetFeesModule = () => {
-    removeStorageCompat(FEES_DB_KEY);
-    removeStorageCompat(RECEIPT_KEY);
-    removeStorageCompat(LEDGER_KEY);
+    const tenantContext = getTenantContextForStorage();
+    removeTenantStorage(FEES_DB_KEY, tenantContext);
+    removeTenantStorage(RECEIPT_KEY, tenantContext);
+    removeTenantStorage(LEDGER_KEY, tenantContext);
 };

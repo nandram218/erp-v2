@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import AppRoutes from "./routes/AppRoutes";
 import { useSchoolStore } from "./store/schoolStore";
-import { validateAppReadiness, getValidationSummary } from "./services/runtimeValidationService";
+import { validateAppReadiness, getValidationSummary, auditStorageKeys } from "./services/runtimeValidationService";
 import { registerDefaultServices } from "./core/serviceRegistry";
 
 export default function App() {
@@ -16,15 +16,35 @@ export default function App() {
             loadAll();
         }
 
-        // Phase 3.1 C - Runtime Validation Safety Layer
+        // Phase 4.5: Runtime Validation Safety Layer
         // Validate app readiness on startup
         const validation = validateAppReadiness();
 
         if (validation.status === "FAIL") {
-            console.warn("[App] Runtime validation failed:", validation.reasons);
-            console.warn("[App] Validation summary:", getValidationSummary());
+            console.error("=".repeat(60));
+            console.error("[App] CRITICAL: Runtime validation failed");
+            console.error("[App] Validation errors:", validation.reasons);
+            console.error("[App] Validation summary:", getValidationSummary());
+            console.error("=".repeat(60));
+            
+            // In production, you might want to show an error screen
+            if (process.env.NODE_ENV === "production") {
+                alert("Application initialization failed. Please contact support.");
+            }
         } else {
-            console.log("[App] Runtime validation passed");
+            console.log("=".repeat(60));
+            console.log("[App] ✅ Runtime validation passed");
+            console.log("[App] Tenant isolation is active");
+            console.log("[App] Validation summary:", getValidationSummary());
+            console.log("=".repeat(60));
+        }
+        
+        // Phase 4.5: Audit storage keys in development
+        if (process.env.NODE_ENV === "development") {
+            const storageAudit = auditStorageKeys();
+            if (storageAudit.issues.length > 0) {
+                console.log("[App] Storage audit results:", storageAudit);
+            }
         }
     }, [loadAll, hydrated]);
 

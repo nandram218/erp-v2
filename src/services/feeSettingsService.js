@@ -8,10 +8,11 @@
  */
 
 import {
-    getStorageCompat,
-    setStorageCompat,
+    getTenantStorage,
+    setTenantStorage,
     STORAGE_KEYS,
 } from "./storageService";
+import { getTenantContextForStorage } from "./tenantContextService";
 import { blockDirectServiceAccess } from "../core/serviceRegistry";
 
 // Phase 3.2C Safe Mode: Block direct access in production mode
@@ -24,7 +25,8 @@ const FEE_SETTINGS_KEY = STORAGE_KEYS.ERP_FEE_SETTINGS;
 ========================= */
 
 export const getFeeSettings = () => {
-    return getStorageCompat(FEE_SETTINGS_KEY, null);
+    const tenantContext = getTenantContextForStorage();
+    return getTenantStorage(FEE_SETTINGS_KEY, tenantContext, null);
 };
 
 /* =========================
@@ -32,7 +34,8 @@ export const getFeeSettings = () => {
 ========================= */
 
 export const saveFeeSettings = (data) => {
-    setStorageCompat(FEE_SETTINGS_KEY, data);
+    const tenantContext = getTenantContextForStorage();
+    setTenantStorage(FEE_SETTINGS_KEY, data, tenantContext);
 };
 
 /* =========================
@@ -40,7 +43,8 @@ export const saveFeeSettings = (data) => {
 ========================= */
 
 export const clearFeeSettings = () => {
-    setStorageCompat(FEE_SETTINGS_KEY, {});
+    const tenantContext = getTenantContextForStorage();
+    setTenantStorage(FEE_SETTINGS_KEY, {}, tenantContext);
 };
 
 /* =========================

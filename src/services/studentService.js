@@ -223,12 +223,39 @@ export const deleteStudent = (
         setStudents
     } = useSchoolStore.getState();
 
+    // Find the student being deleted
+    const studentToDelete = students.find(
+        (student) => matchesStudent(student, identifier)
+    );
+
     const updatedStudents =
         students.filter(
             (student) => !matchesStudent(student, identifier)
         );
 
     setStudents(updatedStudents);
+
+    // CASCADE: Clean up all related records
+    if (studentToDelete) {
+        const studentId = studentToDelete.studentId;
+
+        // 1. Delete fees record
+        const feesService = getService("fees");
+        feesService.deleteStudentFeesRecord(studentId);
+
+        // 2. Clean up transport assignment
+        const transportService = getService("transport");
+        if (studentToDelete.transportRouteId) {
+            transportService.removeStudentTransport(studentId);
+        }
+
+        // 3. Clean up hostel assignment (optional service - safe lookup)
+        const { isServiceRegistered } = require("../core/serviceRegistry");
+        if (isServiceRegistered("hostel")) {
+            const hostelService = getService("hostel");
+            hostelService.releaseStudentBed(studentId);
+        }
+    }
 
     return true;
 };

@@ -1,18 +1,46 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-// FIXED: Import master-setting transport service directly
-import { transportService } from "./transportService";
+// FIXED: Use tenant-aware storage directly (Phase 4.5 Final Gate Audit)
+import { 
+    getTenantStorage,
+    setTenantStorage,
+    STORAGE_KEYS
+} from "../../services/storageService";
+import { getTenantContext } from "../../services/tenantContextService";
+
+const DB_KEY = STORAGE_KEYS.ERP_DB;
 
 export default function TransportSettings() {
 
     const navigate = useNavigate();
 
-    const [store, setStore] =
-        useState(transportService.get());
+    const [store, setStore] = useState({});
+
+    const loadStore = () => {
+        const tenantContext = getTenantContext();
+        const db = getTenantStorage(DB_KEY, tenantContext, {});
+        setStore(db.transport || {
+            routes: [],
+            vehicles: [],
+            drivers: [],
+            mappings: [],
+            settings: {
+                transportEnabled: true,
+                attendanceTracking: false,
+                gpsTracking: false,
+                smsAlerts: false,
+            },
+        });
+    };
+
+    // Load on mount
+    useState(() => {
+        loadStore();
+    });
 
     const refreshStore = () => {
-        setStore(transportService.get());
+        loadStore();
     };
 
     /* =========================================
@@ -197,7 +225,11 @@ export default function TransportSettings() {
             };
         }
 
-        transportService.save(updated);
+        // Save to tenant-aware storage
+        const tenantContext = getTenantContext();
+        const db = getTenantStorage(DB_KEY, tenantContext, {});
+        db.transport = updated;
+        setTenantStorage(DB_KEY, db, tenantContext);
 
         setStore(updated);
 
@@ -239,7 +271,11 @@ export default function TransportSettings() {
                 ),
         };
 
-        transportService.save(updated);
+        // Save to tenant-aware storage
+        const tenantContext = getTenantContext();
+        const db = getTenantStorage(DB_KEY, tenantContext, {});
+        db.transport = updated;
+        setTenantStorage(DB_KEY, db, tenantContext);
 
         setStore(updated);
     };
@@ -313,7 +349,11 @@ export default function TransportSettings() {
             };
         }
 
-        transportService.save(updated);
+        // Save to tenant-aware storage
+        const tenantContext = getTenantContext();
+        const db = getTenantStorage(DB_KEY, tenantContext, {});
+        db.transport = updated;
+        setTenantStorage(DB_KEY, db, tenantContext);
 
         setStore(updated);
 
@@ -355,7 +395,11 @@ export default function TransportSettings() {
                 ),
         };
 
-        transportService.save(updated);
+        // Save to tenant-aware storage
+        const tenantContext = getTenantContext();
+        const db = getTenantStorage(DB_KEY, tenantContext, {});
+        db.transport = updated;
+        setTenantStorage(DB_KEY, db, tenantContext);
 
         setStore(updated);
     };
@@ -421,7 +465,11 @@ export default function TransportSettings() {
                 ],
             };
 
-        transportService.save(updated);
+        // Save to tenant-aware storage
+        const tenantContext = getTenantContext();
+        const db = getTenantStorage(DB_KEY, tenantContext, {});
+        db.transport = updated;
+        setTenantStorage(DB_KEY, db, tenantContext);
 
         setStore(updated);
 
@@ -445,7 +493,11 @@ export default function TransportSettings() {
                 ),
         };
 
-        transportService.save(updated);
+        // Save to tenant-aware storage
+        const tenantContext = getTenantContext();
+        const db = getTenantStorage(DB_KEY, tenantContext, {});
+        db.transport = updated;
+        setTenantStorage(DB_KEY, db, tenantContext);
 
         setStore(updated);
     };
@@ -455,17 +507,17 @@ export default function TransportSettings() {
     ========================================= */
 
     const getRoute = (r) =>
-        store.routes.find(
+        store.routes?.find(
             (x) => x.routeNo === r
         );
 
     const getVehicle = (num) =>
-        store.vehicles.find(
+        store.vehicles?.find(
             (v) => v.number === num
         );
 
     const getDriver = (ph) =>
-        store.drivers.find(
+        store.drivers?.find(
             (d) => d.phone === ph
         );
 
@@ -700,7 +752,7 @@ export default function TransportSettings() {
 
                 <div style={styles.previewGrid}>
 
-                    {store.vehicles.map((v) => (
+                    {store.vehicles?.map((v) => (
 
                         <div
                             key={v.number}
@@ -938,7 +990,7 @@ export default function TransportSettings() {
 
                 <div style={styles.previewGrid}>
 
-                    {store.drivers.map((d) => (
+                    {store.drivers?.map((d) => (
 
                         <div
                             key={d.phone}
@@ -1043,7 +1095,7 @@ export default function TransportSettings() {
                             Select Route
                         </option>
 
-                        {store.routes.map((r) => (
+                        {store.routes?.map((r) => (
 
                             <option
                                 key={r.routeNo}
@@ -1068,7 +1120,7 @@ export default function TransportSettings() {
                             Select Vehicle
                         </option>
 
-                        {store.vehicles.map((v) => (
+                        {store.vehicles?.map((v) => (
 
                             <option
                                 key={v.number}
@@ -1093,7 +1145,7 @@ export default function TransportSettings() {
                             Select Driver
                         </option>
 
-                        {store.drivers.map((d) => (
+                        {store.drivers?.map((d) => (
 
                             <option
                                 key={d.phone}
@@ -1120,7 +1172,7 @@ export default function TransportSettings() {
 
                 <div style={styles.previewGrid}>
 
-                    {store.mappings.map((m, i) => {
+                    {store.mappings?.map((m, i) => {
 
                         const route =
                             getRoute(m.route);

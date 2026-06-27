@@ -7,11 +7,11 @@
  */
 
 import {
-    getStorageCompat,
-    setStorageCompat,
+    getTenantStorage,
+    setTenantStorage,
     STORAGE_KEYS,
 } from "../../services/storageService";
-import { withTenantContext } from "../../services/tenantContextService";
+import { withTenantContext, getTenantContextForStorage } from "../../services/tenantContextService";
 import { blockDirectServiceAccess } from "../../core/serviceRegistry";
 
 // Phase 3.1 D Safe Mode: Block direct access in production mode
@@ -32,12 +32,14 @@ export const classSubjectService = {
     saveClasses: (data) => {
         // Phase 3.1 D: Add tenant context to saved classes
         const tenantAwareData = data.map(cls => withTenantContext(cls));
-        setStorageCompat(STORAGE_KEY, tenantAwareData);
+        const tenantContext = getTenantContextForStorage();
+        setTenantStorage(STORAGE_KEY, tenantAwareData, tenantContext);
     },
 
     // ✅ GET CLASSES (WITH DUPLICATE FIX)
     getClasses: () => {
-        const data = getStorageCompat(STORAGE_KEY, []);
+        const tenantContext = getTenantContextForStorage();
+        const data = getTenantStorage(STORAGE_KEY, tenantContext, []);
 
         const formatted = data.map(c => {
             if (c.stream) {

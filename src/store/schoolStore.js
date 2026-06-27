@@ -56,6 +56,62 @@ export const useSchoolStore = create((set, get) => ({
 
         try {
 
+            // Phase 4.5: Tenant Isolation Validation
+            // Validate that loaded data matches current tenant context
+            const tenantValidationErrors = [];
+            
+            if (fullTenantContext.schoolId && db.school?.schoolId && db.school.schoolId !== fullTenantContext.schoolId) {
+                tenantValidationErrors.push(`School ID mismatch: stored=${db.school.schoolId}, current=${fullTenantContext.schoolId}`);
+            }
+            
+            if (fullTenantContext.branchId && db.school?.branchId && db.school.branchId !== fullTenantContext.branchId) {
+                tenantValidationErrors.push(`Branch ID mismatch: stored=${db.school.branchId}, current=${fullTenantContext.branchId}`);
+            }
+            
+            if (fullTenantContext.sessionId && db.school?.sessionId && db.school.sessionId !== fullTenantContext.sessionId) {
+                tenantValidationErrors.push(`Session ID mismatch: stored=${db.school.sessionId}, current=${fullTenantContext.sessionId}`);
+            }
+
+            // Phase 4.5: Cross-tenant student detection
+            if (Array.isArray(db.students) && fullTenantContext.schoolId) {
+                const crossTenantStudents = db.students.filter(student => {
+                    return student.schoolId && student.schoolId !== fullTenantContext.schoolId;
+                });
+                
+                if (crossTenantStudents.length > 0) {
+                    tenantValidationErrors.push(`Found ${crossTenantStudents.length} students from different school(s)`);
+                    console.error("[Tenant Isolation] Cross-tenant student data detected:", {
+                        currentTenant: fullTenantContext,
+                        crossTenantCount: crossTenantStudents.length,
+                        sampleStudents: crossTenantStudents.slice(0, 3).map(s => ({
+                            studentId: s.studentId,
+                            schoolId: s.schoolId,
+                            name: s.name
+                        }))
+                    });
+                }
+            }
+
+            if (tenantValidationErrors.length > 0) {
+                console.error("[Tenant Isolation] CRITICAL: Tenant validation failed:", tenantValidationErrors);
+                console.error("[Tenant Isolation] This indicates cross-tenant data leakage. Clearing data for safety.");
+                
+                // Clear the corrupted/mixed data
+                removeStorageCompat(ERP_DB_KEY);
+                
+                set({
+                    schoolData: fullTenantContext,
+                    students: [],
+                    classes: [],
+                    fees: {},
+                    transport: {},
+                    hostel: {},
+                    hydrated: true
+                });
+                
+                return;
+            }
+
             set({
 
                 schoolData: {

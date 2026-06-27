@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import StudentTable from "../components/StudentTable";
 import { useSchoolStore } from "../../../store/schoolStore";
+import { getTenantContext } from "../../../services/tenantContextService";
 
 import { getService } from "../../../core/serviceRegistry";
 const studentService = getService("student");
@@ -46,7 +47,17 @@ const input3D = {
 const StudentList = () => {
 
     const navigate = useNavigate();
-    const students = useSchoolStore(state => state.students) || [];
+    const allStudents = useSchoolStore(state => state.students) || [];
+    
+    // Phase 4.5: Tenant Isolation - Filter students by current tenant context
+    const tenantContext = getTenantContext();
+    const students = allStudents.filter(student => {
+        return (
+            (!tenantContext.schoolId || student.schoolId === tenantContext.schoolId) &&
+            (!tenantContext.branchId || student.branchId === tenantContext.branchId) &&
+            (!tenantContext.sessionId || student.sessionId === tenantContext.sessionId)
+        );
+    });
 
     const [selectedIds, setSelectedIds] = useState([]);
     const [search, setSearch] = useState("");

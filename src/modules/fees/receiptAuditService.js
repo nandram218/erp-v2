@@ -10,11 +10,11 @@
  */
 
 import {
-    getStorageCompat,
-    setStorageCompat,
+    getTenantStorage,
+    setTenantStorage,
     STORAGE_KEYS,
 } from "../../services/storageService";
-import { withTenantContext } from "../../services/tenantContextService";
+import { withTenantContext, getTenantContextForStorage } from "../../services/tenantContextService";
 import { blockDirectServiceAccess } from "../../core/serviceRegistry";
 import { getService } from "../../core/serviceRegistry";
 import { RECEIPT_ACTION } from "./receiptConstants";
@@ -34,14 +34,16 @@ const RECEIPT_REGISTER_KEY = STORAGE_KEYS.ERP_RECEIPT_REGISTER;
 
 const getReceiptRegister = () => {
     try {
-        return getStorageCompat(RECEIPT_REGISTER_KEY, []);
+        const tenantContext = getTenantContextForStorage();
+        return getTenantStorage(RECEIPT_REGISTER_KEY, tenantContext, []);
     } catch {
         return [];
     }
 };
 
 const saveReceiptRegister = (data) => {
-    setStorageCompat(RECEIPT_REGISTER_KEY, data);
+    const tenantContext = getTenantContextForStorage();
+    setTenantStorage(RECEIPT_REGISTER_KEY, data, tenantContext);
 };
 
 /* =========================
