@@ -280,6 +280,31 @@ export const updateReceipt = ({ receiptId, updates = {} }) => {
    EXPORT
 ========================= */
 
+/* =========================
+   ORPHAN CLEANUP (Phase 4.5.1)
+========================= */
+
+/**
+ * Remove receipt records whose studentId no longer exists in ERP_DB.students
+ * Phase 4.5.1 Data Integrity Cleanup
+ */
+export const cleanupOrphanReceipts = () => {
+    const { useSchoolStore } = require("../../store/schoolStore");
+    const students = useSchoolStore.getState().students || [];
+    const studentIds = new Set(students.map(s => String(s.studentId)));
+    
+    const register = getReceiptRegister();
+    const orphanCount = register.filter(receipt => !studentIds.has(String(receipt.studentId))).length;
+    
+    if (orphanCount > 0) {
+        const cleaned = register.filter(receipt => studentIds.has(String(receipt.studentId)));
+        saveReceiptRegister(cleaned);
+        console.log(`[Phase 4.5.1] Cleaned up ${orphanCount} orphan receipt records`);
+    }
+    
+    return orphanCount;
+};
+
 export default {
     createReceipt,
     getReceiptById,
@@ -288,4 +313,5 @@ export default {
     getAllReceipts,
     getActiveReceipts,
     updateReceipt,
+    cleanupOrphanReceipts,
 };

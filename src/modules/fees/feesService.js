@@ -564,3 +564,28 @@ export const resetFeesModule = () => {
     removeTenantStorage(RECEIPT_KEY, tenantContext);
     removeTenantStorage(LEDGER_KEY, tenantContext);
 };
+
+/* =========================
+   ORPHAN CLEANUP (Phase 4.5.1)
+========================= */
+
+/**
+ * Remove fee records whose studentId no longer exists in ERP_DB.students
+ * Phase 4.5.1 Data Integrity Cleanup
+ */
+export const cleanupOrphanFees = () => {
+    const { useSchoolStore } = require("../../store/schoolStore");
+    const students = useSchoolStore.getState().students || [];
+    const studentIds = new Set(students.map(s => String(s.studentId)));
+    
+    const db = getFeesDB();
+    const orphanCount = db.filter(fee => !studentIds.has(String(fee.studentId))).length;
+    
+    if (orphanCount > 0) {
+        const cleaned = db.filter(fee => studentIds.has(String(fee.studentId)));
+        saveFeesDB(cleaned);
+        console.log(`[Phase 4.5.1] Cleaned up ${orphanCount} orphan fee records`);
+    }
+    
+    return orphanCount;
+};

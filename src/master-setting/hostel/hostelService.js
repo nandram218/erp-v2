@@ -285,3 +285,54 @@ export const getStudentAssignment = (studentId) => {
     const hostel = get();
     return hostel.assignments?.find(a => String(a.studentId) === String(studentId));
 };
+
+/* =========================
+   ORPHAN CLEANUP (Phase 4.5.1)
+========================= */
+
+/**
+ * Remove hostel assignments whose studentId no longer exists in ERP_DB.students
+ * Phase 4.5.1 Data Integrity Cleanup
+ */
+export const cleanupOrphanHostel = () => {
+    const { useSchoolStore } = require("../../store/schoolStore");
+    const students = useSchoolStore.getState().students || [];
+    const studentIds = new Set(students.map(s => String(s.studentId)));
+    
+    const hostel = get();
+    let orphanCount = 0;
+    
+    if (hostel.assignments && hostel.assignments.length > 0) {
+        const originalCount = hostel.assignments.length;
+        
+        // Remove orphan assignments and free up beds
+        hostel.assignments = hostel.assignments.filter(assignment => {
+            if (!studentIds.has(String(assignment.studentId))) {
+                orphanCount++;
+                // Free up the bed
+                const bed = getBedById(assignment.bedId);
+                if (bed) {
+                    bed.occupied = false;
+                    bed.occupiedBy = null;
+                    bed.occupiedAt = null;
+                    
+                    const room = getRoomById(bed.roomId);
+                    if (room) {
+                        room.occupiedBeds = hostel.beds.filter(b => 
+                            String(b.roomId) === String(room.id) && b.occupied
+                        ).length;
+                    }
+                }
+                return false; // Remove the assignment
+            }
+            return true; // Keep the assignment
+        });
+        
+        if (orphanCount > 0) {
+            save(hostel);
+            console.log(`[Phase 4.5.1] Cleaned up ${orphanCount} orphan hostel assignments`);
+        }
+    }
+    
+    return orphanCount;
+};

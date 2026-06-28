@@ -312,7 +312,7 @@ export const saveStudentTransport = (
         (db.students || []).map(
             (student) => {
                 if (
-                    String(student.id) ===
+                    String(student.studentId) ===
                     String(studentId)
                 ) {
                     return {
@@ -338,7 +338,7 @@ export const removeStudentTransport = (
         (db.students || []).map(
             (student) => {
                 if (
-                    String(student.id) ===
+                    String(student.studentId) ===
                     String(studentId)
                 ) {
                     return {
@@ -449,3 +449,43 @@ export const generateTransportSnapshot =
                 new Date().toISOString(),
         };
     };
+
+/* =========================
+   ORPHAN CLEANUP (Phase 4.5.1)
+========================= */
+
+/**
+ * Remove transport assignments whose studentId no longer exists in ERP_DB.students
+ * Phase 4.5.1 Data Integrity Cleanup
+ */
+export const cleanupOrphanTransport = () => {
+    const { useSchoolStore } = require("../../../store/schoolStore");
+    const students = useSchoolStore.getState().students || [];
+    const studentIds = new Set(students.map(s => String(s.studentId)));
+    
+    const db = getDB();
+    let orphanCount = 0;
+    
+    if (db.students) {
+        const originalCount = db.students.filter(s => s.transport).length;
+        
+        db.students = db.students.map(student => {
+            if (student.transport && !studentIds.has(String(student.studentId))) {
+                orphanCount++;
+                return {
+                    ...student,
+                    transport: null,
+                    transportRouteId: null,
+                };
+            }
+            return student;
+        });
+        
+        if (orphanCount > 0) {
+            saveDB(db);
+            console.log(`[Phase 4.5.1] Cleaned up ${orphanCount} orphan transport assignments`);
+        }
+    }
+    
+    return orphanCount;
+};
