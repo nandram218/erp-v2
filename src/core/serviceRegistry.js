@@ -13,6 +13,7 @@
  */
 
 import { getTenantContext, isTenantContextValid } from "../services/tenantContextService";
+import masterDataService from "../services/masterDataService";
 
 // ================= ENFORCEMENT FLAGS =================
 const ENFORCE_REGISTRY = true;
@@ -156,6 +157,23 @@ export const isServiceRegistered = (name) => {
  */
 export const registerDefaultServices = () => {
     // Import services lazily to avoid circular dependencies
+    
+    // Phase 4.4E: Register canonical master data service FIRST
+    // All other services depend on master data
+    registerService("masterData", masterDataService, {
+        description: "Canonical master data service - Single Source of Truth",
+        deprecated: false,
+        tenantAware: true,
+        priority: 1,
+    });
+    
+    // Initialize master data repository
+    try {
+        masterDataService.refreshAll();
+    } catch (error) {
+        console.error("[ServiceRegistry] Master data initialization error:", error);
+    }
+    
     const feeService = require("../modules/fees/feesService");
     const transportService = require("../modules/transport/services/transportService");
     const studentService = require("../services/studentService");

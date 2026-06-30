@@ -3,6 +3,7 @@ import AppRoutes from "./routes/AppRoutes";
 import { useSchoolStore } from "./store/schoolStore";
 import { validateAppReadiness, getValidationSummary, auditStorageKeys } from "./services/runtimeValidationService";
 import { registerDefaultServices } from "./core/serviceRegistry";
+import masterDataService from "./services/masterDataService";
 
 export default function App() {
     const loadAll = useSchoolStore((state) => state.loadAll);
@@ -11,6 +12,13 @@ export default function App() {
     useEffect(() => {
         // Phase 3.1 D Safe Mode: Register default services on app initialization
         registerDefaultServices();
+
+        // Initialize master data service (repository + cache)
+        try {
+            masterDataService.refreshAll();
+        } catch (error) {
+            console.error("[App] Master data initialization error:", error);
+        }
 
         if (!hydrated) {
             loadAll();
