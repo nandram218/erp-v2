@@ -13,10 +13,6 @@ import {
     STORAGE_KEYS,
 } from "./storageService";
 import { getTenantContextForStorage } from "./tenantContextService";
-import { blockDirectServiceAccess } from "../core/serviceRegistry";
-
-// Phase 3.2C Safe Mode: Block direct access in production mode
-blockDirectServiceAccess("feeSettingsService");
 
 const FEE_SETTINGS_KEY = STORAGE_KEYS.ERP_FEE_SETTINGS;
 

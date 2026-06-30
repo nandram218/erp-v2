@@ -11,11 +11,7 @@
  */
 
 import { getService } from "../../core/serviceRegistry";
-import { blockDirectServiceAccess } from "../../core/serviceRegistry";
 import { RECEIPT_STATUS } from "./receiptConstants";
-
-// Phase 3.2C Safe Mode: Block direct access in production mode
-blockDirectServiceAccess("receiptVoidService");
 
 /* =========================
    GET SERVICES

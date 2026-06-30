@@ -19,7 +19,6 @@ import {
     STORAGE_KEYS,
 } from "../../services/storageService";
 import { getTenantContextForStorage, withTenantContext } from "../../services/tenantContextService";
-import { registerService, getService } from "../serviceRegistry";
 
 // ================= MASTER ENTITY TYPES =================
 
@@ -55,12 +54,6 @@ class MasterEntityRepository {
         this.dependencyGraph = new Map();
         this.storageKey = STORAGE_KEYS.ERP_DB;
         this.initialized = false;
-        
-        // Register this repository as a service
-        registerService("masterDataRepository", this, {
-            description: "Canonical master data repository",
-            tenantAware: true,
-        });
     }
 
     // ================= INITIALIZATION =================

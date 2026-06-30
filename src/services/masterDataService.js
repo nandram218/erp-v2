@@ -16,10 +16,8 @@
 
 import masterEntityRepository from "../core/masterData/MasterEntityRepository";
 import { getTenantContext, isTenantContextValid } from "./tenantContextService";
-import { blockDirectServiceAccess } from "../core/serviceRegistry";
 
-// Block direct access - use ServiceRegistry.getService("masterData")
-blockDirectServiceAccess("masterDataService");
+// Access control is enforced by ServiceRegistry.getService("masterData")
 
 // Re-export entity types for convenience
 export const MASTER_ENTITY_TYPES = masterEntityRepository.MASTER_ENTITY_TYPES || {

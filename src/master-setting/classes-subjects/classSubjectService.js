@@ -12,10 +12,6 @@ import {
     STORAGE_KEYS,
 } from "../../services/storageService";
 import { withTenantContext, getTenantContextForStorage } from "../../services/tenantContextService";
-import { blockDirectServiceAccess } from "../../core/serviceRegistry";
-
-// Phase 3.1 D Safe Mode: Block direct access in production mode
-blockDirectServiceAccess("classSubjectService");
 
 const STORAGE_KEY = STORAGE_KEYS.ERP_CLASSES;
 

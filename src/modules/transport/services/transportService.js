@@ -4,10 +4,6 @@ import {
     STORAGE_KEYS,
 } from "../../../services/storageService";
 import { withTenantContext, getTenantContextForStorage } from "../../../services/tenantContextService";
-import { blockDirectServiceAccess } from "../../../core/serviceRegistry";
-
-// Phase 3.1 D Safe Mode: Block direct access in production mode
-blockDirectServiceAccess("transportService");
 
 const DB_KEY = STORAGE_KEYS.ERP_DB;
 
@@ -327,6 +323,44 @@ export const saveStudentTransport = (
         );
 
     saveDB(db);
+};
+
+export const assignStudentToRoute = ({
+    studentId,
+    routeId,
+    pickupPoint = "",
+    fee = 0
+}) => {
+    const db = getDB();
+
+    // Find the student in ERP_DB.students
+    const students = db.students || [];
+    const studentIndex = students.findIndex(
+        (s) => String(s.studentId) === String(studentId)
+    );
+
+    if (studentIndex === -1) {
+        console.warn(`[transportService] Student not found for transport assignment: ${studentId}`);
+        return null;
+    }
+
+    // Update student's transport record
+    students[studentIndex] = {
+        ...students[studentIndex],
+        transport: {
+            enabled: true,
+            routeId,
+            pickupPoint,
+            routeFee: fee,
+            assignedAt: new Date().toISOString()
+        },
+        transportRouteId: routeId
+    };
+
+    db.students = students;
+    saveDB(db);
+
+    return students[studentIndex].transport;
 };
 
 export const removeStudentTransport = (

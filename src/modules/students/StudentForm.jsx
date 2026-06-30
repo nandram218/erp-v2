@@ -41,17 +41,6 @@ const StudentForm = () => {
         borderTopLeftRadius: "30px",
         borderBottomLeftRadius: "30px"
     };
-    /* ================= DATA ================= */
-const classes =
-                        getStorageCompat(STORAGE_KEYS.ERP_CLASSES, []);
-    // Read fee data from feeSettingsService (single source of truth)
-    const feeData = feeSettingsService.getFeeSettings();
-    // Read transport routes from transport service (single source of truth)
-    const transportRoutes = getTransportRoutes();
-
-    const bloodGroups = ["A+", "B+", "O+", "AB+", "A-", "B-", "O-", "AB-"];
-    const categories = ["GEN", "OBC", "SC", "ST"];
-
     /* ================= STATE ================= */
 
     const initialState = {
@@ -108,6 +97,25 @@ const classes =
     };
 
     const [form, setForm] = useState(initialState);
+
+    /* ================= DATA ================= */
+const classes =
+                        getStorageCompat(STORAGE_KEYS.ERP_CLASSES, []);
+    // Read fee data from feeSettingsService (single source of truth)
+    const feeData = feeSettingsService.getFeeSettings();
+    // Read transport routes from transport service (single source of truth)
+    const transportRoutes = getTransportRoutes();
+    // Get unique sections for the selected class from master settings
+    const selectedClassObj = classes.find(c => c.className + (c.stream ? " (" + c.stream + ")" : "") === form.class);
+    const availableSections = selectedClassObj && selectedClassObj.section
+        ? [...new Set(classes.filter(c => c.className + (c.stream ? " (" + c.stream + ")" : "") === form.class).map(c => c.section).filter(Boolean))]
+        : [];
+    const displaySections = availableSections.length > 0
+        ? availableSections.filter(s => s !== "")
+        : [];
+
+    const bloodGroups = ["A+", "B+", "O+", "AB+", "A-", "B-", "O-", "AB-"];
+    const categories = ["GEN", "OBC", "SC", "ST"];
 
     const location = useLocation();
 
@@ -714,12 +722,28 @@ const classes =
                             <option value="">Class</option>
 
                             {classes.map((c, i) => (
-                                <option key={`${c.className}-${c.stream || 'no-stream'}-${i}`} value={c.className + (c.stream ? "-" + c.stream : "")}>
+                                <option key={`${c.className}-${c.stream || 'no-stream'}-${i}`} value={c.className + (c.stream ? " (" + c.stream + ")" : "")}>
                                     {c.className} {c.stream ? `(${c.stream})` : ""}
                                 </option>
                             ))}
                         </select>
 
+                </div>
+
+                {/* Section Dropdown - Master Settings Reuse */}
+                <div style={box}>
+                    <h3>Section</h3>
+                    <select style={input} name="section" value={form.section || ""} onChange={handleChange}>
+                        <option value="">Select Section</option>
+                        {displaySections.map((sec, i) => (
+                            <option key={`section-${sec}-${i}`} value={sec}>{sec}</option>
+                        ))}
+                    </select>
+                    {form.class && displaySections.length === 0 && (
+                        <p style={{ color: "#666", fontSize: "13px", marginTop: "5px" }}>
+                            No sections configured for this class
+                        </p>
+                    )}
                 </div>
 
                 {/* PREVIOUS SCHOOL */}

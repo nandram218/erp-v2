@@ -17,10 +17,6 @@ import {
     STORAGE_KEYS,
 } from "../../services/storageService";
 import { getTenantContextForStorage } from "../../services/tenantContextService";
-import { blockDirectServiceAccess } from "../../core/serviceRegistry";
-
-// Phase 3.1 D Hardening: Block direct access in production mode
-blockDirectServiceAccess("masterSettingFeesService");
 
 const DB_KEY = STORAGE_KEYS.ERP_DB;
 

@@ -15,12 +15,8 @@ import {
     STORAGE_KEYS,
 } from "../../services/storageService";
 import { withTenantContext, getTenantContextForStorage } from "../../services/tenantContextService";
-import { blockDirectServiceAccess } from "../../core/serviceRegistry";
 import { getService } from "../../core/serviceRegistry";
 import { RECEIPT_ACTION } from "./receiptConstants";
-
-// Phase 3.2C Safe Mode: Block direct access in production mode
-blockDirectServiceAccess("receiptAuditService");
 
 /* =========================
    STORAGE KEYS

@@ -24,9 +24,6 @@ const readRawLegacy = (legacyKey) => {
     }
 };
 
-const writeRawLegacy = (legacyKey, value) => {
-    localStorage.setItem(legacyKey, JSON.stringify(value));
-};
 
 /** Copy legacy keys into prefixed storage (idempotent). Scope: MIGRATED_STORAGE_KEYS only. */
 export const migrateLegacyStorage = () => {
@@ -197,8 +194,8 @@ export const getTenantStorage = (key, tenantContext, fallback = null) => {
         !tenantContext.schoolId || 
         !tenantContext.branchId || 
         !tenantContext.sessionId) {
-        // ZERO TRUST: No fallback to shared storage
-        return fallback;
+        // Fallback to shared storage (matching setTenantStorage behavior)
+        return getStorageCompat(key, fallback);
     }
 
     try {

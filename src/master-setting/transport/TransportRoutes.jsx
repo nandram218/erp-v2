@@ -7,7 +7,7 @@ import {
     setTenantStorage,
     STORAGE_KEYS
 } from "../../services/storageService";
-import { getTenantContext } from "../../services/tenantContextService";
+import { getTenantContextForStorage } from "../../services/tenantContextService";
 
 const DB_KEY = STORAGE_KEYS.ERP_DB;
 
@@ -18,7 +18,7 @@ export default function TransportRoutes() {
     const [store, setStore] = useState({});
 
     const loadStore = () => {
-        const tenantContext = getTenantContext();
+        const tenantContext = getTenantContextForStorage();
         const db = getTenantStorage(DB_KEY, tenantContext, {});
         setStore(db.transport || {
             routes: [],
@@ -259,7 +259,7 @@ export default function TransportRoutes() {
             };
 
             // Save to tenant-aware storage
-            const tenantContext = getTenantContext();
+            const tenantContext = getTenantContextForStorage();
             const db = getTenantStorage(DB_KEY, tenantContext, {});
             if (!db.transport) {
                 db.transport = {
@@ -379,7 +379,7 @@ export default function TransportRoutes() {
             });
 
         // Save to tenant-aware storage
-        const tenantContext = getTenantContext();
+        const tenantContext = getTenantContextForStorage();
         const db = getTenantStorage(DB_KEY, tenantContext, {});
         db.transport.routes = updatedRoutes;
         setTenantStorage(DB_KEY, db, tenantContext);
@@ -424,7 +424,7 @@ export default function TransportRoutes() {
             );
 
         // Save to tenant-aware storage
-        const tenantContext = getTenantContext();
+        const tenantContext = getTenantContextForStorage();
         const db = getTenantStorage(DB_KEY, tenantContext, {});
         db.transport.routes = updatedRoutes;
         setTenantStorage(DB_KEY, db, tenantContext);

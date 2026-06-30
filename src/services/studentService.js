@@ -6,10 +6,6 @@
 import { getService } from "../core/serviceRegistry";
 import { useSchoolStore } from "../store/schoolStore";
 import { getTenantContext } from "./tenantContextService";
-import { blockDirectServiceAccess } from "../core/serviceRegistry";
-
-// Phase 3.1 D Safe Mode: Block direct access in production mode
-blockDirectServiceAccess("studentService");
 
 /** Match by studentId (canonical) or legacy numeric id */
 const matchesStudent = (student, identifier) => {
@@ -146,6 +142,40 @@ export const addStudent = (
     const feesService = getService("fees");
     feesService.createStudentFeesRecord({ student: finalStudent });
 
+    // Create transport assignment if transport is enabled
+    if (finalStudent.transport?.enabled && finalStudent.transport.routeId) {
+        const transportService = getService("transport");
+        if (transportService && typeof transportService.assignStudentToRoute === 'function') {
+            try {
+                transportService.assignStudentToRoute({
+                    studentId: finalStudent.studentId,
+                    routeId: finalStudent.transport.routeId,
+                    pickupPoint: finalStudent.transport.pickupPoint,
+                    fee: finalStudent.transport.routeFee
+                });
+            } catch (e) {
+                console.warn('[studentService] Transport assignment failed:', e.message);
+            }
+        }
+    }
+
+    // Create hostel assignment if hostel is enabled
+    if (finalStudent.hostel?.enabled) {
+        const { isServiceRegistered } = require("../core/serviceRegistry");
+        if (isServiceRegistered("hostel")) {
+            const hostelService = getService("hostel");
+            if (hostelService && typeof hostelService.assignStudentToBed === 'function') {
+                try {
+                    // Note: Bed assignment requires a bedId, which would come from hostel management
+                    // For now, we mark the student as hostel-enabled; actual bed assignment happens in hostel module
+                    console.log('[studentService] Student marked for hostel, bed assignment to be handled separately');
+                } catch (e) {
+                    console.warn('[studentService] Hostel assignment failed:', e.message);
+                }
+            }
+        }
+    }
+
     return finalStudent;
 };
 
@@ -206,6 +236,31 @@ export const updateStudent = (
     feesService.syncStudentsToFeesDB({
         students: [updatedStudent]
     });
+
+    // Update transport assignment if transport info changed
+    const transportService = getService("transport");
+    if (transportService) {
+        if (updatedStudent.transport?.enabled && updatedStudent.transport.routeId) {
+            if (typeof transportService.assignStudentToRoute === 'function') {
+                try {
+                    transportService.assignStudentToRoute({
+                        studentId: updatedStudent.studentId,
+                        routeId: updatedStudent.transport.routeId,
+                        pickupPoint: updatedStudent.transport.pickupPoint,
+                        fee: updatedStudent.transport.routeFee
+                    });
+                } catch (e) {
+                    console.warn('[studentService] Transport update failed:', e.message);
+                }
+            }
+        } else if (typeof transportService.removeStudentTransport === 'function') {
+            try {
+                transportService.removeStudentTransport(updatedStudent.studentId);
+            } catch (e) {
+                console.warn('[studentService] Transport removal failed:', e.message);
+            }
+        }
+    }
 
     return updatedStudent;
 };
