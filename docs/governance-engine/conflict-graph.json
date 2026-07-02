@@ -1,0 +1,98 @@
+{
+  "engine": {
+    "version": "2.0.0",
+    "lastUpdated": "2026-07-02",
+    "description": "All known contradictions between documents — with resolutions"
+  },
+  "conflicts": [
+    {
+      "source": "FOUNDATION-BASELINE.md (legacy)",
+      "target": "PACK-03_saas-multi-tenant.md",
+      "topic": "Storage key format",
+      "severity": "RESOLVED",
+      "resolution": "PACK format is CURRENT; FOUNDATION-BASELINE format is TARGET for Phase 5+",
+      "resolved": true,
+      "resolutionDate": "2026-07-02",
+      "note": "FOUNDATION-BASELINE.md moved to archive/legacy/"
+    },
+    {
+      "source": "MASTER_RULEBOOK.md (archived)",
+      "target": "PACK-00..10 constitution",
+      "topic": "Authority — rulebook claimed PRIMARY SOURCE OF TRUTH",
+      "severity": "RESOLVED",
+      "resolution": "Constitution PACKs are the sole authority. Rulebook archived as historical knowledge.",
+      "resolved": true,
+      "resolutionDate": "2026-07-02",
+      "note": "MASTER_RULEBOOK.md moved to archive/rulebook/"
+    },
+    {
+      "source": "docs/architecture/ (old location)",
+      "target": "docs/02-architecture/ (canonical location)",
+      "topic": "Architecture docs in two locations",
+      "severity": "RESOLVED",
+      "resolution": "All architecture docs consolidated to docs/02-architecture/. Old location files moved to archive/phase-4.4/",
+      "resolved": true,
+      "resolutionDate": "2026-07-02"
+    },
+    {
+      "source": "docs/07-rulebook/ (old location)",
+      "target": "docs/archive/rulebook/ (new location)",
+      "topic": "Rulebook files in wrong location",
+      "severity": "RESOLVED",
+      "resolution": "All rulebook files moved to docs/archive/rulebook/. 07-rulebook directory now empty.",
+      "resolved": true,
+      "resolutionDate": "2026-07-02"
+    },
+    {
+      "source": "docs/checklists/ (old location)",
+      "target": "docs/archive/checklists/ (new location)",
+      "topic": "Checklist files in wrong location",
+      "severity": "RESOLVED",
+      "resolution": "All checklist files moved to docs/archive/checklists/.",
+      "resolved": true,
+      "resolutionDate": "2026-07-02"
+    },
+    {
+      "source": "docs/authority/ (old location)",
+      "target": "docs/archive/historical/authority/ (new location)",
+      "topic": "Authority files in wrong location",
+      "severity": "RESOLVED",
+      "resolution": "Authority files moved to docs/archive/historical/authority/.",
+      "resolved": true,
+      "resolutionDate": "2026-07-02"
+    },
+    {
+      "source": "docs/ (root level audit files)",
+      "target": "docs/archive/audit-history/",
+      "topic": "Audit files scattered at root level",
+      "severity": "RESOLVED",
+      "resolution": "All root-level audit files moved to docs/archive/audit-history/.",
+      "resolved": true,
+      "resolutionDate": "2026-07-02"
+    },
+    {
+      "source": "docs/00-index/KNOWLEDGE_GRAPH.md",
+      "target": "docs/governance-engine/knowledge-graph.json",
+      "topic": "Duplicate knowledge graph — markdown vs JSON",
+      "severity": "RESOLVED",
+      "resolution": "JSON is canonical machine-readable source. Markdown kept as human-readable reference but marked IGNORE in AI routing.",
+      "resolved": true,
+      "resolutionDate": "2026-07-02"
+    },
+    {
+      "source": "docs/00-index/TAG_INDEX.md",
+      "target": "docs/governance-engine/knowledge-graph.json",
+      "topic": "Duplicate tag index — markdown vs JSON",
+      "severity": "RESOLVED",
+      "resolution": "JSON is canonical. Markdown kept as human-readable reference but marked IGNORE in AI routing.",
+      "resolved": true,
+      "resolutionDate": "2026-07-02"
+    }
+  ],
+  "summary": {
+    "totalConflicts": 9,
+    "resolved": 9,
+    "unresolved": 0,
+    "lastResolutionDate": "2026-07-02"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "engine": {
+    "version": "2.0.0",
+    "lastUpdated": "2026-07-02",
+    "lastFullScan": "2026-07-02",
+    "totalDocuments": 141,
+    "activeDocuments": 49,
+    "archivedDocuments": 92,
+    "maintenance": "locked",
+    "description": "Master document registry — consolidation complete, governance frozen"
+  },
+  "summary": {
+    "consolidationDate": "2026-07-02",
+    "filesMoved": 70,
+    "filesArchived": 92,
+    "filesIndexed": 141,
+    "filesReclassified": 49,
+    "filesRedirected": 29,
+    "duplicateKnowledgeRemoved": 9,
+    "canonicalDocuments": 49,
+    "conflictsResolved": 9,
+    "orphanDocuments": 0,
+    "brokenLinks": 0
+  },
+  "activeCategories": [
+    {"name": "Constitution", "path": "01-constitution/", "count": 11, "status": "PERMANENT"},
+    {"name": "Architecture", "path": "02-architecture/", "count": 10, "status": "ACTIVE"},
+    {"name": "Audit", "path": "03-audits/", "count": 8, "status": "ACTIVE"},
+    {"name": "Decision", "path": "04-decisions/", "count": 2, "status": "STABLE"},
+    {"name": "Lock", "path": "05-locks/", "count": 6, "status": "FROZEN"},
+    {"name": "Module", "path": "06-modules/", "count": 5, "status": "ACTIVE"},
+    {"name": "Index", "path": "00-index/", "count": 7, "status": "FROZEN"},
+    {"name": "Governance Engine", "path": "governance-engine/", "count": 7, "status": "ACTIVE"}
+  ],
+  "archiveCategories": [
+    {"name": "Rulebook", "path": "archive/rulebook/", "count": 32, "status": "ARCHIVE"},
+    {"name": "Audit History", "path": "archive/audit-history/", "count": 7, "status": "ARCHIVE"},
+    {"name": "Checklists", "path": "archive/checklists/", "count": 7, "status": "ARCHIVE"},
+    {"name": "Legacy", "path": "archive/legacy/", "count": 5, "status": "LEGACY"},
+    {"name": "Historical", "path": "archive/historical/", "count": 7, "status": "ARCHIVE"},
+    {"name": "Implementation History", "path": "archive/implementation-history/", "count": 5, "status": "ARCHIVE"},
+    {"name": "Phase 4.4", "path": "archive/phase-4.4/", "count": 3, "status": "PHASE_ARCHIVE"},
+    {"name": "Phase 4.5", "path": "archive/phase-4.5/", "count": 14, "status": "PHASE_ARCHIVE"},
+    {"name": "Redirects", "path": "redirects/", "count": 1, "status": "REFERENCE"}
+  ],
+  "governanceTree": {
+    "root": "docs/",
+    "authority": "01-constitution/PACK-00_master-foundation.md",
+    "lockProtocol": "01-constitution/PACK-10_permanent-locks.md",
+    "navigation": "00-index/MASTER_INDEX.md",
+    "context": "00-index/MASTER_CONTEXT.md",
+    "aiEntry": "governance-engine/ai-routing-index.json",
+    "knowledgeGraph": "governance-engine/knowledge-graph.json",
+    "authorityGraph": "governance-engine/authority-graph.json",
+    "conflictGraph": "governance-engine/conflict-graph.json",
+    "lifecycleGraph": "governance-engine/lifecycle-graph.json",
+    "upgradeQueue": "governance-engine/future-upgrade-queue.json",
+    "archiveIndex": "redirects/README.md"
+  }
+}

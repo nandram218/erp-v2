@@ -1,0 +1,106 @@
+{
+  "id": "fee-contract-v1",
+  "version": "1.0.0",
+  "owner": "feeEngine",
+  "classification": "FINANCIAL",
+  "status": "FROZEN",
+  "allowedChanges": ["ADD_NEW_FEE_TYPE", "ADD_NEW_CALCULATION_RULE"],
+  "breakingChanges": ["RENAME_FEE_TYPE", "CHANGE_CALCULATION_LOGIC", "REMOVE_FEE_STRUCTURE"],
+  "migrationRequired": true,
+  "relatedFiles": [
+    "src/core/fee-engine/feeContract.js",
+    "src/core/fee-engine/feeEngineConfig.js",
+    "src/core/fee-engine/FeeEngineCore.ts",
+    "src/modules/fees/feesService.js"
+  ],
+  "validationRules": {
+    "feeNameRequired": true,
+    "amountPositive": true,
+    "feeTypeUnique": true,
+    "academicYearRequired": true,
+    "classAssignmentRequired": true
+  },
+  "dependencies": [
+    "tenant.contract.json",
+    "student.contract.json",
+    "receipt.contract.json"
+  ],
+  "futureExtensionPolicy": "Additive only. New fee types can be added. Fee calculation rules can be extended via config. Core fee structure is immutable.",
+  "contract": {
+    "entityName": "fee",
+    "identifier": "feeId",
+    "fields": {
+      "feeId": {
+        "type": "string",
+        "required": true,
+        "generatedBy": "identifier.contract.json"
+      },
+      "feeName": {
+        "type": "string",
+        "required": true,
+        "maxLength": 100,
+        "description": "Fee type name (e.g., Tuition, Transport, Library)"
+      },
+      "feeType": {
+        "type": "string",
+        "required": true,
+        "enum": ["MANDATORY", "OPTIONAL", "ONE_TIME", "RECURRING"],
+        "description": "Fee categorization"
+      },
+      "amount": {
+        "type": "number",
+        "required": true,
+        "min": 0,
+        "description": "Base fee amount"
+      },
+      "academicYear": {
+        "type": "string",
+        "required": true,
+        "format": "YYYY-YYYY",
+        "description": "Academic year this fee applies to"
+      },
+      "classId": {
+        "type": "string",
+        "required": true,
+        "description": "Applicable class"
+      },
+      "frequency": {
+        "type": "string",
+        "required": false,
+        "enum": ["MONTHLY", "QUARTERLY", "ANNUALLY", "ONE_TIME"],
+        "default": "ONE_TIME"
+      },
+      "dueDate": {
+        "type": "string",
+        "required": false,
+        "format": "date",
+        "description": "Payment due date"
+      },
+      "lateFee": {
+        "type": "object",
+        "required": false,
+        "description": "Late fee configuration",
+        "properties": {
+          "enabled": {"type": "boolean"},
+          "amount": {"type": "number"},
+          "type": {"type": "string", "enum": ["FIXED", "PERCENTAGE"]}
+        }
+      },
+      "discount": {
+        "type": "object",
+        "required": false,
+        "description": "Discount configuration",
+        "properties": {
+          "enabled": {"type": "boolean"},
+          "percentage": {"type": "number", "min": 0, "max": 100},
+          "maxAmount": {"type": "number"}
+        }
+      },
+      "isActive": {
+        "type": "boolean",
+        "required": true,
+        "default": true
+      }
+    }
+  }
+}

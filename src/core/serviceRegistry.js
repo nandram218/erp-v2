@@ -1,4 +1,7 @@
 /**
+ * @CONTRACT Service
+ * @LOCK PERMANENT
+ *
  * SERVICE REGISTRY LAYER
  * Phase 3.1 D Enforcement - SaaS-Grade Service Access Control
  * Phase 3.1 D Hardening - STRICT SaaS Enforcement Layer

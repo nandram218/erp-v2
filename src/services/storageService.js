@@ -1,4 +1,9 @@
-// storageService.js - SINGLE SOURCE OF TRUTH FOR STORAGE
+/**
+ * @CONTRACT Storage
+ * @LOCK PERMANENT
+ *
+ * storageService.js - SINGLE SOURCE OF TRUTH FOR STORAGE
+ */
 
 import {
     STORAGE_KEYS,

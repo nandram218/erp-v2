@@ -1,0 +1,83 @@
+{
+  "id": "identifier-contract-v1",
+  "version": "1.0.0",
+  "owner": "identifierService",
+  "classification": "CORE",
+  "status": "FROZEN",
+  "allowedChanges": ["ADD_NEW_IDENTIFIER_FORMAT", "ADD_NEW_SEQUENCE_RULE"],
+  "breakingChanges": ["RENAME_IDENTIFIER_TYPE", "CHANGE_FORMAT", "RESET_SEQUENCES"],
+  "migrationRequired": true,
+  "relatedFiles": [
+    "src/utils/identifierUtils.js",
+    "src/services/studentService.js"
+  ],
+  "validationRules": {
+    "formatImmutable": true,
+    "tenantScoped": true,
+    "sequenceNeverReuse": true,
+    "noGapsRequired": false
+  },
+  "dependencies": [
+    "tenant.contract.json",
+    "storage.contract.json"
+  ],
+  "futureExtensionPolicy": "Additive only. New identifier types can be added. Existing formats are immutable. Sequence state must be preserved across migrations.",
+  "contract": {
+    "entityName": "identifier",
+    "identifier": "identifierType",
+    "fields": {
+      "studentId": {
+        "type": "string",
+        "required": true,
+        "format": "STU-{YEAR}-{SEQUENCE}",
+        "example": "STU-2024-0001",
+        "sequenceKey": "student_sequence",
+        "description": "Student identifier format"
+      },
+      "receiptNumber": {
+        "type": "string",
+        "required": true,
+        "format": "ERP-R-{YEAR}-{SEQUENCE}",
+        "example": "ERP-R-2024-0001",
+        "sequenceKey": "receipt_sequence",
+        "description": "Receipt number format"
+      },
+      "feeId": {
+        "type": "string",
+        "required": true,
+        "format": "FEE-{UUID}",
+        "example": "FEE-a1b2c3d4",
+        "description": "Fee identifier - UUID based"
+      },
+      "routeId": {
+        "type": "string",
+        "required": true,
+        "format": "ROUTE-{SEQUENCE}",
+        "example": "ROUTE-001",
+        "sequenceKey": "route_sequence",
+        "description": "Transport route identifier"
+      },
+      "stopId": {
+        "type": "string",
+        "required": true,
+        "format": "STOP-{ROUTE_ID}-{SEQUENCE}",
+        "example": "STOP-ROUTE-001-01",
+        "description": "Transport stop identifier"
+      },
+      "vehicleId": {
+        "type": "string",
+        "required": true,
+        "format": "VEH-{SEQUENCE}",
+        "example": "VEH-001",
+        "sequenceKey": "vehicle_sequence",
+        "description": "Vehicle identifier"
+      }
+    },
+    "rules": {
+      "sequenceStorage": "localStorage per tenant",
+      "sequenceIncrement": 1,
+      "formatValidation": "MANDATORY",
+      "tenantIsolation": "MANDATORY"
+    }
+  }
+}

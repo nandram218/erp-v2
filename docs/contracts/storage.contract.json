@@ -1,0 +1,110 @@
+{
+  "id": "storage-contract-v1",
+  "version": "1.0.0",
+  "owner": "storageService",
+  "classification": "CORE",
+  "status": "FROZEN",
+  "allowedChanges": ["ADD_NEW_KEY", "DEPRECATE_KEY"],
+  "breakingChanges": ["RENAME_KEY", "REMOVE_KEY", "CHANGE_KEY_TYPE"],
+  "migrationRequired": true,
+  "relatedFiles": [
+    "src/core/constants/storageKeys.js",
+    "src/services/storageService.js",
+    "src/store/schoolStore.js"
+  ],
+  "validationRules": {
+    "keyFormat": "UPPER_SNAKE_CASE",
+    "prefixRequired": "ERP_",
+    "maxLength": 50,
+    "reservedPrefixes": ["ERP_", "SCHOOL_"],
+    "cannotStartWithNumber": true
+  },
+  "dependencies": [
+    "tenant.contract.json",
+    "service.contract.json"
+  ],
+  "futureExtensionPolicy": "Additive only. New keys must follow ERP_ prefix convention. Migration path required for any key changes.",
+  "contract": {
+    "keys": {
+      "ERP_DB": {
+        "description": "Main tenant DB — schoolStore (Step 1 migrated)",
+        "owner": "schoolStore",
+        "type": "object",
+        "encrypted": false,
+        "migrated": true
+      },
+      "ERP_CLASSES": {
+        "description": "Class list — classSubjectService, StudentForm",
+        "owner": "classSubjectService",
+        "type": "array",
+        "encrypted": false
+      },
+      "ERP_SUBJECTS": {
+        "description": "Per-class subject setup — SubjectManager",
+        "owner": "classSubjectService",
+        "type": "array",
+        "encrypted": false
+      },
+      "ERP_CLASS_SUBJECT_MAP": {
+        "description": "Class → subject mapping — SubjectManager",
+        "owner": "classSubjectService",
+        "type": "object",
+        "encrypted": false
+      },
+      "ERP_FEE_SETTINGS": {
+        "description": "Master fee settings — FeeSettings, FeeStructure",
+        "owner": "feeSettingsService",
+        "type": "object",
+        "encrypted": false
+      },
+      "ERP_FEES_DB": {
+        "description": "Operational fees records — modules/fees/feesService",
+        "owner": "feesService",
+        "type": "array",
+        "encrypted": false
+      },
+      "ERP_FEES_LEDGER": {
+        "description": "Fees payment ledger — modules/fees/feesService",
+        "owner": "feesService",
+        "type": "array",
+        "encrypted": false
+      },
+      "ERP_RECEIPT_COUNTER": {
+        "description": "Receipt counter — receiptService (Primary Authority)",
+        "owner": "receiptService",
+        "type": "number",
+        "encrypted": false
+      },
+      "ERP_RECEIPT_REGISTER": {
+        "description": "Receipt Register — Primary financial authority (Phase-3D)",
+        "owner": "receiptService",
+        "type": "array",
+        "encrypted": false
+      },
+      "ERP_RECEIPT_TEMPLATES": {
+        "description": "Receipt Templates — Receipt template storage (Phase-3D)",
+        "owner": "receiptService",
+        "type": "array",
+        "encrypted": false
+      },
+      "ERP_RECEIPT_PDFS": {
+        "description": "Receipt PDFs — Generated PDF cache storage (Phase-3D)",
+        "owner": "receiptService",
+        "type": "object",
+        "encrypted": false
+      },
+      "SCHOOL_PROFILE": {
+        "description": "School profile (dual medium) — SchoolProfile",
+        "owner": "schoolProfileService",
+        "type": "object",
+        "encrypted": false
+      },
+      "DRAFT_STUDENT": {
+        "description": "Student form draft — StudentForm",
+        "owner": "studentService",
+        "type": "object",
+        "encrypted": false
+      }
+    }
+  }
+}

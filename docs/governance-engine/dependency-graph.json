@@ -1,0 +1,266 @@
+{
+  "engine": {
+    "version": "2.0.0",
+    "description": "Dependency Graph — what breaks if something changes. Maps document dependencies, impact analysis, and change propagation.",
+    "lastUpdated": "2026-07-02"
+  },
+  "dependencyTypes": {
+    "GOVERNS": "Document A governs document B. If A changes, B must be reviewed.",
+    "REFERENCES": "Document A references document B. If B changes, A may need updates.",
+    "SUPERSEDES": "Document A supersedes document B. B is no longer authoritative.",
+    "DECIDES": "Document A records a decision that affects document B.",
+    "PRECEDES": "Document A must be read before document B for proper understanding.",
+    "IMPLEMENTS": "Document A implements rules defined in document B."
+  },
+  "dependencies": [
+    {
+      "source": "FOUNDATION-BASELINE.md",
+      "target": "PACK-00_master-foundation.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "If FOUNDATION-BASELINE changes, PACK-00 must be reviewed for consistency"
+    },
+    {
+      "source": "FOUNDATION-BASELINE.md",
+      "target": "PACK-01_business-rules.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "Business rules must align with baseline contracts"
+    },
+    {
+      "source": "FOUNDATION-BASELINE.md",
+      "target": "PACK-02_folder-file-ownership.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "Ownership matrix must align with baseline folder structure"
+    },
+    {
+      "source": "FOUNDATION-BASELINE.md",
+      "target": "PACK-03_saas-multi-tenant.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "SaaS rules must align with baseline tenant contracts"
+    },
+    {
+      "source": "FOUNDATION-BASELINE.md",
+      "target": "PACK-05_backend-database.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "Storage rules must align with baseline storage contracts"
+    },
+    {
+      "source": "FOUNDATION-BASELINE.md",
+      "target": "PACK-06_module-rules.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "Module rules must align with baseline module contracts"
+    },
+    {
+      "source": "FOUNDATION-BASELINE.md",
+      "target": "PACK-10_permanent-locks.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "Lock rules must align with baseline locked files"
+    },
+    {
+      "source": "FOUNDATION-BASELINE.md",
+      "target": "PHASE-4.4-SAAS-AUTHORITY-FREEZE.md",
+      "type": "GOVERNS",
+      "impact": "MEDIUM",
+      "breakage": "Freeze decisions must align with baseline contracts"
+    },
+    {
+      "source": "FOUNDATION-BASELINE.md",
+      "target": "All contracts/*.json",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "JSON contracts must match baseline contract definitions"
+    },
+    {
+      "source": "FOUNDATION-BASELINE.md",
+      "target": "MASTER_RULEBOOK.md",
+      "type": "SUPERSEDES",
+      "impact": "LOW",
+      "breakage": "Rulebook is superseded, no breakage"
+    },
+    {
+      "source": "FOUNDATION-BASELINE.md",
+      "target": "CONSTITUTION_LOCK_v1.0.md",
+      "type": "SUPERSEDES",
+      "impact": "LOW",
+      "breakage": "Constitution lock is superseded, no breakage"
+    },
+    {
+      "source": "PACK-00_master-foundation.md",
+      "target": "PACK-01_business-rules.md",
+      "type": "PRECEDES",
+      "impact": "MEDIUM",
+      "breakage": "Must read PACK-00 before PACK-01 for context"
+    },
+    {
+      "source": "PACK-00_master-foundation.md",
+      "target": "PACK-10_permanent-locks.md",
+      "type": "PRECEDES",
+      "impact": "MEDIUM",
+      "breakage": "Must read PACK-00 before PACK-10 for context"
+    },
+    {
+      "source": "PACK-02_folder-file-ownership.md",
+      "target": "architecture-service-registry.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "Service registry must match PACK-02 ownership matrix"
+    },
+    {
+      "source": "PACK-02_folder-file-ownership.md",
+      "target": "architecture-file-ownership.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "File ownership doc must match PACK-02"
+    },
+    {
+      "source": "PACK-02_folder-file-ownership.md",
+      "target": "architecture-folder-map.md",
+      "type": "GOVERNS",
+      "impact": "MEDIUM",
+      "breakage": "Folder map must match PACK-02"
+    },
+    {
+      "source": "PACK-03_saas-multi-tenant.md",
+      "target": "architecture-tenant-isolation.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "Tenant isolation doc must match PACK-03"
+    },
+    {
+      "source": "PACK-05_backend-database.md",
+      "target": "architecture-storage-flow.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "Storage flow doc must match PACK-05"
+    },
+    {
+      "source": "PACK-05_backend-database.md",
+      "target": "storage-locks.md",
+      "type": "GOVERNS",
+      "impact": "MEDIUM",
+      "breakage": "Storage locks must match PACK-05"
+    },
+    {
+      "source": "PACK-06_module-rules.md",
+      "target": "architecture-authority-matrix.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "Authority matrix must match PACK-06"
+    },
+    {
+      "source": "PACK-06_module-rules.md",
+      "target": "All 06-modules/ files",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "Module docs must follow PACK-06 structure"
+    },
+    {
+      "source": "PACK-07_development-workflow.md",
+      "target": "All checklists/",
+      "type": "SUPERSEDES",
+      "impact": "LOW",
+      "breakage": "Checklists are superseded by PACK-07"
+    },
+    {
+      "source": "PACK-10_permanent-locks.md",
+      "target": "All 05-locks/ files",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "Lock files must match PACK-10 lock types and values"
+    },
+    {
+      "source": "PACK-10_permanent-locks.md",
+      "target": "master-lock-sheet.md",
+      "type": "GOVERNS",
+      "impact": "HIGH",
+      "breakage": "Lock sheet must match PACK-10"
+    },
+    {
+      "source": "ADR-0001-service-registry.md",
+      "target": "architecture-service-registry.md",
+      "type": "DECIDES",
+      "impact": "MEDIUM",
+      "breakage": "Service registry architecture must implement ADR-0001 decision"
+    },
+    {
+      "source": "ADR-0002-storage-owner.md",
+      "target": "architecture-storage-flow.md",
+      "type": "DECIDES",
+      "impact": "MEDIUM",
+      "breakage": "Storage flow must implement ADR-0002 decision"
+    },
+    {
+      "source": "PHASE-4.4-SAAS-AUTHORITY-FREEZE.md",
+      "target": "PHASE-4.4E-IMPLEMENTATION-SUMMARY.md",
+      "type": "SUPERSEDES",
+      "impact": "LOW",
+      "breakage": "Phase 4.4E summary is superseded"
+    },
+    {
+      "source": "MASTER_INDEX.md",
+      "target": "All documents",
+      "type": "REFERENCES",
+      "impact": "MEDIUM",
+      "breakage": "If any document path changes, MASTER_INDEX must be updated"
+    },
+    {
+      "source": "MASTER_CONTEXT.md",
+      "target": "FOUNDATION-BASELINE.md",
+      "type": "REFERENCES",
+      "impact": "MEDIUM",
+      "breakage": "Context must reflect current baseline state"
+    },
+    {
+      "source": "CURRENT_STATE.md",
+      "target": "All documents",
+      "type": "REFERENCES",
+      "impact": "LOW",
+      "breakage": "Current state must be updated when project state changes"
+    }
+  ],
+  "impactAnalysis": {
+    "highestImpactChanges": [
+      {
+        "change": "Modify FOUNDATION-BASELINE.md",
+        "impactedDocuments": 12,
+        "impactedPaths": ["PACK-00..10", "contracts/*.json", "PHASE-4.4 freeze"],
+        "riskLevel": "CRITICAL",
+        "mitigation": "Requires ADR + CEO approval + full governance review"
+      },
+      {
+        "change": "Modify PACK-02 (ownership)",
+        "impactedDocuments": 4,
+        "impactedPaths": ["architecture-service-registry.md", "architecture-file-ownership.md", "architecture-folder-map.md"],
+        "riskLevel": "HIGH",
+        "mitigation": "Requires ADR + update all referencing architecture docs"
+      },
+      {
+        "change": "Modify PACK-10 (locks)",
+        "impactedDocuments": 7,
+        "impactedPaths": ["All 05-locks/ files", "master-lock-sheet.md"],
+        "riskLevel": "CRITICAL",
+        "mitigation": "Requires ADR + CEO approval + update all lock files"
+      },
+      {
+        "change": "Add new document",
+        "impactedDocuments": 2,
+        "impactedPaths": ["MASTER_INDEX.md", "knowledge-graph.json"],
+        "riskLevel": "LOW",
+        "mitigation": "Update index and knowledge graph"
+      },
+      {
+        "change": "Archive document",
+        "impactedDocuments": 2,
+        "impactedPaths": ["MASTER_INDEX.md", "knowledge-graph.json"],
+        "riskLevel": "LOW",
+        "mitigation": "Update index and knowledge graph"
+      }
+    ]
+  }
+}

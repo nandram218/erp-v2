@@ -74,8 +74,11 @@ export const getAuthContext = () => {
 
 // ================= CLEAR AUTH CONTEXT =================
 /**
- * Clear tenant context from authentication
- * This should be called on logout
+ * @CONTRACT Tenant
+ * @LOCK PERMANENT
+ *
+ * Tenant Context Service
+ * Manages tenant context for multi-tenant isolation
  */
 export const clearAuthContext = () => {
     try {

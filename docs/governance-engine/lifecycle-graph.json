@@ -1,0 +1,222 @@
+{
+  "engine": {
+    "version": "2.0.0",
+    "lastUpdated": "2026-07-02",
+    "description": "Lifecycle state machine — every document's current, future, and historical state"
+  },
+  "states": {
+    "PERMANENT": "Cannot change — requires ADR + CEO approval",
+    "FROZEN": "Cannot change — index/lock documents",
+    "ACTIVE": "Can be updated by authorized maintainers",
+    "STABLE": "Changes require version bump + migration",
+    "ARCHIVE": "Historical — not authoritative",
+    "SUPERSEDED": "Replaced by newer document",
+    "PHASE_ARCHIVE": "Archived at end of phase",
+    "LEGACY": "Old version kept for reference"
+  },
+  "documents": [
+    {
+      "path": "docs/01-constitution/PACK-00_master-foundation.md",
+      "state": "PERMANENT",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3,
+      "supersedes": ["docs/archive/legacy/FOUNDATION-BASELINE.md", "docs/archive/rulebook/MASTER_RULEBOOK.md"]
+    },
+    {
+      "path": "docs/01-constitution/PACK-01_business-rules.md",
+      "state": "PERMANENT",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/01-constitution/PACK-02_folder-file-ownership.md",
+      "state": "PERMANENT",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/01-constitution/PACK-03_saas-multi-tenant.md",
+      "state": "PERMANENT",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/01-constitution/PACK-04_ui-ux-standards.md",
+      "state": "PERMANENT",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/01-constitution/PACK-05_backend-database.md",
+      "state": "PERMANENT",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/01-constitution/PACK-06_module-rules.md",
+      "state": "PERMANENT",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/01-constitution/PACK-07_development-workflow.md",
+      "state": "PERMANENT",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/01-constitution/PACK-08_master-roadmap.md",
+      "state": "PERMANENT",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/01-constitution/PACK-09_controlled-refactor.md",
+      "state": "PERMANENT",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/01-constitution/PACK-10_permanent-locks.md",
+      "state": "PERMANENT",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/00-index/MASTER_INDEX.md",
+      "state": "FROZEN",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/00-index/MASTER_CONTEXT.md",
+      "state": "FROZEN",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/00-index/CURRENT_STATE.md",
+      "state": "FROZEN",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/00-index/READING_ORDER.md",
+      "state": "FROZEN",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/00-index/CHANGELOG.md",
+      "state": "ACTIVE",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/00-index/KNOWLEDGE_GRAPH.md",
+      "state": "SUPERSEDED",
+      "supersededBy": "docs/governance-engine/knowledge-graph.json",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/00-index/TAG_INDEX.md",
+      "state": "SUPERSEDED",
+      "supersededBy": "docs/governance-engine/knowledge-graph.json",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3
+    },
+    {
+      "path": "docs/02-architecture/*",
+      "state": "ACTIVE",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3,
+      "note": "All 10 architecture docs are ACTIVE"
+    },
+    {
+      "path": "docs/03-audits/*",
+      "state": "ACTIVE",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3,
+      "note": "All 8 audit docs are ACTIVE"
+    },
+    {
+      "path": "docs/04-decisions/*",
+      "state": "STABLE",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3,
+      "note": "Both ADRs are STABLE"
+    },
+    {
+      "path": "docs/05-locks/*",
+      "state": "FROZEN",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3,
+      "note": "All 6 lock sheets are FROZEN"
+    },
+    {
+      "path": "docs/06-modules/*",
+      "state": "ACTIVE",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3,
+      "note": "All 5 module docs are ACTIVE"
+    },
+    {
+      "path": "docs/archive/rulebook/*",
+      "state": "ARCHIVE",
+      "phaseOrigin": "Pre-Phase 4",
+      "governanceGeneration": 1,
+      "note": "Entire rulebook converted to historical knowledge"
+    },
+    {
+      "path": "docs/archive/legacy/*",
+      "state": "LEGACY",
+      "phaseOrigin": "Pre-Phase 4",
+      "governanceGeneration": 1,
+      "note": "Legacy documents kept for reference"
+    },
+    {
+      "path": "docs/archive/audit-history/*",
+      "state": "ARCHIVE",
+      "phaseOrigin": "Pre-Phase 4",
+      "governanceGeneration": 1
+    },
+    {
+      "path": "docs/archive/implementation-history/*",
+      "state": "ARCHIVE",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 2
+    },
+    {
+      "path": "docs/archive/phase-4.4/*",
+      "state": "PHASE_ARCHIVE",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 2
+    },
+    {
+      "path": "docs/archive/phase-4.5/*",
+      "state": "PHASE_ARCHIVE",
+      "phaseOrigin": "Phase 4.5",
+      "governanceGeneration": 2
+    },
+    {
+      "path": "docs/archive/checklists/*",
+      "state": "ARCHIVE",
+      "phaseOrigin": "Pre-Phase 4",
+      "governanceGeneration": 1
+    },
+    {
+      "path": "docs/archive/historical/*",
+      "state": "ARCHIVE",
+      "phaseOrigin": "Various",
+      "governanceGeneration": 1
+    },
+    {
+      "path": "docs/governance-engine/*",
+      "state": "ACTIVE",
+      "phaseOrigin": "Phase 4.4",
+      "governanceGeneration": 3,
+      "note": "Governance engine is the live system"
+    }
+  ]
+}

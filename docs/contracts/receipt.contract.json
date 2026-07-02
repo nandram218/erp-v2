@@ -1,0 +1,108 @@
+{
+  "id": "receipt-contract-v1",
+  "version": "1.0.0",
+  "owner": "receiptService",
+  "classification": "FINANCIAL",
+  "status": "FROZEN",
+  "allowedChanges": ["ADD_NEW_FIELD", "ADD_NEW_STATUS_REASON"],
+  "breakingChanges": ["RENAME_RECEIPT_NUMBER", "REMOVE_FIELD", "CHANGE_AMOUNT_TYPE"],
+  "migrationRequired": true,
+  "relatedFiles": [
+    "src/modules/fees/receiptService.js",
+    "src/modules/fees/receiptAuditService.js",
+    "src/modules/fees/receiptSearchService.js"
+  ],
+  "validationRules": {
+    "receiptNumberFormat": "ERP-R-{YEAR}-{SEQUENCE}",
+    "receiptNumberUnique": true,
+    "amountPositive": true,
+    "immutableAfterCreation": true,
+    "cancellationRequiresAudit": true
+  },
+  "dependencies": [
+    "student.contract.json",
+    "fee.contract.json",
+    "tenant.contract.json"
+  ],
+  "futureExtensionPolicy": "Additive only. New receipt fields must be optional. Receipt number format is immutable. Cancellation trail is mandatory.",
+  "contract": {
+    "entityName": "receipt",
+    "identifier": "receiptNumber",
+    "identifierGeneratedBy": "identifier.contract.json",
+    "fields": {
+      "receiptNumber": {
+        "type": "string",
+        "required": true,
+        "unique": true,
+        "description": "ERP-R-{YEAR}-{SEQUENCE}"
+      },
+      "studentId": {
+        "type": "string",
+        "required": true,
+        "description": "Student identifier"
+      },
+      "studentName": {
+        "type": "string",
+        "required": true
+      },
+      "classId": {
+        "type": "string",
+        "required": true
+      },
+      "feeType": {
+        "type": "string",
+        "required": true
+      },
+      "amount": {
+        "type": "number",
+        "required": true,
+        "min": 0
+      },
+      "paymentMode": {
+        "type": "string",
+        "required": true,
+        "enum": ["Cash", "Bank Transfer", "Cheque", "UPI", "Card"],
+        "description": "Valid payment modes only"
+      },
+      "paymentReference": {
+        "type": "string",
+        "required": false,
+        "description": "Reference number for non-cash payments"
+      },
+      "paymentDate": {
+        "type": "string",
+        "required": true,
+        "format": "date"
+      },
+      "collectedBy": {
+        "type": "string",
+        "required": true
+      },
+      "remarks": {
+        "type": "string",
+        "required": false,
+        "maxLength": 500
+      },
+      "status": {
+        "type": "string",
+        "required": true,
+        "enum": ["Issued", "Cancelled", "Void"],
+        "default": "Issued"
+      },
+      "cancelledBy": {
+        "type": "string",
+        "required": false
+      },
+      "cancelledAt": {
+        "type": "string",
+        "required": false,
+        "format": "datetime"
+      },
+      "voidReason": {
+        "type": "string",
+        "required": false,
+        "maxLength": 500
+      }
+    }
+  }
+}

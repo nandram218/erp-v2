@@ -480,8 +480,11 @@ export const studentExists = (
 ========================================================= */
 
 /**
- * Normalize student schema to handle field name variations
- * Phase 4.2.1: Schema drift handling - PURE FUNCTION
+ * @CONTRACT Student
+ * @LOCK STABLE
+ *
+ * Student Service
+ * Handles all student-related operations
  */
 export const normalizeStudentSchema = (student = {}) => {
     return {

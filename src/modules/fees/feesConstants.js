@@ -1,4 +1,9 @@
-// src/modules/fees/feesConstants.js
+/**
+ * @CONTRACT Financial
+ * @LOCK STABLE
+ *
+ * src/modules/fees/feesConstants.js
+ */
 
 /* =========================
    CENTRAL STORAGE KEYS

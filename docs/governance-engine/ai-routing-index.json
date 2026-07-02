@@ -1,0 +1,284 @@
+{
+  "engine": {
+    "version": "2.0.0",
+    "lastUpdated": "2026-07-02",
+    "description": "AI reading priorities — every document classified for machine routing"
+  },
+  "routing": [
+    {
+      "path": "docs/governance-engine/README.md",
+      "priority": "MUST_READ",
+      "reason": "Entry point — explains how to use the governance engine"
+    },
+    {
+      "path": "docs/governance-engine/authority-graph.json",
+      "priority": "MUST_READ",
+      "reason": "Governance hierarchy — which documents govern which"
+    },
+    {
+      "path": "docs/governance-engine/conflict-graph.json",
+      "priority": "MUST_READ",
+      "reason": "Known contradictions between documents"
+    },
+    {
+      "path": "docs/governance-engine/future-upgrade-queue.json",
+      "priority": "MUST_READ",
+      "reason": "Pending upgrades that may affect current work"
+    },
+    {
+      "path": "docs/governance-engine/knowledge-graph.json",
+      "priority": "MUST_READ",
+      "reason": "Master document registry with full metadata"
+    },
+    {
+      "path": "docs/00-index/MASTER_INDEX.md",
+      "priority": "MUST_READ",
+      "reason": "Navigation hub — every document categorized"
+    },
+    {
+      "path": "docs/00-index/MASTER_CONTEXT.md",
+      "priority": "MUST_READ",
+      "reason": "Project overview, current phase, architecture version"
+    },
+    {
+      "path": "docs/00-index/CURRENT_STATE.md",
+      "priority": "MUST_READ",
+      "reason": "Current state of the codebase"
+    },
+    {
+      "path": "docs/00-index/READING_ORDER.md",
+      "priority": "MUST_READ",
+      "reason": "Recommended reading order for new AI/devs"
+    },
+    {
+      "path": "docs/01-constitution/PACK-00_master-foundation.md",
+      "priority": "MUST_READ",
+      "reason": "Core principles, purpose, glossary — foundation of all authority"
+    },
+    {
+      "path": "docs/01-constitution/PACK-10_permanent-locks.md",
+      "priority": "MUST_READ",
+      "reason": "Lock protocol — what cannot change"
+    },
+    {
+      "path": "docs/01-constitution/PACK-02_folder-file-ownership.md",
+      "priority": "MUST_READ",
+      "reason": "File placement rules — where code belongs"
+    },
+    {
+      "path": "docs/01-constitution/PACK-06_module-rules.md",
+      "priority": "MUST_READ",
+      "reason": "Module boundaries — cross-module rules"
+    },
+    {
+      "path": "docs/01-constitution/PACK-03_saas-multi-tenant.md",
+      "priority": "MUST_READ",
+      "reason": "SaaS multi-tenant architecture rules"
+    },
+    {
+      "path": "docs/01-constitution/PACK-05_backend-database.md",
+      "priority": "MUST_READ",
+      "reason": "Backend and database contracts"
+    },
+    {
+      "path": "docs/01-constitution/PACK-01_business-rules.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Business rules — read when working on business logic"
+    },
+    {
+      "path": "docs/01-constitution/PACK-04_ui-ux-standards.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "UI/UX standards — read when working on frontend"
+    },
+    {
+      "path": "docs/01-constitution/PACK-07_development-workflow.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Development workflow — read when contributing code"
+    },
+    {
+      "path": "docs/01-constitution/PACK-08_master-roadmap.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Roadmap — read for planning context"
+    },
+    {
+      "path": "docs/01-constitution/PACK-09_controlled-refactor.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Refactor rules — read before refactoring"
+    },
+    {
+      "path": "docs/02-architecture/architecture-service-registry.md",
+      "priority": "MUST_READ",
+      "reason": "Service ownership and registration"
+    },
+    {
+      "path": "docs/02-architecture/architecture-tenant-isolation.md",
+      "priority": "MUST_READ",
+      "reason": "Multi-tenant isolation architecture"
+    },
+    {
+      "path": "docs/02-architecture/architecture-storage-flow.md",
+      "priority": "MUST_READ",
+      "reason": "Storage data flow patterns"
+    },
+    {
+      "path": "docs/02-architecture/architecture-current-reality.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Current architecture reality — read for context"
+    },
+    {
+      "path": "docs/02-architecture/architecture-dependency-graph.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Dependency graph — read before refactoring"
+    },
+    {
+      "path": "docs/02-architecture/architecture-authority-matrix.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Authority matrix — read for ownership questions"
+    },
+    {
+      "path": "docs/02-architecture/architecture-data-flow.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Data flow — read for debugging"
+    },
+    {
+      "path": "docs/02-architecture/architecture-file-ownership.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "File ownership — read for file placement"
+    },
+    {
+      "path": "docs/02-architecture/architecture-folder-map.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Folder map — read for navigation"
+    },
+    {
+      "path": "docs/02-architecture/architecture-store-runtime.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Store runtime — read for state debugging"
+    },
+    {
+      "path": "docs/05-locks/master-lock-sheet.md",
+      "priority": "MUST_READ",
+      "reason": "Complete lock inventory"
+    },
+    {
+      "path": "docs/05-locks/architecture-locks.md",
+      "priority": "MUST_READ",
+      "reason": "Architecture locks"
+    },
+    {
+      "path": "docs/05-locks/authority-locks.md",
+      "priority": "MUST_READ",
+      "reason": "Authority locks"
+    },
+    {
+      "path": "docs/05-locks/folder-locks.md",
+      "priority": "MUST_READ",
+      "reason": "Folder ownership locks"
+    },
+    {
+      "path": "docs/05-locks/naming-locks.md",
+      "priority": "MUST_READ",
+      "reason": "Naming convention locks"
+    },
+    {
+      "path": "docs/05-locks/storage-locks.md",
+      "priority": "MUST_READ",
+      "reason": "Storage locks"
+    },
+    {
+      "path": "docs/03-audits/audit-saas-isolation.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "SaaS isolation audit — read for multi-tenancy work"
+    },
+    {
+      "path": "docs/03-audits/audit-module-boundaries.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Module boundaries audit — read for module work"
+    },
+    {
+      "path": "docs/03-audits/audit-fee-engine.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Fee engine audit — read for fees work"
+    },
+    {
+      "path": "docs/03-audits/audit-runtime-lifecycle.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Runtime lifecycle audit — read for lifecycle work"
+    },
+    {
+      "path": "docs/03-audits/audit-service-registry.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Service registry audit — read for service work"
+    },
+    {
+      "path": "docs/03-audits/audit-storage-authority.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Storage authority audit — read for storage work"
+    },
+    {
+      "path": "docs/03-audits/audit-student-module.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Student module audit — read for student work"
+    },
+    {
+      "path": "docs/04-decisions/ADR-0001-service-registry.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Service registry ADR — read for service decisions"
+    },
+    {
+      "path": "docs/04-decisions/ADR-0002-storage-owner.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Storage owner ADR — read for storage decisions"
+    },
+    {
+      "path": "docs/06-modules/module-fees.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Fees module — read for fees work"
+    },
+    {
+      "path": "docs/06-modules/module-students.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Students module — read for student work"
+    },
+    {
+      "path": "docs/06-modules/module-transport.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Transport module — read for transport work"
+    },
+    {
+      "path": "docs/06-modules/module-hostel.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Hostel module — read for hostel work"
+    },
+    {
+      "path": "docs/06-modules/module-attendance.md",
+      "priority": "READ_IF_RELEVANT",
+      "reason": "Attendance module — read for attendance work"
+    },
+    {
+      "path": "docs/00-index/CHANGELOG.md",
+      "priority": "IGNORE",
+      "reason": "Changelog — only read for historical context"
+    },
+    {
+      "path": "docs/00-index/KNOWLEDGE_GRAPH.md",
+      "priority": "IGNORE",
+      "reason": "Superseded by governance-engine/knowledge-graph.json"
+    },
+    {
+      "path": "docs/00-index/TAG_INDEX.md",
+      "priority": "IGNORE",
+      "reason": "Superseded by governance-engine/knowledge-graph.json tag indexing"
+    },
+    {
+      "path": "docs/archive/**",
+      "priority": "IGNORE",
+      "reason": "Archive — historical documents, not authoritative"
+    },
+    {
+      "path": "docs/redirects/**",
+      "priority": "IGNORE",
+      "reason": "Redirect files — not content"
+    }
+  ]
+}

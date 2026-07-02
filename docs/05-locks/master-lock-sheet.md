@@ -2,6 +2,23 @@
 > **ERP-v2 Knowledge Base v1.0 (Permanent)**
 > Complete inventory of locked items
 
+**PRIMARY SOURCE:** [FOUNDATION-BASELINE.md](../FOUNDATION-BASELINE.md)
+**Status:** Redirected to baseline
+
+This document is now a summary index. All locked items are classified and documented in FOUNDATION-BASELINE.md.
+
+---
+
+## Quick Reference
+
+| Category | Count | Details |
+|----------|-------|---------|
+| PERMANENT | 10 | Storage keys, tenant context, identifiers |
+| STABLE | 7 | Entity schemas, service APIs |
+| EXTENDABLE | 5 | Dashboard data, constants |
+| INTERNAL | 4 | Master-setting services |
+| EXPERIMENTAL | 0 | None currently |
+
 ---
 
 ## Permanent Locks

@@ -1,0 +1,45 @@
+{
+  "engine": {
+    "version": "2.0.0",
+    "lastUpdated": "2026-07-02",
+    "description": "Pending upgrades that should be surfaced before active docs"
+  },
+  "upgrades": [
+    {
+      "id": "UPGRADE-001",
+      "title": "Replace architecture-dependency-graph.md with governance-engine/dependency-graph.json",
+      "source": "docs/02-architecture/architecture-dependency-graph.md",
+      "target": "docs/governance-engine/dependency-graph.json",
+      "status": "QUEUED",
+      "priority": "LOW",
+      "impact": "Machine-readable dependency graph replaces markdown version"
+    },
+    {
+      "id": "UPGRADE-002",
+      "title": "Replace architecture-authority-matrix.md with governance-engine/authority-graph.json",
+      "source": "docs/02-architecture/architecture-authority-matrix.md",
+      "target": "docs/governance-engine/authority-graph.json",
+      "status": "IN_PROGRESS",
+      "priority": "MEDIUM",
+      "impact": "Machine-readable authority graph replaces markdown version"
+    },
+    {
+      "id": "UPGRADE-003",
+      "title": "Consolidate 99-archive/README.md into MASTER_INDEX.md archive registry",
+      "source": "docs/99-archive/README.md",
+      "target": "docs/00-index/MASTER_INDEX.md",
+      "status": "QUEUED",
+      "priority": "LOW",
+      "impact": "Reduce duplicate index documentation"
+    },
+    {
+      "id": "UPGRADE-004",
+      "title": "Create governance-engine/dependency-graph.json from architecture-dependency-graph.md",
+      "source": "docs/02-architecture/architecture-dependency-graph.md",
+      "target": "docs/governance-engine/dependency-graph.json",
+      "status": "QUEUED",
+      "priority": "LOW",
+      "note": "Extract dependency data from markdown into structured JSON"
+    }
+  ]
+}

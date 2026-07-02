@@ -1,0 +1,65 @@
+{
+  "id": "tenant-contract-v1",
+  "version": "1.0.0",
+  "owner": "tenantContextService",
+  "classification": "CORE",
+  "status": "FROZEN",
+  "allowedChanges": ["ADD_NEW_FIELD", "ADD_NEW_VALIDATION"],
+  "breakingChanges": ["RENAME_FIELD", "REMOVE_FIELD", "CHANGE_FIELD_TYPE"],
+  "migrationRequired": true,
+  "relatedFiles": [
+    "src/services/tenantContextService.js",
+    "src/store/schoolStore.js",
+    "src/services/runtimeValidationService.js"
+  ],
+  "validationRules": {
+    "tenantIdFormat": "STRING",
+    "tenantIdRequired": true,
+    "tenantIsolationRequired": true,
+    "contextValidationOnEveryAccess": true
+  },
+  "dependencies": [
+    "storage.contract.json",
+    "service.contract.json"
+  ],
+  "futureExtensionPolicy": "Additive only. New tenant properties must be validated. Tenant isolation must never be compromised.",
+  "contract": {
+    "fields": {
+      "tenantId": {
+        "type": "string",
+        "required": true,
+        "description": "Unique tenant identifier"
+      },
+      "dbName": {
+        "type": "string",
+        "required": true,
+        "description": "Tenant database name"
+      },
+      "schoolName": {
+        "type": "string",
+        "required": false,
+        "description": "School display name"
+      },
+      "academicYear": {
+        "type": "string",
+        "required": false,
+        "description": "Current academic year"
+      },
+      "subscription": {
+        "type": "object",
+        "required": false,
+        "description": "Subscription details"
+      },
+      "features": {
+        "type": "array",
+        "required": false,
+        "description": "Enabled features for tenant"
+      }
+    },
+    "isolation": {
+      "storagePrefix": true,
+      "serviceProxy": true,
+      "dataIsolation": "MANDATORY"
+    }
+  }
+}

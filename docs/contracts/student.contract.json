@@ -1,0 +1,75 @@
+{
+  "id": "student-contract-v1",
+  "version": "1.0.0",
+  "owner": "studentService",
+  "classification": "BUSINESS",
+  "status": "FROZEN",
+  "allowedChanges": ["ADD_NEW_FIELD", "ADD_NEW_METHOD"],
+  "breakingChanges": ["RENAME_ID", "REMOVE_FIELD", "CHANGE_ID_GENERATION"],
+  "migrationRequired": true,
+  "relatedFiles": [
+    "src/services/studentService.js",
+    "src/modules/students/StudentForm.jsx",
+    "src/modules/students/components/StudentTable.jsx"
+  ],
+  "validationRules": {
+    "studentIdFormat": "STRING",
+    "studentIdUnique": true,
+    "tenantScoped": true,
+    "requiredFields": ["studentId", "firstName", "lastName"]
+  },
+  "dependencies": [
+    "tenant.contract.json",
+    "identifier.contract.json",
+    "storage.contract.json"
+  ],
+  "futureExtensionPolicy": "Additive only. New student fields must be optional. Student ID generation follows identifier.contract.json.",
+  "contract": {
+    "entityName": "student",
+    "identifier": "studentId",
+    "fields": {
+      "studentId": {
+        "type": "string",
+        "required": true,
+        "description": "Unique student identifier per tenant",
+        "generatedBy": "identifier.contract.json"
+      },
+      "firstName": {
+        "type": "string",
+        "required": true,
+        "maxLength": 100
+      },
+      "lastName": {
+        "type": "string",
+        "required": true,
+        "maxLength": 100
+      },
+      "dateOfBirth": {
+        "type": "string",
+        "required": false,
+        "format": "date"
+      },
+      "gender": {
+        "type": "string",
+        "required": false,
+        "enum": ["Male", "Female", "Other"]
+      },
+      "classId": {
+        "type": "string",
+        "required": true,
+        "description": "Current class assignment"
+      },
+      "admissionDate": {
+        "type": "string",
+        "required": true,
+        "format": "date"
+      },
+      "status": {
+        "type": "string",
+        "required": true,
+        "enum": ["Active", "Inactive", "Graduated", "Transferred"],
+        "default": "Active"
+      }
+    }
+  }
+}

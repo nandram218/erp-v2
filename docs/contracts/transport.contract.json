@@ -1,0 +1,74 @@
+{
+  "id": "transport-contract-v1",
+  "version": "1.0.0",
+  "owner": "transportService",
+  "classification": "BUSINESS",
+  "status": "FROZEN",
+  "allowedChanges": ["ADD_NEW_ROUTE", "ADD_NEW_STOP", "ADD_NEW_VEHICLE"],
+  "breakingChanges": ["RENAME_ROUTE_ID", "REMOVE_ROUTE", "CHANGE_ROUTE_ASSIGNMENT"],
+  "migrationRequired": true,
+  "relatedFiles": [
+    "src/master-setting/transport/transportService.js",
+    "src/modules/transport/services/transportService.js",
+    "src/master-setting/transport/TransportRoutes.jsx"
+  ],
+  "validationRules": {
+    "routeIdRequired": true,
+    "vehicleNumberUnique": true,
+    "stopOrderRequired": true,
+    "capacityPositive": true
+  },
+  "dependencies": [
+    "tenant.contract.json",
+    "student.contract.json",
+    "storage.contract.json"
+  ],
+  "futureExtensionPolicy": "Additive only. New routes, stops, and vehicles can be added. Route assignments are immutable once active.",
+  "contract": {
+    "entityName": "transport",
+    "identifier": "routeId",
+    "fields": {
+      "route": {
+        "type": "object",
+        "required": true,
+        "properties": {
+          "routeId": {"type": "string", "required": true},
+          "routeName": {"type": "string", "required": true},
+          "vehicleNumber": {"type": "string", "required": true, "unique": true},
+          "driverName": {"type": "string", "required": false},
+          "driverContact": {"type": "string", "required": false},
+          "capacity": {"type": "number", "required": true, "min": 1},
+          "isActive": {"type": "boolean", "required": true, "default": true}
+        }
+      },
+      "stops": {
+        "type": "array",
+        "required": true,
+        "items": {
+          "type": "object",
+          "properties": {
+            "stopId": {"type": "string", "required": true},
+            "stopName": {"type": "string", "required": true},
+            "order": {"type": "number", "required": true},
+            "latitude": {"type": "number", "required": false},
+            "longitude": {"type": "number", "required": false},
+            "arrivalTime": {"type": "string", "required": false, "format": "time"}
+          }
+        }
+      },
+      "studentAssignments": {
+        "type": "array",
+        "required": false,
+        "items": {
+          "type": "object",
+          "properties": {
+            "studentId": {"type": "string", "required": true},
+            "routeId": {"type": "string", "required": true},
+            "stopId": {"type": "string", "required": true},
+            "pickupTime": {"type": "string", "required": false, "format": "time"}
+          }
+        }
+      }
+    }
+  }
+}

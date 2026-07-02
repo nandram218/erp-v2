@@ -1,0 +1,36 @@
+{
+  "engine": {
+    "version": "2.0.0",
+    "lastUpdated": "2026-07-02",
+    "description": "Governance hierarchy — which documents govern which"
+  },
+  "authorityEdges": [
+    {"source": "PACK-00 (Foundation)", "target": "PACK-01..10", "type": "GOVERNS", "strength": "DIRECT"},
+    {"source": "PACK-10 (Permanent Locks)", "target": "05-locks/*", "type": "GOVERNS", "strength": "DIRECT"},
+    {"source": "PACK-02 (Folder Ownership)", "target": "02-architecture/architecture-folder-map.md", "type": "GOVERNS", "strength": "DIRECT"},
+    {"source": "PACK-02 (Folder Ownership)", "target": "02-architecture/architecture-file-ownership.md", "type": "GOVERNS", "strength": "DIRECT"},
+    {"source": "PACK-03 (SaaS Multi-Tenant)", "target": "02-architecture/architecture-tenant-isolation.md", "type": "GOVERNS", "strength": "DIRECT"},
+    {"source": "PACK-03 (SaaS Multi-Tenant)", "target": "02-architecture/architecture-storage-flow.md", "type": "GOVERNS", "strength": "DIRECT"},
+    {"source": "PACK-05 (Backend/Database)", "target": "02-architecture/architecture-service-registry.md", "type": "GOVERNS", "strength": "DIRECT"},
+    {"source": "PACK-06 (Module Rules)", "target": "02-architecture/architecture-dependency-graph.md", "type": "GOVERNS", "strength": "DIRECT"},
+    {"source": "PACK-06 (Module Rules)", "target": "02-architecture/architecture-authority-matrix.md", "type": "GOVERNS", "strength": "DIRECT"},
+    {"source": "PACK-06 (Module Rules)", "target": "06-modules/*", "type": "GOVERNS", "strength": "DIRECT"},
+    {"source": "PACK-07 (Dev Workflow)", "target": "docs/archive/rulebook/*", "type": "SUPERSEDES", "strength": "DIRECT"},
+    {"source": "PACK-00..10 (Constitution)", "target": "docs/archive/rulebook/MASTER_RULEBOOK.md", "type": "SUPERSEDES", "strength": "DIRECT"},
+    {"source": "PACK-00 (Foundation)", "target": "docs/archive/legacy/FOUNDATION-BASELINE.md", "type": "SUPERSEDES", "strength": "DIRECT"},
+    {"source": "PACK-10 (Permanent Locks)", "target": "docs/archive/legacy/CONSTITUTION_LOCK_v1.0.md", "type": "SUPERSEDES", "strength": "DIRECT"},
+    {"source": "00-index/MASTER_INDEX.md", "target": "docs/archive/rulebook/RULE_INDEX.md", "type": "SUPERSEDES", "strength": "DIRECT"},
+    {"source": "governance-engine/knowledge-graph.json", "target": "00-index/KNOWLEDGE_GRAPH.md", "type": "SUPERSEDES", "strength": "DIRECT"},
+    {"source": "governance-engine/knowledge-graph.json", "target": "00-index/TAG_INDEX.md", "type": "SUPERSEDES", "strength": "DIRECT"},
+    {"source": "governance-engine/dependency-graph.json", "target": "02-architecture/architecture-dependency-graph.md", "type": "FUTURE_UPGRADE", "strength": "PLANNED"},
+    {"source": "governance-engine/authority-graph.json", "target": "02-architecture/architecture-authority-matrix.md", "type": "FUTURE_UPGRADE", "strength": "PLANNED"},
+    {"source": "00-index/MASTER_INDEX.md", "target": "ALL docs", "type": "NAVIGATES", "strength": "INDEX"}
+  ],
+  "hierarchy": {
+    "tier1_permanent": ["PACK-00", "PACK-01", "PACK-02", "PACK-03", "PACK-05", "PACK-06", "PACK-10"],
+    "tier2_stable": ["PACK-04", "PACK-07", "PACK-08", "PACK-09", "02-architecture/*", "03-audits/*", "04-decisions/*", "06-modules/*"],
+    "tier3_frozen": ["00-index/MASTER_INDEX.md", "00-index/MASTER_CONTEXT.md", "00-index/CURRENT_STATE.md", "00-index/READING_ORDER.md", "05-locks/*"],
+    "tier4_reference": ["00-index/CHANGELOG.md", "00-index/KNOWLEDGE_GRAPH.md", "00-index/TAG_INDEX.md"],
+    "tier5_archive": ["docs/archive/**", "docs/redirects/**"]
+  }
+}

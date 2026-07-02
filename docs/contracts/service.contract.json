@@ -1,0 +1,66 @@
+{
+  "id": "service-contract-v1",
+  "version": "1.0.0",
+  "owner": "serviceRegistry",
+  "classification": "CORE",
+  "status": "FROZEN",
+  "allowedChanges": ["ADD_NEW_SERVICE", "ADD_NEW_METHOD"],
+  "breakingChanges": ["RENAME_SERVICE", "REMOVE_SERVICE", "CHANGE_SERVICE_API"],
+  "migrationRequired": true,
+  "relatedFiles": [
+    "src/core/serviceRegistry.js",
+    "src/services/*"
+  ],
+  "validationRules": {
+    "serviceNameRequired": true,
+    "serviceNameUnique": true,
+    "registrationRequired": true,
+    "tenantAwareRequired": true,
+    "cannotAccessServicesDirectly": true
+  },
+  "dependencies": [
+    "tenant.contract.json",
+    "storage.contract.json"
+  ],
+  "futureExtensionPolicy": "Additive only. New services must be registered. All services must be tenant-aware. Direct service access is forbidden in production.",
+  "contract": {
+    "entityName": "service",
+    "identifier": "serviceName",
+    "registration": {
+      "required": true,
+      "method": "registerService()",
+      "authority": "serviceRegistry"
+    },
+    "access": {
+      "method": "getService()",
+      "authority": "serviceRegistry",
+      "tenantValidation": true,
+      "proxyWrapper": true
+    },
+    "fields": {
+      "serviceName": {
+        "type": "string",
+        "required": true,
+        "unique": true
+      },
+      "description": {
+        "type": "string",
+        "required": true
+      },
+      "tenantAware": {
+        "type": "boolean",
+        "required": true,
+        "default": true
+      },
+      "deprecated": {
+        "type": "boolean",
+        "required": true,
+        "default": false
+      },
+      "replacement": {
+        "type": "string",
+        "required": false
+      }
+    }
+  }
+}

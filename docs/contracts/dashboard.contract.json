@@ -1,0 +1,82 @@
+{
+  "id": "dashboard-contract-v1",
+  "version": "1.0.0",
+  "owner": "dashboardModule",
+  "classification": "PRESENTATION",
+  "status": "FROZEN",
+  "allowedChanges": ["ADD_NEW_WIDGET", "ADD_NEW_LAYOUT"],
+  "breakingChanges": ["RENAME_WIDGET_ID", "REMOVE_WIDGET", "CHANGE_WIDGET_API"],
+  "migrationRequired": false,
+  "relatedFiles": [
+    "src/layouts/DashboardLayout.jsx",
+    "src/modules/dashboard/*"
+  ],
+  "validationRules": {
+    "widgetIdUnique": true,
+    "widgetTypeRequired": true,
+    "tenantScoped": true
+  },
+  "dependencies": [
+    "tenant.contract.json",
+    "service.contract.json"
+  ],
+  "futureExtensionPolicy": "Additive only. New widgets can be added without modifying existing ones. Widget configuration is tenant-specific.",
+  "contract": {
+    "entityName": "dashboardWidget",
+    "identifier": "widgetId",
+    "fields": {
+      "widgetId": {
+        "type": "string",
+        "required": true,
+        "unique": true
+      },
+      "widgetType": {
+        "type": "string",
+        "required": true,
+        "enum": ["STATS_CARD", "CHART", "TABLE", "CALENDAR", "CUSTOM"],
+        "description": "Widget type classification"
+      },
+      "title": {
+        "type": "string",
+        "required": true,
+        "maxLength": 100
+      },
+      "module": {
+        "type": "string",
+        "required": true,
+        "description": "Module this widget belongs to",
+        "enum": ["students", "fees", "transport", "hostel", "attendance", "exams", "library"]
+      },
+      "position": {
+        "type": "object",
+        "required": true,
+        "properties": {
+          "row": {"type": "number"},
+          "column": {"type": "number"},
+          "size": {"type": "string", "enum": ["SMALL", "MEDIUM", "LARGE", "FULL"]}
+        }
+      },
+      "dataSource": {
+        "type": "object",
+        "required": true,
+        "description": "Data source configuration",
+        "properties": {
+          "service": {"type": "string", "required": true},
+          "method": {"type": "string", "required": true},
+          "refreshInterval": {"type": "number", "required": false}
+        }
+      },
+      "permissions": {
+        "type": "array",
+        "required": false,
+        "description": "RBAC permissions required to view widget",
+        "items": {"type": "string"}
+      },
+      "isActive": {
+        "type": "boolean",
+        "required": true,
+        "default": true
+      }
+    }
+  }
+}

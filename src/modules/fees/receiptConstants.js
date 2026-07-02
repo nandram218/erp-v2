@@ -1,4 +1,7 @@
 /**
+ * @CONTRACT Financial
+ * @LOCK STABLE
+ *
  * Receipt Constants - Phase-3D Receipt Authority Layer
  * 
  * Central registry of receipt-related constants.

@@ -1,4 +1,7 @@
 /**
+ * @CONTRACT Storage
+ * @LOCK PERMANENT
+ *
  * Central registry of legacy localStorage keys.
  * Use these constants with storageService (getStorageCompat / setStorageCompat).
  * Do not hardcode key strings in modules.
