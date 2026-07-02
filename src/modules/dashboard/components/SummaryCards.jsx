@@ -1,11 +1,30 @@
-import React from "react";
+import { useSchoolStore } from "../../../store/schoolStore";
+import { getService } from "../../../core/serviceRegistry";
 
 const SummaryCards = () => {
+    const students = useSchoolStore((state) => state.students);
+
+    const studentService = getService("student");
+    const receiptService = getService("receipt");
+    const feesService = getService("fees");
+
+    if (!studentService || !receiptService || !feesService) {
+        return null;
+    }
+
+    const totalStudents = students.length;
+    const receipts = receiptService.getAllReceipts();
+    const feesCollected = receipts.reduce((sum, r) => sum + (r.finalAmount || 0), 0);
+    const pendingFees = feesService.getTotalDue();
+
+    const formatCurrency = (value) => {
+        return `₹${value.toLocaleString("en-IN")}`;
+    };
+
     const data = [
-        { title: "Total Students", value: 3 },
-        { title: "Present Today", value: 2 },
-        { title: "Fees Collected", value: "₹7000" },
-        { title: "Pending Fees", value: "₹3000" },
+        { title: "Total Students", value: totalStudents },
+        { title: "Fees Collected", value: formatCurrency(feesCollected) },
+        { title: "Pending Fees", value: formatCurrency(pendingFees) },
     ];
 
     return (
@@ -24,10 +43,8 @@ const SummaryCards = () => {
                             index === 0
                                 ? "linear-gradient(135deg, #667eea, #764ba2)"
                                 : index === 1
-                                    ? "linear-gradient(135deg, #43cea2, #185a9d)"
-                                    : index === 2
-                                        ? "linear-gradient(135deg, #f7971e, #ffd200)"
-                                        : "linear-gradient(135deg, #ff512f, #dd2476)",
+                                    ? "linear-gradient(135deg, #f7971e, #ffd200)"
+                                    : "linear-gradient(135deg, #ff512f, #dd2476)",
                         color: "#fff",
                         padding: "20px",
                         borderRadius: "15px",

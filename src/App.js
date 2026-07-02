@@ -11,14 +11,8 @@ export default function App() {
 
     useEffect(() => {
         // Phase 3.1 D Safe Mode: Register default services on app initialization
+        // Note: masterDataService.refreshAll() is called inside registerDefaultServices()
         registerDefaultServices();
-
-        // Initialize master data service (repository + cache)
-        try {
-            masterDataService.refreshAll();
-        } catch (error) {
-            console.error("[App] Master data initialization error:", error);
-        }
 
         if (!hydrated) {
             loadAll();

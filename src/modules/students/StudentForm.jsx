@@ -14,6 +14,7 @@ import { getHostelFee } from "../../master-setting/hostel/hostelService";
 const studentService = getService("student");
 const feesService = getService("fees");
 const feeSettingsService = getService("feeSettings");
+const classSubjectService = getService("classSubject");
 
 
 const StudentForm = () => {
@@ -97,22 +98,15 @@ const StudentForm = () => {
     };
 
     const [form, setForm] = useState(initialState);
+    const [saving, setSaving] = useState(false);
 
     /* ================= DATA ================= */
-const classes =
-                        getStorageCompat(STORAGE_KEYS.ERP_CLASSES, []);
+    // Use canonical classSubjectService (ERP_CLASSES) instead of schoolStore (ERP_DB)
+    const classes = classSubjectService.getClasses() || [];
     // Read fee data from feeSettingsService (single source of truth)
     const feeData = feeSettingsService.getFeeSettings();
     // Read transport routes from transport service (single source of truth)
     const transportRoutes = getTransportRoutes();
-    // Get unique sections for the selected class from master settings
-    const selectedClassObj = classes.find(c => c.className + (c.stream ? " (" + c.stream + ")" : "") === form.class);
-    const availableSections = selectedClassObj && selectedClassObj.section
-        ? [...new Set(classes.filter(c => c.className + (c.stream ? " (" + c.stream + ")" : "") === form.class).map(c => c.section).filter(Boolean))]
-        : [];
-    const displaySections = availableSections.length > 0
-        ? availableSections.filter(s => s !== "")
-        : [];
 
     const bloodGroups = ["A+", "B+", "O+", "AB+", "A-", "B-", "O-", "AB-"];
     const categories = ["GEN", "OBC", "SC", "ST"];
@@ -209,6 +203,7 @@ const classes =
 
         else {
 
+            // Phase 4.5B: Draft uses shared storage (temporary UI state, not business data)
             const draft =
                 getStorageCompat(STORAGE_KEYS.DRAFT_STUDENT, null);
 
@@ -411,26 +406,71 @@ const classes =
         });
     };
 
-    const handleSave = () => {
-
-        const finalData = {
-            ...form,
-            mobile: form.mobile || form.fatherMobile
-        };
-
-        if (id || form.id) {
-            studentService.updateStudent(
-                form.studentId || form.id || id,
-                finalData
-            );
-        } else {
-            studentService.addStudent({
-                ...finalData,
-                id: Date.now()
-            });
+    const handleSave = async () => {
+        // SECTION C: Save Guard - Prevent multiple saves
+        if (saving) {
+            return;
         }
 
-        alert("Saved");
+        // SECTION D: Edit Guard - Detect no changes
+        if (id || form.id) {
+            const existingStudent = studentService.getStudentById(form.studentId || form.id || id);
+            if (existingStudent) {
+                // Compare critical fields (excluding timestamps and system fields)
+                const fieldsToCompare = [
+                    'name', 'dob', 'gender', 'category', 'fatherName', 'motherName',
+                    'fatherMobile', 'mobile', 'whatsapp', 'aadhar', 'janAadhar',
+                    'aparId', 'RTE', 'class', 'stream', 'section', 'bloodGroup',
+                    'previousSchool', 'tcNo', 'lastClass', 'admissionNo', 'admissionDate',
+                    'transport', 'hostel', 'selectedCompulsoryFees', 'selectedOptionalFees'
+                ];
+                
+                const hasChanges = fieldsToCompare.some(field => {
+                    const newValue = form[field];
+                    const oldValue = existingStudent[field];
+                    return JSON.stringify(newValue) !== JSON.stringify(oldValue);
+                });
+                
+                if (!hasChanges) {
+                    alert("No changes detected.");
+                    return;
+                }
+            }
+        }
+
+        setSaving(true);
+
+        try {
+            const finalData = {
+                ...form,
+                mobile: form.mobile || form.fatherMobile
+            };
+
+            if (id || form.id) {
+                await studentService.updateStudent(
+                    form.studentId || form.id || id,
+                    finalData
+                );
+            } else {
+                await studentService.addStudent({
+                    ...finalData,
+                    id: Date.now()
+                });
+
+                // ROOT CAUSE FIX: After successful CREATE, reset to fresh blank form
+                // prevents duplicate creation on second save click
+                setForm(initialState);
+                removeStorageCompat(STORAGE_KEYS.DRAFT_STUDENT);
+            }
+
+            // SECTION J: UX Hardening - Proper success message
+            alert("Saved successfully");
+        } catch (error) {
+            console.error('Save failed:', error);
+            alert(error.message || "Save failed. Please try again.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleDraft = () => {
@@ -730,22 +770,6 @@ const classes =
 
                 </div>
 
-                {/* Section Dropdown - Master Settings Reuse */}
-                <div style={box}>
-                    <h3>Section</h3>
-                    <select style={input} name="section" value={form.section || ""} onChange={handleChange}>
-                        <option value="">Select Section</option>
-                        {displaySections.map((sec, i) => (
-                            <option key={`section-${sec}-${i}`} value={sec}>{sec}</option>
-                        ))}
-                    </select>
-                    {form.class && displaySections.length === 0 && (
-                        <p style={{ color: "#666", fontSize: "13px", marginTop: "5px" }}>
-                            No sections configured for this class
-                        </p>
-                    )}
-                </div>
-
                 {/* PREVIOUS SCHOOL */}
                 <div style={box}>
                     <h3>Previous School</h3>
@@ -1023,16 +1047,22 @@ const classes =
 
                 <button
                     onClick={handleSave}
-                    style={btn("#4CAF50")}
+                    disabled={saving}
+                    style={{...btn("#4CAF50"), opacity: saving ? 0.6 : 1, cursor: saving ? 'not-allowed' : 'pointer'}}
                     onMouseDown={(e) => e.currentTarget.style.transform = "translateY(2px)"}
                     onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0px)"}
                 >
-                    💾 Save
+                    {saving ? '⏳ Saving...' : '💾 Save'}
                 </button>
 
+                {/*
+                    SECTION F: TRANSACTION LOCK - Disable non-saving buttons during save
+                    Prevents side effects during critical mutation operations
+                */}
                 <button
                     onClick={handleDraft}
-                    style={btn("#ff9800")}
+                    disabled={saving}
+                    style={{...btn("#ff9800"), opacity: saving ? 0.6 : 1, cursor: saving ? 'not-allowed' : 'pointer'}}
                     onMouseDown={(e) => e.currentTarget.style.transform = "translateY(2px)"}
                     onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0px)"}
                 >
@@ -1041,7 +1071,8 @@ const classes =
 
                 <button
                     onClick={handleReset}
-                    style={btn("#f44336")}
+                    disabled={saving}
+                    style={{...btn("#f44336"), opacity: saving ? 0.6 : 1, cursor: saving ? 'not-allowed' : 'pointer'}}
                     onMouseDown={(e) => e.currentTarget.style.transform = "translateY(2px)"}
                     onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0px)"}
                 >

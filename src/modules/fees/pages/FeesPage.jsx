@@ -2,16 +2,16 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSchoolStore } from "../../../store/schoolStore";
 import { getService } from "../../../core/serviceRegistry";
-import { getStorageCompat } from "../../../services/storageService";
-import { STORAGE_KEYS } from "../../../core/constants/storageKeys";
 import FeesTable from "../components/FeesTable";
 import FeesCollectModal from "../components/FeesCollectModal";
 import ReceiptModal from "../components/ReceiptModal";
 
 const feesService = getService("fees");
+const feeSettingsService = getService("feeSettings");
 
 const getFeeSettings = () => {
-    return getStorageCompat(STORAGE_KEYS.ERP_FEE_SETTINGS, null);
+    // Phase 4.5B: Use tenant-aware feeSettingsService instead of shared getStorageCompat
+    return feeSettingsService.getFeeSettings();
 };
 
 const FeesPage = () => {

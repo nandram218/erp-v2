@@ -7,6 +7,30 @@ import { getService } from "../core/serviceRegistry";
 import { useSchoolStore } from "../store/schoolStore";
 import { getTenantContext } from "./tenantContextService";
 
+// ============================================================
+// PRODUCTION STABILITY: execution lock to prevent duplicate operations
+// ============================================================
+const executionLocks = new Map();
+const LOCK_TIMEOUT = 5000; // 5 seconds max lock duration
+
+const acquireLock = (operation) => {
+    const lockKey = `${operation}_${Date.now()}`;
+    if (executionLocks.has(operation)) {
+        const existingLock = executionLocks.get(operation);
+        if (Date.now() - existingLock.timestamp < LOCK_TIMEOUT) {
+            throw new Error(`[LOCK] ${operation} already in progress. Please wait.`);
+        }
+    }
+    executionLocks.set(operation, { timestamp: Date.now(), lockKey });
+    return lockKey;
+};
+
+const releaseLock = (operation) => {
+    if (executionLocks.has(operation)) {
+        executionLocks.delete(operation);
+    }
+};
+
 /** Match by studentId (canonical) or legacy numeric id */
 const matchesStudent = (student, identifier) => {
     if (identifier === undefined || identifier === null || identifier === "") {
@@ -27,11 +51,11 @@ const matchesStudent = (student, identifier) => {
 };
 
 /* =========================================================
-   GLOBAL STUDENT ENGINE
+    GLOBAL STUDENT ENGINE
 ========================================================= */
 
 /* =========================================================
-   GET STUDENTS
+    GET STUDENTS
 ========================================================= */
 
 export const getStudents = () => {
@@ -49,7 +73,7 @@ export const getStudents = () => {
 };
 
 /* =========================================================
-   GENERATE STUDENT ID
+    GENERATE STUDENT ID
 ========================================================= */
 
 export const generateStudentId = () => {
@@ -71,112 +95,155 @@ export const generateStudentId = () => {
     const students =
         state.students || [];
 
+    // CRITICAL FIX SECTION A: Use highest existing numeric ID + 1 instead of length
+    // This prevents ID reuse after deletions
+    const maxNumericId = students.reduce((max, student) => {
+        if (student.studentId && typeof student.studentId === 'string') {
+            const match = student.studentId.match(/STU-(\d+)/);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                return num > max ? num : max;
+            }
+        }
+        return max;
+    }, 0);
+
     const nextNumber =
-        String(students.length + 1)
+        String(maxNumericId + 1)
             .padStart(6, "0");
 
     return `${schoolId}-${sessionId}-STU-${nextNumber}`;
 };
 
 /* =========================================================
-   ADD STUDENT
+    ADD STUDENT
 ========================================================= */
 
 export const addStudent = (
     student = {}
 ) => {
+    // PRODUCTION STABILITY: Acquire execution lock
+    const lockKey = acquireLock('addStudent');
 
-    const {
-        students,
-        setStudents
-    } = useSchoolStore.getState();
+    try {
+        const {
+            students,
+            setStudents
+        } = useSchoolStore.getState();
 
-    const studentId =
-        generateStudentId();
+        const studentId =
+            generateStudentId();
 
-    // Use tenant context service for consistent tenant context
-    const tenantContext = getTenantContext();
+        // Use tenant context service for consistent tenant context
+        const tenantContext = getTenantContext();
 
-    const finalStudent = {
-
-        ...student,
-
-        /* =================
-           PRIMARY IDENTITY
-        ================= */
-
-        studentId,
-
-        /* =================
-           TENANT CONTEXT
-        ================= */
-
-        schoolId:
-            tenantContext.schoolId || "",
-
-        branchId:
-            tenantContext.branchId || "",
-
-        sessionId:
-            tenantContext.sessionId || "",
-
-        /* =================
-           TIMESTAMPS
-        ================= */
-
-        createdAt:
-            new Date().toISOString(),
-
-        updatedAt:
-            new Date().toISOString(),
-    };
-
-    const updatedStudents = [
-        ...students,
-        finalStudent
-    ];
-
-    setStudents(updatedStudents);
-
-    // Create fee record in fees service
-    const feesService = getService("fees");
-    feesService.createStudentFeesRecord({ student: finalStudent });
-
-    // Create transport assignment if transport is enabled
-    if (finalStudent.transport?.enabled && finalStudent.transport.routeId) {
-        const transportService = getService("transport");
-        if (transportService && typeof transportService.assignStudentToRoute === 'function') {
-            try {
-                transportService.assignStudentToRoute({
-                    studentId: finalStudent.studentId,
-                    routeId: finalStudent.transport.routeId,
-                    pickupPoint: finalStudent.transport.pickupPoint,
-                    fee: finalStudent.transport.routeFee
-                });
-            } catch (e) {
-                console.warn('[studentService] Transport assignment failed:', e.message);
-            }
+        // PHASE 6.0: Duplicate detection before creation
+        const exists = students.some(s => 
+            s.studentId === studentId || 
+            (student.studentId && s.studentId === student.studentId)
+        );
+        if (exists) {
+            throw new Error(`[DUPLICATE] Student already exists: ${studentId || student.studentId}`);
         }
-    }
 
-    // Create hostel assignment if hostel is enabled
-    if (finalStudent.hostel?.enabled) {
-        const { isServiceRegistered } = require("../core/serviceRegistry");
-        if (isServiceRegistered("hostel")) {
-            const hostelService = getService("hostel");
-            if (hostelService && typeof hostelService.assignStudentToBed === 'function') {
+        const finalStudent = {
+
+            ...student,
+
+            /* =================
+               PRIMARY IDENTITY
+            ================= */
+
+            studentId,
+
+            /* =================
+               TENANT CONTEXT
+            ================= */
+
+            schoolId:
+                tenantContext.schoolId || "",
+
+            branchId:
+                tenantContext.branchId || "",
+
+            sessionId:
+                tenantContext.sessionId || "",
+
+            /* =================
+               TIMESTAMPS
+            ================= */
+
+            createdAt:
+                new Date().toISOString(),
+
+            updatedAt:
+                new Date().toISOString(),
+        };
+
+        const updatedStudents = [
+            ...students,
+            finalStudent
+        ];
+
+        setStudents(updatedStudents);
+
+        // Stage 2: Atomic transaction - create related records
+        // If any step fails, rollback student addition
+        const rollback = () => {
+            const currentStudents = useSchoolStore.getState().students || [];
+            setStudents(currentStudents.filter(s => s.studentId !== studentId));
+        };
+
+        try {
+            // Create fee record in fees service
+            const feesService = getService("fees");
+            feesService.createStudentFeesRecord({ student: finalStudent });
+        } catch (feeError) {
+            console.error('[studentService] Fee record creation failed, rolling back:', feeError);
+            rollback();
+            throw new Error(`Failed to create student fee record: ${feeError.message}`);
+        }
+
+        // Create transport assignment if transport is enabled
+        if (finalStudent.transport?.enabled && finalStudent.transport.routeId) {
+            const transportService = getService("transport");
+            if (transportService && typeof transportService.assignStudentToRoute === 'function') {
                 try {
-                    // Note: Bed assignment requires a bedId, which would come from hostel management
-                    // For now, we mark the student as hostel-enabled; actual bed assignment happens in hostel module
-                    console.log('[studentService] Student marked for hostel, bed assignment to be handled separately');
+                    transportService.assignStudentToRoute({
+                        studentId: finalStudent.studentId,
+                        routeId: finalStudent.transport.routeId,
+                        pickupPoint: finalStudent.transport.pickupPoint,
+                        fee: finalStudent.transport.routeFee
+                    });
                 } catch (e) {
-                    console.warn('[studentService] Hostel assignment failed:', e.message);
+                    console.warn('[studentService] Transport assignment failed (non-critical):', e.message);
+                    // Transport assignment failure is non-critical - student is still created
                 }
             }
         }
-    }
 
-    return finalStudent;
+        // Create hostel assignment if hostel is enabled
+        if (finalStudent.hostel?.enabled) {
+            const { isServiceRegistered } = require("../core/serviceRegistry");
+            if (isServiceRegistered("hostel")) {
+                const hostelService = getService("hostel");
+                if (hostelService && typeof hostelService.assignStudentToBed === 'function') {
+                    try {
+                        // Note: Bed assignment requires a bedId, which would come from hostel management
+                        // For now, we mark the student as hostel-enabled; actual bed assignment happens in hostel module
+                        console.log('[studentService] Student marked for hostel, bed assignment to be handled separately');
+                    } catch (e) {
+                        console.warn('[studentService] Hostel assignment failed (non-critical):', e.message);
+                    }
+                }
+            }
+        }
+
+        return finalStudent;
+    } finally {
+        // PRODUCTION STABILITY: Always release lock
+        releaseLock('addStudent');
+    }
 };
 
 /* =========================================================
@@ -187,17 +254,26 @@ export const updateStudent = (
     identifier,
     updatedData = {}
 ) => {
+    // PRODUCTION STABILITY: Acquire execution lock
+    const lockKey = acquireLock(`updateStudent_${identifier}`);
 
-    const {
-        students,
-        setStudents
-    } = useSchoolStore.getState();
+    try {
+        const {
+            students,
+            setStudents
+        } = useSchoolStore.getState();
 
-    const updatedStudents =
-        students.map((student) =>
-
+        // Find current student to verify it exists
+        const existingStudent = students.find((student) =>
             matchesStudent(student, identifier)
+        );
 
+        if (!existingStudent) {
+            throw new Error(`Student not found: ${identifier}`);
+        }
+
+        const updatedStudents = students.map((student) =>
+            matchesStudent(student, identifier)
                 ? {
                     ...student,
                     ...updatedData,
@@ -221,48 +297,60 @@ export const updateStudent = (
                     updatedAt:
                         new Date().toISOString(),
                 }
-
                 : student
         );
 
-    setStudents(updatedStudents);
+        setStudents(updatedStudents);
 
-    const updatedStudent = updatedStudents.find((student) =>
-        matchesStudent(student, identifier)
-    );
+        const updatedStudent = updatedStudents.find((student) =>
+            matchesStudent(student, identifier)
+        );
 
-    const feesService = getService("fees");
+        if (!updatedStudent) {
+            throw new Error(`Student not found: ${identifier}`);
+        }
 
-    feesService.syncStudentsToFeesDB({
-        students: [updatedStudent]
-    });
+        const feesService = getService("fees");
 
-    // Update transport assignment if transport info changed
-    const transportService = getService("transport");
-    if (transportService) {
-        if (updatedStudent.transport?.enabled && updatedStudent.transport.routeId) {
-            if (typeof transportService.assignStudentToRoute === 'function') {
+        try {
+            feesService.syncStudentsToFeesDB({
+                students: [updatedStudent]
+            });
+        } catch (feeError) {
+            console.error('[studentService] Fee sync failed:', feeError);
+            throw new Error(`Failed to sync student fees: ${feeError.message}`);
+        }
+
+        // Update transport assignment if transport info changed
+        const transportService = getService("transport");
+        if (transportService) {
+            if (updatedStudent.transport?.enabled && updatedStudent.transport.routeId) {
+                if (typeof transportService.assignStudentToRoute === 'function') {
+                    try {
+                        transportService.assignStudentToRoute({
+                            studentId: updatedStudent.studentId,
+                            routeId: updatedStudent.transport.routeId,
+                            pickupPoint: updatedStudent.transport.pickupPoint,
+                            fee: updatedStudent.transport.routeFee
+                        });
+                    } catch (e) {
+                        console.warn('[studentService] Transport update failed (non-critical):', e.message);
+                    }
+                }
+            } else if (typeof transportService.removeStudentTransport === 'function') {
                 try {
-                    transportService.assignStudentToRoute({
-                        studentId: updatedStudent.studentId,
-                        routeId: updatedStudent.transport.routeId,
-                        pickupPoint: updatedStudent.transport.pickupPoint,
-                        fee: updatedStudent.transport.routeFee
-                    });
+                    transportService.removeStudentTransport(updatedStudent.studentId);
                 } catch (e) {
-                    console.warn('[studentService] Transport update failed:', e.message);
+                    console.warn('[studentService] Transport removal failed (non-critical):', e.message);
                 }
             }
-        } else if (typeof transportService.removeStudentTransport === 'function') {
-            try {
-                transportService.removeStudentTransport(updatedStudent.studentId);
-            } catch (e) {
-                console.warn('[studentService] Transport removal failed:', e.message);
-            }
         }
-    }
 
-    return updatedStudent;
+        return updatedStudent;
+    } finally {
+        // PRODUCTION STABILITY: Always release lock
+        releaseLock(`updateStudent_${identifier}`);
+    }
 };
 
 /* =========================================================
@@ -272,47 +360,72 @@ export const updateStudent = (
 export const deleteStudent = (
     identifier
 ) => {
+    // PRODUCTION STABILITY: Acquire execution lock
+    const lockKey = acquireLock(`deleteStudent_${identifier}`);
 
-    const {
-        students,
-        setStudents
-    } = useSchoolStore.getState();
+    try {
+        const {
+            students,
+            setStudents
+        } = useSchoolStore.getState();
 
-    // Find the student being deleted
-    const studentToDelete = students.find(
-        (student) => matchesStudent(student, identifier)
-    );
-
-    const updatedStudents =
-        students.filter(
-            (student) => !matchesStudent(student, identifier)
+        // Find the student being deleted
+        const studentToDelete = students.find(
+            (student) => matchesStudent(student, identifier)
         );
 
-    setStudents(updatedStudents);
+        if (!studentToDelete) {
+            throw new Error(`Student not found: ${identifier}`);
+        }
 
-    // CASCADE: Clean up all related records
-    if (studentToDelete) {
         const studentId = studentToDelete.studentId;
 
-        // 1. Delete fees record
-        const feesService = getService("fees");
-        feesService.deleteStudentFeesRecord(studentId);
+        // Stage 2: Atomic transaction - delete student FIRST, then cleanup related records
+        // If cleanup fails, student is already removed (acceptable - orphans will be cleaned by cleanupOrphan functions)
+        const updatedStudents =
+            students.filter(
+                (student) => !matchesStudent(student, identifier)
+            );
 
-        // 2. Clean up transport assignment
-        const transportService = getService("transport");
-        if (studentToDelete.transportRouteId) {
-            transportService.removeStudentTransport(studentId);
+        setStudents(updatedStudents);
+
+        try {
+            // 1. Delete fees record
+            const feesService = getService("fees");
+            feesService.deleteStudentFeesRecord(studentId);
+        } catch (feeError) {
+            console.error('[studentService] Fee record cleanup failed:', feeError);
+            // Non-critical - orphan cleanup will handle this later
+        }
+
+        try {
+            // 2. Clean up transport assignment
+            const transportService = getService("transport");
+            if (studentToDelete.transportRouteId) {
+                transportService.removeStudentTransport(studentId);
+            }
+        } catch (transportError) {
+            console.error('[studentService] Transport cleanup failed:', transportError);
+            // Non-critical - orphan cleanup will handle this later
         }
 
         // 3. Clean up hostel assignment (optional service - safe lookup)
-        const { isServiceRegistered } = require("../core/serviceRegistry");
-        if (isServiceRegistered("hostel")) {
-            const hostelService = getService("hostel");
-            hostelService.releaseStudentBed(studentId);
+        try {
+            const { isServiceRegistered } = require("../core/serviceRegistry");
+            if (isServiceRegistered("hostel")) {
+                const hostelService = getService("hostel");
+                hostelService.releaseStudentBed(studentId);
+            }
+        } catch (hostelError) {
+            console.error('[studentService] Hostel cleanup failed:', hostelError);
+            // Non-critical - orphan cleanup will handle this later
         }
-    }
 
-    return true;
+        return true;
+    } finally {
+        // PRODUCTION STABILITY: Always release lock
+        releaseLock(`deleteStudent_${identifier}`);
+    }
 };
 
 /* =========================================================
@@ -399,10 +512,6 @@ export const validateStudent = (student = {}) => {
 
     if (!student.name || typeof student.name !== 'string') {
         errors.push('name is required and must be a string');
-    }
-
-    if (!student.class && !student.className) {
-        errors.push('class is required');
     }
 
     if (student.mobile && typeof student.mobile !== 'string') {

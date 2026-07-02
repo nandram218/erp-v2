@@ -74,133 +74,138 @@ export const createReceiptNumber = () => {
 ========================= */
 
 export const createReceipt = ({ receiptData = {} }) => {
-    const register = getReceiptRegister();
+    try {
+        const register = getReceiptRegister();
 
-    const receiptId = crypto.randomUUID();
-    const paymentId = crypto.randomUUID();
-    const ledgerEntryId = crypto.randomUUID();
-    const receiptNumber = createReceiptNumber();
+        const receiptId = crypto.randomUUID();
+        const paymentId = crypto.randomUUID();
+        const ledgerEntryId = crypto.randomUUID();
+        const receiptNumber = createReceiptNumber();
 
-    const receipt = withTenantContext({
-        // =========================
-        // IDENTITY
-        // =========================
-        receiptId,
-        receiptNumber,
-        paymentId,
-        ledgerEntryId,
+        const receipt = withTenantContext({
+            // =========================
+            // IDENTITY
+            // =========================
+            receiptId,
+            receiptNumber,
+            paymentId,
+            ledgerEntryId,
 
-        // =========================
-        // STUDENT
-        // =========================
-        studentId: receiptData.studentId,
-        admissionNo: receiptData.admissionNo,
-        studentName: receiptData.studentName,
-        className: receiptData.className,
-        section: receiptData.section || "",
-        rollNumber: receiptData.rollNumber || "",
-        fatherName: receiptData.fatherName || "",
+            // =========================
+            // STUDENT
+            // =========================
+            studentId: receiptData.studentId,
+            admissionNo: receiptData.admissionNo,
+            studentName: receiptData.studentName,
+            className: receiptData.className,
+            section: receiptData.section || "",
+            rollNumber: receiptData.rollNumber || "",
+            fatherName: receiptData.fatherName || "",
 
-        // =========================
-        // FINANCIAL
-        // =========================
-        amount: Number(receiptData.amount || 0),
-        discount: Number(receiptData.discount || 0),
-        lateFee: Number(receiptData.lateFee || 0),
-        finalAmount: Number(receiptData.finalAmount || 0),
+            // =========================
+            // FINANCIAL
+            // =========================
+            amount: Number(receiptData.amount || 0),
+            discount: Number(receiptData.discount || 0),
+            lateFee: Number(receiptData.lateFee || 0),
+            finalAmount: Number(receiptData.finalAmount || 0),
 
-        // =========================
-        // LINE ITEMS
-        // =========================
-        lineItems: receiptData.lineItems || [],
+            // =========================
+            // LINE ITEMS
+            // =========================
+            lineItems: receiptData.lineItems || [],
 
-        // =========================
-        // INSTALLMENT COMPATIBILITY
-        // =========================
-        installmentId: receiptData.installmentId || null,
-        installmentName: receiptData.installmentName || null,
-        installmentSequence: receiptData.installmentSequence || null,
-        totalInstallments: receiptData.totalInstallments || null,
-        dueDate: receiptData.dueDate || null,
+            // =========================
+            // INSTALLMENT COMPATIBILITY
+            // =========================
+            installmentId: receiptData.installmentId || null,
+            installmentName: receiptData.installmentName || null,
+            installmentSequence: receiptData.installmentSequence || null,
+            totalInstallments: receiptData.totalInstallments || null,
+            dueDate: receiptData.dueDate || null,
 
-        // =========================
-        // DISCOUNT COMPATIBILITY
-        // =========================
-        discountType: receiptData.discountType || null,
-        discountSource: receiptData.discountSource || DISCOUNT_SOURCE.NORMAL,
-        discountReason: receiptData.discountReason || null,
-        discountReferenceId: receiptData.discountReferenceId || null,
+            // =========================
+            // DISCOUNT COMPATIBILITY
+            // =========================
+            discountType: receiptData.discountType || null,
+            discountSource: receiptData.discountSource || DISCOUNT_SOURCE.NORMAL,
+            discountReason: receiptData.discountReason || null,
+            discountReferenceId: receiptData.discountReferenceId || null,
 
-        // =========================
-        // PAYMENT DETAILS
-        // =========================
-        paymentMode: receiptData.paymentMode || PAYMENT_MODE.CASH,
-        referenceNumber: receiptData.referenceNumber || null,
-        bankName: receiptData.bankName || null,
-        chequeNumber: receiptData.chequeNumber || null,
-        transactionId: receiptData.transactionId || null,
+            // =========================
+            // PAYMENT DETAILS
+            // =========================
+            paymentMode: receiptData.paymentMode || PAYMENT_MODE.CASH,
+            referenceNumber: receiptData.referenceNumber || null,
+            bankName: receiptData.bankName || null,
+            chequeNumber: receiptData.chequeNumber || null,
+            transactionId: receiptData.transactionId || null,
 
-        // =========================
-        // FEE SNAPSHOT
-        // =========================
-        feeSnapshot: receiptData.feeSnapshot || {
-            totalFee: 0,
-            compulsoryFees: 0,
-            optionalFees: 0,
-            transportFee: 0,
-            hostelFee: 0,
-            academicYear: "",
-            feeStructureVersion: "1.0",
-        },
+            // =========================
+            // FEE SNAPSHOT
+            // =========================
+            feeSnapshot: receiptData.feeSnapshot || {
+                totalFee: 0,
+                compulsoryFees: 0,
+                optionalFees: 0,
+                transportFee: 0,
+                hostelFee: 0,
+                academicYear: "",
+                feeStructureVersion: "1.0",
+            },
 
-        // =========================
-        // FUTURE TENANT COMPATIBILITY
-        // =========================
-        academicYearId: receiptData.academicYearId || "",
+            // =========================
+            // FUTURE TENANT COMPATIBILITY
+            // =========================
+            academicYearId: receiptData.academicYearId || "",
 
-        // =========================
-        // AUDIT COMPATIBILITY
-        // =========================
-        printCount: 0,
-        lastPrintDate: null,
-        reprintHistory: [],
-        actionLog: [],
+            // =========================
+            // AUDIT COMPATIBILITY
+            // =========================
+            printCount: 0,
+            lastPrintDate: null,
+            reprintHistory: [],
+            actionLog: [],
 
-        // =========================
-        // STATUS COMPATIBILITY
-        // =========================
-        status: RECEIPT_STATUS.ACTIVE,
+            // =========================
+            // STATUS COMPATIBILITY
+            // =========================
+            status: RECEIPT_STATUS.ACTIVE,
 
-        // =========================
-        // CANCELLATION TRACKING
-        // =========================
-        cancelledAt: null,
-        cancelledBy: null,
-        cancelReason: null,
-        cancelApprovedBy: null,
-        cancelApprovedAt: null,
+            // =========================
+            // CANCELLATION TRACKING
+            // =========================
+            cancelledAt: null,
+            cancelledBy: null,
+            cancelReason: null,
+            cancelApprovedBy: null,
+            cancelApprovedAt: null,
 
-        // =========================
-        // VOID TRACKING
-        // =========================
-        voidedAt: null,
-        voidedBy: null,
-        voidReason: null,
-        voidApprovedBy: null,
-        voidApprovedAt: null,
+            // =========================
+            // VOID TRACKING
+            // =========================
+            voidedAt: null,
+            voidedBy: null,
+            voidReason: null,
+            voidApprovedBy: null,
+            voidApprovedAt: null,
 
-        // =========================
-        // TIMESTAMPS
-        // =========================
-        paymentDate: receiptData.paymentDate || new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    });
+            // =========================
+            // TIMESTAMPS
+            // =========================
+            paymentDate: receiptData.paymentDate || new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        });
 
-    register.push(receipt);
-    saveReceiptRegister(register);
+        register.push(receipt);
+        saveReceiptRegister(register);
 
-    return receipt;
+        return receipt;
+    } catch (error) {
+        console.error('[receiptService] createReceipt failed:', error);
+        throw error;
+    }
 };
 
 /* =========================
@@ -255,21 +260,28 @@ export const getActiveReceipts = () => {
 ========================= */
 
 export const updateReceipt = ({ receiptId, updates = {} }) => {
-    const register = getReceiptRegister();
-    const index = register.findIndex((r) => r.receiptId === receiptId);
+    try {
+        const register = getReceiptRegister();
+        const index = register.findIndex((r) => r.receiptId === receiptId);
 
-    if (index === -1) return null;
+        if (index === -1) {
+            throw new Error(`Receipt not found: ${receiptId}`);
+        }
 
-    const updated = {
-        ...register[index],
-        ...updates,
-        updatedAt: new Date().toISOString(),
-    };
+        const updated = {
+            ...register[index],
+            ...updates,
+            updatedAt: new Date().toISOString(),
+        };
 
-    register[index] = updated;
-    saveReceiptRegister(register);
+        register[index] = updated;
+        saveReceiptRegister(register);
 
-    return updated;
+        return updated;
+    } catch (error) {
+        console.error('[receiptService] updateReceipt failed:', error);
+        throw error;
+    }
 };
 
 /* =========================

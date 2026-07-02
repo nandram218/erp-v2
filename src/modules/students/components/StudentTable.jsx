@@ -60,9 +60,20 @@ const StudentTable = ({
     });
 
     const handleDelete = (id) => {
-        if (!window.confirm("Delete this student?")) return;
+        // SECTION E: Delete Guard - Enhanced confirmation
+        const student = students.find(s => s.id === id || s.studentId === id);
+        const confirmMessage = student 
+            ? `Delete student "${student.name}" (ID: ${student.studentId || id})? This action cannot be undone.`
+            : "Delete this student? This action cannot be undone.";
+        
+        if (!window.confirm(confirmMessage)) return;
 
-        studentService.deleteStudent(id);
+        try {
+            studentService.deleteStudent(id);
+            alert("Record deleted successfully");
+        } catch (error) {
+            alert("Delete failed: " + error.message);
+        }
     };
 
     const allSelected =

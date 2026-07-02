@@ -86,47 +86,57 @@ export const getRoomById = (roomId) => {
 };
 
 export const createRoom = ({ roomNumber, capacity, type, floor }) => {
-    const hostel = get();
-    const existing = hostel.rooms?.find(r => r.roomNumber === roomNumber);
-    
-    if (existing) {
-        throw new Error(`Room ${roomNumber} already exists`);
+    try {
+        const hostel = get();
+        const existing = hostel.rooms?.find(r => r.roomNumber === roomNumber);
+        
+        if (existing) {
+            throw new Error(`Room ${roomNumber} already exists`);
+        }
+        
+        const newRoom = {
+            id: Date.now(),
+            roomNumber,
+            capacity: Number(capacity),
+            type,
+            floor,
+            occupiedBeds: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        hostel.rooms.push(newRoom);
+        save(hostel);
+        
+        return newRoom;
+    } catch (error) {
+        console.error('[hostelService] createRoom failed:', error);
+        throw error;
     }
-    
-    const newRoom = {
-        id: Date.now(),
-        roomNumber,
-        capacity: Number(capacity),
-        type,
-        floor,
-        occupiedBeds: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
-    
-    hostel.rooms.push(newRoom);
-    save(hostel);
-    
-    return newRoom;
 };
 
 export const updateRoom = (roomId, updates) => {
-    const hostel = get();
-    const roomIndex = hostel.rooms.findIndex(r => String(r.id) === String(roomId));
-    
-    if (roomIndex === -1) {
-        throw new Error(`Room not found`);
+    try {
+        const hostel = get();
+        const roomIndex = hostel.rooms.findIndex(r => String(r.id) === String(roomId));
+        
+        if (roomIndex === -1) {
+            throw new Error(`Room not found`);
+        }
+        
+        hostel.rooms[roomIndex] = {
+            ...hostel.rooms[roomIndex],
+            ...updates,
+            updatedAt: new Date().toISOString()
+        };
+        
+        save(hostel);
+        
+        return hostel.rooms[roomIndex];
+    } catch (error) {
+        console.error('[hostelService] updateRoom failed:', error);
+        throw error;
     }
-    
-    hostel.rooms[roomIndex] = {
-        ...hostel.rooms[roomIndex],
-        ...updates,
-        updatedAt: new Date().toISOString()
-    };
-    
-    save(hostel);
-    
-    return hostel.rooms[roomIndex];
 };
 
 /* =========================
@@ -152,40 +162,45 @@ export const getAvailableBeds = (roomId) => {
 };
 
 export const createBed = ({ roomId, bedNumber }) => {
-    const hostel = get();
-    const room = getRoomById(roomId);
-    
-    if (!room) {
-        throw new Error(`Room not found`);
+    try {
+        const hostel = get();
+        const room = getRoomById(roomId);
+        
+        if (!room) {
+            throw new Error(`Room not found`);
+        }
+        
+        const existingBed = hostel.beds?.find(b => 
+            String(b.roomId) === String(roomId) && 
+            b.bedNumber === bedNumber
+        );
+        
+        if (existingBed) {
+            throw new Error(`Bed ${bedNumber} already exists in room ${room.roomNumber}`);
+        }
+        
+        const newBed = {
+            id: Date.now(),
+            roomId,
+            bedNumber,
+            occupied: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        hostel.beds.push(newBed);
+        
+        room.occupiedBeds = hostel.beds.filter(b => 
+            String(b.roomId) === String(roomId) && b.occupied
+        ).length;
+        
+        save(hostel);
+        
+        return newBed;
+    } catch (error) {
+        console.error('[hostelService] createBed failed:', error);
+        throw error;
     }
-    
-    const existingBed = hostel.beds?.find(b => 
-        String(b.roomId) === String(roomId) && 
-        b.bedNumber === bedNumber
-    );
-    
-    if (existingBed) {
-        throw new Error(`Bed ${bedNumber} already exists in room ${room.roomNumber}`);
-    }
-    
-    const newBed = {
-        id: Date.now(),
-        roomId,
-        bedNumber,
-        occupied: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
-    
-    hostel.beds.push(newBed);
-    
-    room.occupiedBeds = hostel.beds.filter(b => 
-        String(b.roomId) === String(roomId) && b.occupied
-    ).length;
-    
-    save(hostel);
-    
-    return newBed;
 };
 
 /* =========================
@@ -213,58 +228,33 @@ export const setHostelFee = (amount, enabled = true) => {
 ========================= */
 
 export const assignStudentToBed = ({ studentId, bedId }) => {
-    const hostel = get();
-    const bed = getBedById(bedId);
-    
-    if (!bed) {
-        throw new Error(`Bed not found`);
-    }
-    
-    if (bed.occupied) {
-        throw new Error(`Bed is already occupied`);
-    }
-    
-    const existingAssignment = hostel.assignments?.find(a => String(a.studentId) === String(studentId));
-    if (existingAssignment) {
-        throw new Error(`Student already assigned to a bed`);
-    }
-    
-    bed.occupied = true;
-    bed.occupiedBy = studentId;
-    bed.occupiedAt = new Date().toISOString();
-    
-    hostel.assignments.push({
-        id: Date.now(),
-        studentId,
-        bedId,
-        assignedAt: new Date().toISOString()
-    });
-    
-    const room = getRoomById(bed.roomId);
-    if (room) {
-        room.occupiedBeds = hostel.beds.filter(b => 
-            String(b.roomId) === String(room.id) && b.occupied
-        ).length;
-    }
-    
-    save(hostel);
-    
-    return bed;
-};
-
-export const releaseStudentBed = (studentId) => {
-    const hostel = get();
-    const assignment = hostel.assignments?.find(a => String(a.studentId) === String(studentId));
-    
-    if (!assignment) {
-        throw new Error(`Student assignment not found`);
-    }
-    
-    const bed = getBedById(assignment.bedId);
-    if (bed) {
-        bed.occupied = false;
-        bed.occupiedBy = null;
-        bed.occupiedAt = null;
+    try {
+        const hostel = get();
+        const bed = getBedById(bedId);
+        
+        if (!bed) {
+            throw new Error(`Bed not found`);
+        }
+        
+        if (bed.occupied) {
+            throw new Error(`Bed is already occupied`);
+        }
+        
+        const existingAssignment = hostel.assignments?.find(a => String(a.studentId) === String(studentId));
+        if (existingAssignment) {
+            throw new Error(`Student already assigned to a bed`);
+        }
+        
+        bed.occupied = true;
+        bed.occupiedBy = studentId;
+        bed.occupiedAt = new Date().toISOString();
+        
+        hostel.assignments.push({
+            id: Date.now(),
+            studentId,
+            bedId,
+            assignedAt: new Date().toISOString()
+        });
         
         const room = getRoomById(bed.roomId);
         if (room) {
@@ -272,13 +262,48 @@ export const releaseStudentBed = (studentId) => {
                 String(b.roomId) === String(room.id) && b.occupied
             ).length;
         }
+        
+        save(hostel);
+        
+        return bed;
+    } catch (error) {
+        console.error('[hostelService] assignStudentToBed failed:', error);
+        throw error;
     }
-    
-    hostel.assignments = hostel.assignments.filter(a => String(a.studentId) !== String(studentId));
-    
-    save(hostel);
-    
-    return true;
+};
+
+export const releaseStudentBed = (studentId) => {
+    try {
+        const hostel = get();
+        const assignment = hostel.assignments?.find(a => String(a.studentId) === String(studentId));
+        
+        if (!assignment) {
+            throw new Error(`Student assignment not found`);
+        }
+        
+        const bed = getBedById(assignment.bedId);
+        if (bed) {
+            bed.occupied = false;
+            bed.occupiedBy = null;
+            bed.occupiedAt = null;
+            
+            const room = getRoomById(bed.roomId);
+            if (room) {
+                room.occupiedBeds = hostel.beds.filter(b => 
+                    String(b.roomId) === String(room.id) && b.occupied
+                ).length;
+            }
+        }
+        
+        hostel.assignments = hostel.assignments.filter(a => String(a.studentId) !== String(studentId));
+        
+        save(hostel);
+        
+        return true;
+    } catch (error) {
+        console.error('[hostelService] releaseStudentBed failed:', error);
+        throw error;
+    }
 };
 
 export const getStudentAssignment = (studentId) => {

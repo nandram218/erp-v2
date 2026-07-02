@@ -359,125 +359,142 @@ export const getStudentFeeBreakdown = (student) => {
 ========================= */
 
 export const collectFeesPayment = ({ studentId, paymentData = {} }) => {
-    const db = getFeesDB();
+    try {
+        const db = getFeesDB();
 
-    const index = db.findIndex(
-        (s) => String(s.studentId) === String(studentId)
-    );
+        const index = db.findIndex(
+            (s) => String(s.studentId) === String(studentId)
+        );
 
-    if (index === -1) return null;
+        if (index === -1) {
+            throw new Error(`Student fee record not found: ${studentId}`);
+        }
 
-    const student = db[index];
+        const student = db[index];
 
-    const amount = Number(paymentData.amount || 0);
-    const discount = Number(paymentData.discount || 0);
-    const lateFee = Number(paymentData.lateFee || 0);
+        const amount = Number(paymentData.amount || 0);
+        const discount = Number(paymentData.discount || 0);
+        const lateFee = Number(paymentData.lateFee || 0);
 
-    const finalAmount = amount + lateFee - discount;
+        const finalAmount = amount + lateFee - discount;
 
-    const newPaid = (student.paidAmount || 0) + amount;
+        const newPaid = (student.paidAmount || 0) + amount;
 
-    const updatedStudent = {
-        ...student,
-        paidAmount: newPaid,
+        const updatedStudent = {
+            ...student,
+            paidAmount: newPaid,
 
-        dueAmount: Math.max(
-            (student.totalFee || 0) - newPaid,
-            0
-        )
-    };
-    updatedStudent.status =
-        updatedStudent.dueAmount <= 0
-            ? "paid"
-            : updatedStudent.paidAmount > 0
-                ? "partial"
-                : "unpaid";
+            dueAmount: Math.max(
+                (student.totalFee || 0) - newPaid,
+                0
+            )
+        };
+        updatedStudent.status =
+            updatedStudent.dueAmount <= 0
+                ? "paid"
+                : updatedStudent.paidAmount > 0
+                    ? "partial"
+                    : "unpaid";
 
-    // =========================
-    // PHASE-3D INTEGRATION
-    // Create receipt in ERP_RECEIPT_REGISTER (Primary Authority)
-    // =========================
-    const receiptService = getService("receipt");
-    
-    const receipt = receiptService.createReceipt({
-        receiptData: {
-            studentId: student.studentId,
-            admissionNo: student.admissionNo || "",
+        // Stage 2: Atomic transaction - create receipt FIRST (primary authority)
+        // If receipt creation fails, do not update fees DB
+        let receipt;
+        try {
+            const receiptService = getService("receipt");
+            
+            receipt = receiptService.createReceipt({
+                receiptData: {
+                    studentId: student.studentId,
+                    admissionNo: student.admissionNo || "",
+                    studentName: student.studentName,
+                    className: student.className,
+                    section: student.section || "",
+                    rollNumber: student.rollNumber || "",
+                    fatherName: student.fatherName || "",
+                    amount,
+                    discount,
+                    lateFee,
+                    finalAmount,
+                    paymentMode: paymentData.paymentMode || PAYMENT_MODE.CASH,
+                    referenceNumber: paymentData.referenceNumber || "",
+                    discountType: paymentData.discountType || null,
+                    discountSource: DISCOUNT_SOURCE.NORMAL,
+                    discountReason: paymentData.discountReason || "",
+                    paymentDate: new Date().toISOString(),
+                    academicYearId: paymentData.academicSession || "",
+                    feeSnapshot: {
+                        totalFee: student.totalFee || 0,
+                        compulsoryFees: 0,
+                        optionalFees: 0,
+                        transportFee: 0,
+                        hostelFee: 0,
+                        academicYear: paymentData.academicSession || "",
+                        feeStructureVersion: "1.0",
+                    },
+                },
+            });
+        } catch (receiptError) {
+            console.error('[feesService] Receipt creation failed, aborting payment:', receiptError);
+            throw new Error(`Payment aborted - receipt creation failed: ${receiptError.message}`);
+        }
+
+        // Receipt created successfully - now update derived layers
+        // =========================
+        // DERIVED LAYER: Sync ERP_FEES_DB
+        // =========================
+        db[index] = updatedStudent;
+        saveFeesDB(db);
+
+        // =========================
+        // DERIVED LAYER: Sync ERP_FEES_LEDGER
+        // =========================
+        const ledger = getLedger();
+        ledger.push({
+            id: receipt.paymentId,
+            receiptNumber: receipt.receiptNumber,
+            studentId,
             studentName: student.studentName,
             className: student.className,
-            section: student.section || "",
-            rollNumber: student.rollNumber || "",
-            fatherName: student.fatherName || "",
             amount,
             discount,
             lateFee,
             finalAmount,
             paymentMode: paymentData.paymentMode || PAYMENT_MODE.CASH,
-            referenceNumber: paymentData.referenceNumber || "",
-            discountType: paymentData.discountType || null,
-            discountSource: DISCOUNT_SOURCE.NORMAL,
-            discountReason: paymentData.discountReason || "",
+            remarks: paymentData.remarks || "",
             paymentDate: new Date().toISOString(),
-            academicYearId: paymentData.academicSession || "",
-            feeSnapshot: {
-                totalFee: student.totalFee || 0,
-                compulsoryFees: 0,
-                optionalFees: 0,
-                transportFee: 0,
-                hostelFee: 0,
-                academicYear: paymentData.academicSession || "",
-                feeStructureVersion: "1.0",
-            },
-        },
-    });
+            section: student.section || "",
+            rollNumber: student.rollNumber || "",
+            academicSession: paymentData.academicSession || "",
+            discountType: paymentData.discountType || "",
+            discountReason: paymentData.discountReason || "",
+            lateFeeReason: paymentData.lateFeeReason || "",
+            referenceNumber: paymentData.referenceNumber || "",
+            fatherName: student.fatherName,
+        });
+        saveLedger(ledger);
 
-    // =========================
-    // DERIVED LAYER: Sync ERP_FEES_DB
-    // =========================
-    db[index] = updatedStudent;
-    saveFeesDB(db);
+        // Reverse sync: update student payment status
+        try {
+            const studentService = getService("student");
+            studentService.updateStudent(studentId, {
+                paymentStatus: updatedStudent.status,
+                lastPaymentDate: receipt.paymentDate
+            });
+        } catch (studentSyncError) {
+            console.warn('[feesService] Student sync failed (non-critical):', studentSyncError);
+            // Non-critical - receipt and fees DB are already updated
+        }
 
-    // =========================
-    // DERIVED LAYER: Sync ERP_FEES_LEDGER
-    // =========================
-    const ledger = getLedger();
-    ledger.push({
-        id: receipt.paymentId,
-        receiptNumber: receipt.receiptNumber,
-        studentId,
-        studentName: student.studentName,
-        className: student.className,
-        amount,
-        discount,
-        lateFee,
-        finalAmount,
-        paymentMode: paymentData.paymentMode || PAYMENT_MODE.CASH,
-        remarks: paymentData.remarks || "",
-        paymentDate: new Date().toISOString(),
-        section: student.section || "",
-        rollNumber: student.rollNumber || "",
-        academicSession: paymentData.academicSession || "",
-        discountType: paymentData.discountType || "",
-        discountReason: paymentData.discountReason || "",
-        lateFeeReason: paymentData.lateFeeReason || "",
-        referenceNumber: paymentData.referenceNumber || "",
-        fatherName: student.fatherName,
-    });
-    saveLedger(ledger);
-
-    // Reverse sync: update student payment status
-    const studentService = getService("student");
-    studentService.updateStudent(studentId, {
-        paymentStatus: updatedStudent.status,
-        lastPaymentDate: receipt.paymentDate
-    });
-
-    return {
-        success: true,
-        student: updatedStudent,
-        payment: receipt,
-        receipt,
-    };
+        return {
+            success: true,
+            student: updatedStudent,
+            payment: receipt,
+            receipt,
+        };
+    } catch (error) {
+        console.error('[feesService] collectFeesPayment failed:', error);
+        throw error;
+    }
 };
 
 /* =========================

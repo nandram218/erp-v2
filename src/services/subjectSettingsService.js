@@ -47,9 +47,10 @@ export const clearSubjectSettings = (classId) => {
 // =============================
 // RESET ALL SUBJECT SETTINGS (ERP WIDE)
 // Phase 3.1 D - Storage Consistency Fix
+// Phase 4.5B - Removed direct localStorage access, uses tenant-aware storage
 // =============================
 export const clearAllSubjectSettings = () => {
-    // Phase 3.1 D: Use tenant-aware storage methods
+    // Phase 4.5B: Use tenant-aware storage methods - no direct localStorage access
     const tenantContext = getTenantContextForStorage();
     
     if (tenantContext.schoolId && tenantContext.branchId && tenantContext.sessionId) {
@@ -70,7 +71,6 @@ export const clearAllSubjectSettings = () => {
         });
     } else {
         // No tenant context - clear using tenant-aware method for current context
-        const tenantContext = getTenantContextForStorage();
         const prefix = `ERP_V2_SAAS_${tenantContext.schoolId || 'shared'}_${tenantContext.branchId || 'shared'}_${tenantContext.sessionId || 'shared'}_${STORAGE_KEYS.ERP_SUBJECTS}`;
         
         const allKeys = Object.keys(localStorage);

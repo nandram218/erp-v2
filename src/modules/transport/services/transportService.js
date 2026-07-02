@@ -4,6 +4,7 @@ import {
     STORAGE_KEYS,
 } from "../../../services/storageService";
 import { withTenantContext, getTenantContextForStorage } from "../../../services/tenantContextService";
+import { getService } from "../../../core/serviceRegistry";
 
 const DB_KEY = STORAGE_KEYS.ERP_DB;
 
@@ -120,106 +121,117 @@ export const getRouteById = (
 export const createTransportRoute = (
     payload
 ) => {
-    const transport =
-        getTransportDB();
+    try {
+        const transport =
+            getTransportDB();
 
-    const routes =
-        transport.routes || [];
+        const routes =
+            transport.routes || [];
 
-    const existing =
-        routes.find(
-            (r) =>
-                String(r.id) ===
-                String(payload.id)
-        );
-
-    const route = withTenantContext({
-        id:
-            payload.id || uid(),
-
-        routeName:
-            payload.routeName || "",
-
-        vehicleNumber:
-            payload.vehicleNumber || "",
-
-        vehicleType:
-            payload.vehicleType || "Bus",
-
-        driverName:
-            payload.driverName || "",
-
-        driverPhone:
-            payload.driverPhone || "",
-
-        monthlyFee: Number(
-            payload.monthlyFee || 0
-        ),
-
-        pickupPoints:
-            payload.pickupPoints || [],
-
-        gpsEnabled:
-            payload.gpsEnabled || false,
-
-        liveTrackingEnabled:
-            payload.liveTrackingEnabled ||
-            false,
-
-        active:
-            payload.active !== undefined
-                ? payload.active
-                : true,
-
-        createdAt:
-            existing?.createdAt ||
-            new Date().toISOString(),
-
-        updatedAt:
-            new Date().toISOString(),
-    });
-
-    if (existing) {
-        transport.routes =
-            routes.map((r) =>
-                String(r.id) ===
-                    String(route.id)
-                    ? route
-                    : r
+        const existing =
+            routes.find(
+                (r) =>
+                    String(r.id) ===
+                    String(payload.id)
             );
-    } else {
-        transport.routes = [
-            ...routes,
-            route,
-        ];
+
+        const route = withTenantContext({
+            id:
+                payload.id || uid(),
+
+            routeName:
+                payload.routeName || "",
+
+            vehicleNumber:
+                payload.vehicleNumber || "",
+
+            vehicleType:
+                payload.vehicleType || "Bus",
+
+            driverName:
+                payload.driverName || "",
+
+            driverPhone:
+                payload.driverPhone || "",
+
+            monthlyFee: Number(
+                payload.monthlyFee || 0
+            ),
+
+            pickupPoints:
+                payload.pickupPoints || [],
+
+            gpsEnabled:
+                payload.gpsEnabled || false,
+
+            liveTrackingEnabled:
+                payload.liveTrackingEnabled ||
+                false,
+
+            active:
+                payload.active !== undefined
+                    ? payload.active
+                    : true,
+
+            createdAt:
+                existing?.createdAt ||
+                new Date().toISOString(),
+
+            updatedAt:
+                new Date().toISOString(),
+        });
+
+        if (existing) {
+            transport.routes =
+                routes.map((r) =>
+                    String(r.id) ===
+                        String(route.id)
+                        ? route
+                        : r
+                );
+        } else {
+            transport.routes = [
+                ...routes,
+                route,
+            ];
+        }
+
+        saveTransportDB(transport);
+
+        return route;
+    } catch (error) {
+        console.error('[transportService] createTransportRoute failed:', error);
+        throw error;
     }
-
-    saveTransportDB(transport);
-
-    return route;
 };
 
 export const removeTransportRoute = (
     id
 ) => {
-    const transport =
-        getTransportDB();
+    try {
+        const transport =
+            getTransportDB();
 
-    transport.routes =
-        transport.routes.filter(
-            (r) =>
-                String(r.id) !==
-                String(id)
-        );
+        transport.routes =
+            transport.routes.filter(
+                (r) =>
+                    String(r.id) !==
+                    String(id)
+            );
 
-    saveTransportDB(transport);
+        saveTransportDB(transport);
+    } catch (error) {
+        console.error('[transportService] removeTransportRoute failed:', error);
+        throw error;
+    }
 };
 
 export const toggleRouteStatus = (
     id
 ) => {
-    const transport =
-        getTransportDB();
+    try {
+        const transport =
+            getTransportDB();
 
         transport.routes =
             transport.routes.map((r) => {
@@ -239,6 +251,10 @@ export const toggleRouteStatus = (
             });
 
         saveTransportDB(transport);
+    } catch (error) {
+        console.error('[transportService] toggleRouteStatus failed:', error);
+        throw error;
+    }
 };
 
 /* =====================================================
@@ -299,30 +315,22 @@ export const saveStudentTransport = (
     studentId,
     transportData
 ) => {
-    const db = getDB();
+    try {
+        // Stage 3: Authority fix - Use studentService for student data mutations
+        // transportService must NOT write to db.students directly
+        const studentService = getService("student");
+        
+        // Phase 3.1 D: Add tenant context to transport data
+        const tenantAwareTransportData = withTenantContext(transportData);
 
-    // Phase 3.1 D: Add tenant context to transport data
-    const tenantAwareTransportData = withTenantContext(transportData);
-
-    db.students =
-        (db.students || []).map(
-            (student) => {
-                if (
-                    String(student.studentId) ===
-                    String(studentId)
-                ) {
-                    return {
-                        ...student,
-                        transport:
-                            tenantAwareTransportData,
-                    };
-                }
-
-                return student;
-            }
-        );
-
-    saveDB(db);
+        studentService.updateStudent(studentId, {
+            transport: tenantAwareTransportData,
+            transportRouteId: transportData.routeId || null
+        });
+    } catch (error) {
+        console.error('[transportService] saveStudentTransport failed:', error);
+        throw error;
+    }
 };
 
 export const assignStudentToRoute = ({
@@ -331,62 +339,63 @@ export const assignStudentToRoute = ({
     pickupPoint = "",
     fee = 0
 }) => {
-    const db = getDB();
+    try {
+        // Stage 3: Authority fix - Use studentService for student data mutations
+        const studentService = getService("student");
+        
+        // Find the student to verify it exists
+        const db = getDB();
+        const students = db.students || [];
+        const studentIndex = students.findIndex(
+            (s) => String(s.studentId) === String(studentId)
+        );
 
-    // Find the student in ERP_DB.students
-    const students = db.students || [];
-    const studentIndex = students.findIndex(
-        (s) => String(s.studentId) === String(studentId)
-    );
+        if (studentIndex === -1) {
+            console.warn(`[transportService] Student not found for transport assignment: ${studentId}`);
+            return null;
+        }
 
-    if (studentIndex === -1) {
-        console.warn(`[transportService] Student not found for transport assignment: ${studentId}`);
-        return null;
-    }
+        // Update student's transport record via studentService (canonical authority)
+        studentService.updateStudent(studentId, {
+            transport: {
+                enabled: true,
+                routeId,
+                pickupPoint,
+                routeFee: fee,
+                assignedAt: new Date().toISOString()
+            },
+            transportRouteId: routeId
+        });
 
-    // Update student's transport record
-    students[studentIndex] = {
-        ...students[studentIndex],
-        transport: {
+        // Return transport data for confirmation
+        return {
             enabled: true,
             routeId,
             pickupPoint,
             routeFee: fee,
             assignedAt: new Date().toISOString()
-        },
-        transportRouteId: routeId
-    };
-
-    db.students = students;
-    saveDB(db);
-
-    return students[studentIndex].transport;
+        };
+    } catch (error) {
+        console.error('[transportService] assignStudentToRoute failed:', error);
+        throw error;
+    }
 };
 
 export const removeStudentTransport = (
     studentId
 ) => {
-    const db = getDB();
+    try {
+        // Stage 3: Authority fix - Use studentService for student data mutations
+        const studentService = getService("student");
 
-    db.students =
-        (db.students || []).map(
-            (student) => {
-                if (
-                    String(student.studentId) ===
-                    String(studentId)
-                ) {
-                    return {
-                        ...student,
-                        transport: null,
-                        transportRouteId: null,
-                    };
-                }
-
-                return student;
-            }
-        );
-
-    saveDB(db);
+        studentService.updateStudent(studentId, {
+            transport: null,
+            transportRouteId: null
+        });
+    } catch (error) {
+        console.error('[transportService] removeStudentTransport failed:', error);
+        throw error;
+    }
 };
 
 /* =====================================================

@@ -126,6 +126,8 @@ export default function FeeSettings() {
         optionalFees: []
     });
 
+    const [saving, setSaving] = useState(false);
+
     /* =====================================================
        LOAD CLASSES
     ===================================================== */

@@ -14,6 +14,7 @@ const FeesCollectModal = ({ student, onClose, onSuccess }) => {
     const [discountReason, setDiscountReason] = useState("");
     const [lateFeeReason, setLateFeeReason] = useState("");
     const [remarks, setRemarks] = useState("");
+    const [processing, setProcessing] = useState(false);
 
     const dueAmount = Number(student?.dueAmount || 0);
 
@@ -27,30 +28,42 @@ const FeesCollectModal = ({ student, onClose, onSuccess }) => {
 
     const remaining = Math.max(dueAmount - finalPayable, 0);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        if (processing) {
+            return; // Prevent double-click
+        }
 
-        const paymentData = {
-            amount: Number(amount),
-            discount: Number(discount),
-            lateFee: Number(lateFee),
-            finalAmount: finalPayable,
-            remainingDue: remaining,
-            paymentMode,
-            referenceNumber,
-            discountType,
-            discountReason,
-            lateFeeReason,
-            remarks,
-            date: new Date().toISOString(),
-        };
+        setProcessing(true);
 
-        const result = feesService.collectFeesPayment({
-            studentId: student.studentId,
-            paymentData,
-        });
+        try {
+            const paymentData = {
+                amount: Number(amount),
+                discount: Number(discount),
+                lateFee: Number(lateFee),
+                finalAmount: finalPayable,
+                remainingDue: remaining,
+                paymentMode,
+                referenceNumber,
+                discountType,
+                discountReason,
+                lateFeeReason,
+                remarks,
+                date: new Date().toISOString(),
+            };
 
-        onSuccess?.(result);
-        onClose?.();
+            const result = await feesService.collectFeesPayment({
+                studentId: student.studentId,
+                paymentData,
+            });
+
+            onSuccess?.(result);
+            onClose?.();
+        } catch (error) {
+            console.error('Payment collection failed:', error);
+            alert(error.message || "Payment failed. Please try again.");
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (
@@ -157,8 +170,19 @@ const FeesCollectModal = ({ student, onClose, onSuccess }) => {
                 <p>Final: ₹{finalPayable}</p>
                 <p>Remaining: ₹{remaining}</p>
 
-                <button onClick={handleSubmit} style={{ padding: 10, marginRight: 10 }}>Collect</button>
-                <button onClick={onClose} style={{ padding: 10 }}>Close</button>
+                <button 
+                    onClick={handleSubmit} 
+                    disabled={processing}
+                    style={{ 
+                        padding: 10, 
+                        marginRight: 10,
+                        opacity: processing ? 0.6 : 1,
+                        cursor: processing ? 'not-allowed' : 'pointer'
+                    }}
+                >
+                    {processing ? '⏳ Processing...' : 'Collect'}
+                </button>
+                <button onClick={onClose} style={{ padding: 10 }} disabled={processing}>Close</button>
 
             </div>
 
