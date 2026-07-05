@@ -34,10 +34,15 @@ const readRawLegacy = (legacyKey) => {
 export const migrateLegacyStorage = () => {
     MIGRATED_STORAGE_KEYS.forEach((key) => {
         const prefixedKey = getPrefixedKey(key);
-        if (localStorage.getItem(prefixedKey) !== null) {
+        
+        const prefixedExists = localStorage.getItem(prefixedKey) !== null;
+        
+        if (prefixedExists) {
             return;
         }
+        
         const legacy = localStorage.getItem(key);
+        
         if (legacy !== null) {
             localStorage.setItem(prefixedKey, legacy);
         }
@@ -46,17 +51,26 @@ export const migrateLegacyStorage = () => {
 
 /** Prefixed first, then legacy raw key (backward compatible). */
 export const getStorageCompat = (key, fallback = null) => {
+    let result = null;
+    
     try {
-        const prefixed = localStorage.getItem(getPrefixedKey(key));
+        const prefixedKey = getPrefixedKey(key);
+        const prefixed = localStorage.getItem(prefixedKey);
         if (prefixed !== null) {
-            return JSON.parse(prefixed);
+            result = JSON.parse(prefixed);
         }
     } catch (error) {
         console.error("Storage Get Error:", key, error);
     }
 
-    const legacy = readRawLegacy(key);
-    return legacy !== null ? legacy : fallback;
+    if (result === null) {
+        const legacy = readRawLegacy(key);
+        if (legacy !== null) {
+            result = legacy;
+        }
+    }
+    
+    return result !== null ? result : fallback;
 };
 
 /** Writes prefixed storage only - dual-write removed to fix QuotaExceededError */
@@ -235,7 +249,6 @@ export const setTenantStorage = (key, value, tenantContext) => {
         try {
             const tenantKey = getTenantStorageKey(key, tenantContext);
             localStorage.setItem(tenantKey, JSON.stringify(value));
-            console.log(`[STORAGE] Tenant write: ${tenantKey}`);
             return true;
         } catch (error) {
             console.error("[STORAGE] Tenant write failed:", error);
